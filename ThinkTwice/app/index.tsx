@@ -1,10 +1,29 @@
 import { useState } from "react";
-import { Text, View, StyleSheet, Pressable } from "react-native";
+import { Text, View, StyleSheet, Pressable, TextInput, NativeSyntheticEvent, TextInputKeyPressEventData  } from "react-native";
 
 export default function Index() {
+  
+
+  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    const key = e.nativeEvent.key;
+
+    const isControlKey = ["Backspace", "Delete", "ArrowLeft", "ArrowRight"];
+    const isNumber = /^[0-9]$/.test(key);
+
+    if (!isControlKey.includes(key) && !isNumber) {
+      e.preventDefault();
+    }
+
+  };
+
+  const handleChangeText = (text: string) => {
+    const cleanNumber = text.replace(/[^0-9]/g, "");
+    setBudget(Number(cleanNumber));
+  };
 
 
-  const [hiddenText, setHiddenText] = useState("");
+  const [ budget, setBudget] = useState(0);
+  
 
 
 
@@ -24,20 +43,13 @@ export default function Index() {
 
       <View style={styles.content}>
         <Text style={{ fontSize: 18, color: "#fff" }}>Content</Text>
-        <Text style={{ fontSize: 18, color: "#fff", marginTop: 20 }}>{hiddenText}</Text>
-        <Pressable
-          style={{
-            marginTop: 20,
-            padding: 10,
-            backgroundColor: "#2945b3",
-            borderRadius: 5,
-          }}
-          onPress={() => {
-            setHiddenText("The text has been revealed");
-          }}
-        >
-          <Text style={{ color: "#fff", fontSize: 18 }}>Press Me</Text>
-        </Pressable>
+        <TextInput
+          style={styles.input}
+          onChangeText={handleChangeText}
+          onKeyPress={handleKeyPress}
+          keyboardType="numeric"
+        />
+        <Text>{budget}</Text>
       </View>
 
       <View style={styles.footer}>
@@ -78,5 +90,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     backgroundColor: "#555",
+  },
+  input: {
+    height: 40,
+    borderColor: "gray",
+    borderWidth: 1,
+    marginTop: 20,
+    paddingHorizontal: 10,
+    color: "#000",
+    backgroundColor: "#fff",
+    borderRadius: 5,
+  },
+  button: {
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "#2945b3",
+    alignItems: "center",
   }
-});
+  });
+
