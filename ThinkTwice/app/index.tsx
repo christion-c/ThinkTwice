@@ -42,14 +42,14 @@ export default function Index() {
       </View>
 
       <View style={styles.content}>
-        <Text style={{ fontSize: 18, color: "#fff" }}>Content</Text>
+        <Text style={{ fontSize: 27, color: "#fff" }}>Content</Text>
         <TextInput
           style={styles.input}
           onChangeText={handleChangeText}
           onKeyPress={handleKeyPress}
           keyboardType="numeric"
         />
-        <Text>{budget}</Text>
+        <Text style={{ color: "#fff", marginTop: 15, fontSize: 18 }}>{budget}</Text>
       </View>
 
       <View style={styles.footer}>
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "100%",
-    backgroundColor: "#555",
+    backgroundColor: "#222",
   },
   input: {
     height: 40,
