@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "expo-router";
 import { Text, View, StyleSheet, Pressable, TextInput, NativeSyntheticEvent, TextInputKeyPressEventData  } from "react-native";
 
 export default function Index() {
@@ -54,6 +55,8 @@ export default function Index() {
 
       <View style={styles.footer}>
         <Text style={{ fontSize: 18, color: "#fff" }}>Footer</Text>
+        <Link href="/profile" style={{ fontSize: 18, color: "#fff", marginTop: 10 }}>Go to Profile</Link>
+        <Link href="/about" style={{ fontSize: 18, color: "#fff", marginTop: 10 }}>Go to About</Link>
       </View>
     </View>
   );
@@ -64,10 +67,12 @@ const styles = StyleSheet.create({
     zIndex: 1,
     position: "absolute",
     bottom: 0,
-    width: "100%",
+    width: "80%",
     alignItems: "center",
     padding: 10,
     backgroundColor: "#111",
+    borderRadius: 10,
+
   },
 
   header: {
