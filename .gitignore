@@ -1,0 +1,36 @@
+# Local environment values
+.env
+.env.local
+.env.*.local
+
+# JavaScript dependencies and builds
+**/node_modules/
+**/dist/
+**/.expo/
+**/.cache/
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/.pytest_cache/
+**/.mypy_cache/
+
+# Test output
+**/coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Operating systems
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
