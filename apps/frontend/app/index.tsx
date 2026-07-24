@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { Link } from "expo-router";
 import { Text, View, StyleSheet, Pressable, TextInput, NativeSyntheticEvent, TextInputKeyPressEventData  } from "react-native";
+import SideMenu from "./components/SideMenu"
+import NavBar from "./components/Header"
+
 
 export default function Index() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [ budget, setBudget] = useState(0);
   
 
   const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
@@ -21,9 +25,6 @@ export default function Index() {
     const cleanNumber = text.replace(/[^0-9]/g, "");
     setBudget(Number(cleanNumber));
   };
-
-
-  const [ budget, setBudget] = useState(0);
   
 
 
@@ -35,12 +36,18 @@ export default function Index() {
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: "#111",
+        bottom: 0,
       }}
     >
+      {isMenuOpen ? (
+        <Pressable style={styles.menuOverlay} onPress={() => setIsMenuOpen(false)}>
+          <Pressable style={styles.menuContainer} onPress={() => {}}>
+            <SideMenu />
+          </Pressable>
+        </Pressable>
+      ) : null}
 
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Think Twice</Text>
-      </View>
+      <NavBar/>
 
       <View style={styles.content}>
         <Text style={{ fontSize: 27, color: "#fff" }}>Content</Text>
@@ -53,26 +60,43 @@ export default function Index() {
         <Text style={{ color: "#fff", marginTop: 15, fontSize: 18 }}>{budget}</Text>
       </View>
 
-      <View style={styles.footer}>
-        <Text style={{ fontSize: 18, color: "#fff" }}>Footer</Text>
-        <Link href="/profile" style={{ fontSize: 18, color: "#fff", marginTop: 10 }}>Go to Profile</Link>
-        <Link href="/about" style={{ fontSize: 18, color: "#fff", marginTop: 10 }}>Go to About</Link>
-      </View>
+      <Pressable style={styles.footer} onPress={() => setIsMenuOpen(true)}>
+        <Text style={styles.footerMenuIcon}>☰</Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+  },
+  menuContainer: {
+    bottom: 24,
+    position: "absolute",
+    zIndex: 10,
+    left: 65,
+  },
   footer: {
     zIndex: 1,
     position: "absolute",
-    bottom: 0,
+    bottom: 24,
     width: "80%",
     alignItems: "center",
     padding: 10,
-    backgroundColor: "#111",
-    borderRadius: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    color: "#000",
+    borderRadius: 24,
 
+  },
+  footerMenuIcon: {
+    color: "#111",
+    fontSize: 28,
+    lineHeight: 28,
   },
 
   header: {
@@ -98,6 +122,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
+    width: "40%",
     borderColor: "gray",
     borderWidth: 1,
     marginTop: 20,
