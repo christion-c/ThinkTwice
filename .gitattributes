@@ -1,0 +1,16 @@
+# Normalize repository text files.
+* text=auto eol=lf
+
+# Windows-specific scripts may use CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Treat binary files as binary.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
