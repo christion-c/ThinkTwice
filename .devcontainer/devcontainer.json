@@ -1,0 +1,64 @@
+{
+  "name": "ThinkTwice Full-Stack Development",
+
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
+
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+
+  "mounts": [
+    "source=thinktwice-backend-node-modules,target=/workspace/apps/backend/node_modules,type=volume",
+    "source=thinktwice-frontend-node-modules,target=/workspace/apps/frontend/node_modules,type=volume",
+    "source=thinktwice-ml-venv,target=/workspace/services/ml/.venv,type=volume"
+  ],
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "forwardPorts": [
+    3000,
+    5433,
+    8000,
+    8081
+  ],
+
+  "portsAttributes": {
+    "3000": {
+      "label": "Backend API"
+    },
+    "5433": {
+      "label": "PostgreSQL"
+    },
+    "8000": {
+      "label": "ML Service"
+    },
+    "8081": {
+      "label": "Expo"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "typescript.tsdk": "apps/backend/node_modules/typescript/lib",
+        "python.defaultInterpreterPath": "/workspace/services/ml/.venv/bin/python",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+
+  "remoteUser": "node"
+}
