@@ -1,8 +1,8 @@
 import { Text, Pressable, StyleSheet, } from "react-native"
 
-export default function About() {
+export default function Nutrition() {
 
     return(
-        <Text>About Page</Text>
+        <Text>Nutrition Page</Text>
     )
 }

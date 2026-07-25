@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { router } from "expo-router";
 import { Text, View, StyleSheet, Pressable, TextInput, NativeSyntheticEvent, TextInputKeyPressEventData  } from "react-native";
 import SideMenu from "./components/SideMenu"
 import NavBar from "./components/Header"
@@ -51,18 +52,25 @@ export default function Index() {
 
       <View style={styles.content}>
         <Text style={{ fontSize: 27, color: "#fff" }}>Content</Text>
-        <TextInput
-          style={styles.input}
-          onChangeText={handleChangeText}
-          onKeyPress={handleKeyPress}
-          keyboardType="numeric"
-        />
-        <Text style={{ color: "#fff", marginTop: 15, fontSize: 18 }}>{budget}</Text>
       </View>
 
-      <Pressable style={styles.footer} onPress={() => setIsMenuOpen(true)}>
+      <View style={styles.footer}>
+        <Pressable onPress={() => router.push("/nutrition")}>
+                <Text style={styles.link}>Nutrition</Text>
+        </Pressable>
+
+        <Pressable onPress={() => router.push("/fuel")}>
+                <Text style={styles.link}>Fuel</Text>
+        </Pressable>
+
+        <Pressable onPress={() => router.push("/profile/profile")}>
+                <Text style={styles.link}>Profile</Text>
+        </Pressable>
+      </View>
+
+      {/* <Pressable style={styles.footer} onPress={() => setIsMenuOpen(true)}>
         <Text style={styles.footerMenuIcon}>☰</Text>
-      </Pressable>
+      </Pressable> */}
     </View>
   );
 }
@@ -83,6 +91,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     zIndex: 1,
+    display: "flex",
     position: "absolute",
     bottom: 24,
     width: "80%",
@@ -90,6 +99,14 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     color: "#000",
+    borderRadius: 18,
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  link: {
+    fontSize: 18,
+    textDecorationLine: "underline",
+    paddingBottom: 10,
     borderRadius: 24,
 
   },

@@ -8,16 +8,16 @@ export default function SideMenu() {
         <Text style={styles.link}>Home</Text>
       </Pressable>
 
-      <Pressable onPress={() => router.push("/about")}>
-        <Text style={styles.link}>About</Text>
+      <Pressable onPress={() => router.push("/fuel")}>
+        <Text style={styles.link}>Fuel</Text>
       </Pressable>
 
       <Pressable onPress={() => router.push("/profile/profile")}>
         <Text style={styles.link}>Profile</Text>
       </Pressable>
 
-      <Pressable onPress={() => router.push("/settings/notifications")}>
-        <Text style={styles.link}>Notifications</Text>
+      <Pressable onPress={() => router.push("/nutrition")}>
+        <Text style={styles.link}>Nutrition</Text>
       </Pressable>
     </View>
   );
