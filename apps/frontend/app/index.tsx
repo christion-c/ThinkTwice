@@ -8,6 +8,8 @@ import NavBar from "./components/Header"
 export default function Index() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [ budget, setBudget] = useState(0);
+
+  const [secretText, setSecretText] = useState("   ")
   
 
   const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
@@ -52,6 +54,10 @@ export default function Index() {
 
       <View style={styles.content}>
         <Text style={{ fontSize: 27, color: "#fff" }}>Content</Text>
+        <Pressable style={styles.button} onPress={() => setSecretText("Bingus")}>
+          <Text style={{ color: "#fff", fontSize: 18 }}>Show Secret Text</Text>
+        </Pressable>
+        <Text style={{ fontSize: 18, color: "#fff", marginTop: 10 }}>{secretText}</Text>
       </View>
 
       <View style={styles.footer}>
@@ -99,7 +105,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     color: "#000",
-    borderRadius: 18,
+    borderRadius: 50,
     flexDirection: "row",
     justifyContent: "space-around",
   },
