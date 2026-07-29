@@ -9,7 +9,7 @@ export default function NavBar({
         <View style={{ height: 70, flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 }}>
             {onMenuPress ? (
                 <Pressable onPress={onMenuPress}>
-                    <Text style={{ color: "#000", fontSize: 28, paddingRight: 20 }}>☰</Text>
+                    <Text style={{ color: "#222", fontSize: 28, paddingRight: 20 }}>☰</Text>
                 </Pressable>
             ) : (
                 <View style={{ width: 36 }} />

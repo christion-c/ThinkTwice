@@ -1,163 +1,236 @@
-import { useState } from "react";
+import {View, Text, Pressable, StyleSheet, ScrollView } from "react-native"
 import { router } from "expo-router";
-import { Text, View, StyleSheet, Pressable, TextInput, NativeSyntheticEvent, TextInputKeyPressEventData  } from "react-native";
-import SideMenu from "./components/SideMenu"
-import NavBar from "./components/Header"
+import { SafeAreaView } from "react-native-safe-area-context";
 
-
-export default function Index() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [ budget, setBudget] = useState(0);
-
-  const [secretText, setSecretText] = useState("   ")
-  
-
-  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    const key = e.nativeEvent.key;
-
-    const isControlKey = ["Backspace", "Delete", "ArrowLeft", "ArrowRight"];
-    const isNumber = /^[0-9]$/.test(key);
-
-    if (!isControlKey.includes(key) && !isNumber) {
-      e.preventDefault();
-    }
-
-  };
-
-  const handleChangeText = (text: string) => {
-    const cleanNumber = text.replace(/[^0-9]/g, "");
-    setBudget(Number(cleanNumber));
-  };
-  
-
-
+export default function Home() {
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#111",
-        bottom: 0,
-      }}
-    >
-      {isMenuOpen ? (
-        <Pressable style={styles.menuOverlay} onPress={() => setIsMenuOpen(false)}>
-          <Pressable style={styles.menuContainer} onPress={() => {}}>
-            <SideMenu />
-          </Pressable>
-        </Pressable>
-      ) : null}
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
+        {/* Header Section */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>ThinkTwice</Text>
+            <Text style={styles.name}>Parker</Text>
+          </View>
 
-      <NavBar/>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>P</Text>
+          </View>
+        </View>
 
-      <View style={styles.content}>
-        <Text style={{ fontSize: 27, color: "#fff" }}>Content</Text>
-        <Pressable style={styles.button} onPress={() => setSecretText("Bingus")}>
-          <Text style={{ color: "#fff", fontSize: 18 }}>Show Secret Text</Text>
-        </Pressable>
-        <Text style={{ fontSize: 18, color: "#fff", marginTop: 10 }}>{secretText}</Text>
-      </View>
+        {/* Balance Section */}
+        <View style={styles.balanceCard}>
+          <Text style={styles.balanceLabel}>Balance</Text>
+          <Text style={styles.balance}>$12,345.67</Text>
 
+          <View style={styles.balanceRow}>
+            <View>
+              
+
+              <Text style={styles.smallLabel}>Income</Text>
+              <Text style={styles.income}>+1234.56</Text>
+            </View>
+
+            <View>
+              <Text style={styles.smallLabel}>Expense</Text>
+              <Text style={styles.expense}>-123.45</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+
+      {/* Footer with expo router navigation */}
       <View style={styles.footer}>
-        <Pressable onPress={() => router.push("/nutrition")}>
-                <Text style={styles.link}>Nutrition</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.navItem,
+            styles.navItemInactive,
+            pressed && styles.navItemPressed,
+          ]}
+          onPress={() => router.push("/nutrition")}
+        >
+          <Text style={styles.navLabel}>Nutrition</Text>
         </Pressable>
 
-        <Pressable onPress={() => router.push("/fuel")}>
-                <Text style={styles.link}>Fuel</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.navItem,
+            styles.navItemActive,
+            pressed && styles.navItemPressed,
+          ]}
+          onPress={() => router.push("/")}
+        >
+          <Text style={styles.navLabelActive}>Home</Text>
         </Pressable>
 
-        <Pressable onPress={() => router.push("/profile/profile")}>
-                <Text style={styles.link}>Profile</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.navItem,
+            styles.navItemInactive,
+            pressed && styles.navItemPressed,
+          ]}
+          onPress={() => router.push("/profile/profile")}
+        >
+          <Text style={styles.navLabel}>Profile</Text>
         </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.navItem,
+            styles.navItemInactive,
+            pressed && styles.navItemPressed,
+          ]}
+          onPress={() => router.push("/fuel")}
+        >
+          <Text style={styles.navLabel}>Fuel</Text>
+        </Pressable>
+
       </View>
-
-      {/* <Pressable style={styles.footer} onPress={() => setIsMenuOpen(true)}>
-        <Text style={styles.footerMenuIcon}>☰</Text>
-      </Pressable> */}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  menuOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
+  container: {
+    flex: 1,
+    backgroundColor: "#0c1320",
   },
-  menuContainer: {
-    bottom: 24,
-    position: "absolute",
-    zIndex: 10,
-    left: 65,
-  },
-  footer: {
-    zIndex: 1,
-    display: "flex",
-    position: "absolute",
-    bottom: 24,
-    width: "80%",
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    color: "#000",
-    borderRadius: 50,
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  link: {
-    fontSize: 18,
-    textDecorationLine: "underline",
-    paddingBottom: 10,
-    borderRadius: 24,
 
+  scroll: {
+    flex: 1,
   },
-  footerMenuIcon: {
-    color: "#111",
-    fontSize: 28,
-    lineHeight: 28,
+
+  content: {
+    padding: 24,
+    paddingBottom: 24,
   },
 
   header: {
-    zIndex: 1,
-    position: "absolute",
-    top: 0,
-    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
-    backgroundColor: "#2945b3",
+    marginBottom: 30,
   },
-  headerText: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#fff",
+
+  title: {
+    fontSize: 16,
+    color: "#ffffff",
   },
-  content: {
-    flex: 1,
+
+  name: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginTop: 4,
+  },
+
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "green",
     justifyContent: "center",
     alignItems: "center",
-    width: "100%",
-    backgroundColor: "#222",
   },
-  input: {
-    height: 40,
-    width: "40%",
-    borderColor: "gray",
-    borderWidth: 1,
-    marginTop: 20,
+
+  avatarText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 20,
+  },
+
+  balanceCard: {
+    backgroundColor: "#111827",
+    borderRadius: 28,
+    padding: 24,
+    marginBottom: 32,
+  },
+
+  balanceLabel: {
+    color: "#9CA3AF",
+    fontSize: 15,
+  },
+
+  balance: {
+    color: "#fff",
+    fontSize: 38,
+    fontWeight: "700",
+    marginVertical: 12,
+  },
+
+  balanceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+
+  smallLabel: {
+    color: "#9CA3AF",
+    marginBottom: 4,
+  },
+
+  income: {
+    color: "#4ADE80",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+
+  expense: {
+    color: "#F87171",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  footer: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+    paddingVertical: 10,
     paddingHorizontal: 10,
-    color: "#000",
-    backgroundColor: "#fff",
-    borderRadius: 5,
+    backgroundColor: "rgba(9, 15, 26, 0.9)",
+    borderColor: "rgba(255, 255, 255, 0.12)",
+    borderWidth: 1,
+    borderRadius: 22,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
   },
-  button: {
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: "#2945b3",
+  navItem: {
+    flex: 1,
     alignItems: "center",
-  }
-  });
+    justifyContent: "center",
+    marginHorizontal: 4,
+    borderRadius: 12,
+    paddingVertical: 10,
+  },
+  navItemInactive: {
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+  },
+  navItemActive: {
+    backgroundColor: "#22C55E",
+  },
+  navItemPressed: {
+    opacity: 0.85,
+  },
+  navLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#E5E7EB",
+  },
+  navLabelActive: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#052E16",
+  },
+
+
+  
+})
