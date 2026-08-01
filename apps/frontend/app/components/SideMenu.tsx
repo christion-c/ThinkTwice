@@ -1,6 +1,8 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { colors, radii, spacing } from "./theme";
+
 export default function SideMenu() {
   return (
     <View style={styles.card}>
@@ -26,15 +28,17 @@ export default function SideMenu() {
 const styles = StyleSheet.create({
   card: {
     width: 260,
-    padding: 20,
-    borderRadius: 20,
-    backgroundColor: "white",
-    justifyContent: "center",
-    alignItems: "center",
+    padding: spacing.lg,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    gap: spacing.sm,
   },
   link: {
-    fontSize: 18,
-    textDecorationLine: "underline",
-    paddingBottom: 10,
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "600",
+    paddingVertical: spacing.xs,
   },
 });
