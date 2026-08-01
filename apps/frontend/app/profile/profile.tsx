@@ -1,119 +1,74 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
-import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { router, Stack } from "expo-router";
+import { useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { useAppPreferences, useThemeColors } from "../components/AppPreferences";
+import BottomNav from "../components/BottomNav";
+import PageScaffold from "../components/PageScaffold";
+import { radii, spacing, type ThemeColors } from "../components/theme";
 
 export default function Profile() {
+  const colors = useThemeColors();
+  const { colorMode } = useAppPreferences();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Profile Page</Text>
+    <>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable onPress={() => router.push("/settings/preferences")} style={styles.headerButton}>
+              <Ionicons name="settings-outline" size={20} color={colors.text} />
+            </Pressable>
+          ),
+        }}
+      />
 
-      <View style={styles.footer}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemInactive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/nutrition")}
-        >
-          <Text style={styles.navLabel}>Nutrition</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemInactive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/")}
-        >
-          <Text style={styles.navLabel}>Home</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemActive,
-            pressed && styles.navItemPressed,
-          ]}
-        >
-          <Text style={styles.navLabelActive}>Profile</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemInactive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/fuel")}
-        >
-          <Text style={styles.navLabel}>Fuel</Text>
-        </Pressable>
-      </View>
-    </View>
+      <PageScaffold
+        title="Profile"
+        subtitle="Manage your account and keep your preferences up to date."
+        footer={<BottomNav active="Profile" />}
+      >
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Account Snapshot</Text>
+          <Text style={styles.cardText}>Signed in as Parker. Visit settings to update account, notifications, and accessibility.</Text>
+          <Text style={styles.modeText}>Appearance: {colorMode === "dark" ? "Dark" : "Light"}</Text>
+        </View>
+      </PageScaffold>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#111",
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 24,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  footer: {
-    zIndex: 10,
-    position: "absolute",
-    bottom: 24,
-    left: 16,
-    right: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    backgroundColor: "rgba(9, 15, 26, 0.9)",
-    borderColor: "rgba(255, 255, 255, 0.12)",
-    borderWidth: 1,
-    borderRadius: 22,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 4,
-    borderRadius: 12,
-    paddingVertical: 10,
-  },
-  navItemInactive: {
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-  },
-  navItemActive: {
-    backgroundColor: "#22C55E",
-  },
-  navItemPressed: {
-    opacity: 0.85,
-  },
-  navLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#E5E7EB",
-  },
-  navLabelActive: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#052E16",
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    headerButton: {
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      borderRadius: 10,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    cardText: {
+      color: colors.textMuted,
+      fontSize: 15,
+      lineHeight: 22,
+    },
+    modeText: {
+      color: colors.accent,
+      fontSize: 14,
+      fontWeight: "600",
+      marginTop: 2,
+    },
+  });

@@ -1,236 +1,264 @@
-import {View, Text, Pressable, StyleSheet, ScrollView } from "react-native"
-import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useMemo, useState } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
+
+import { useThemeColors } from "./components/AppPreferences";
+import BottomNav from "./components/BottomNav";
+import PageScaffold from "./components/PageScaffold";
+import { radii, shadows, spacing, type ThemeColors } from "./components/theme";
 
 export default function Home() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const [incomeInput, setIncomeInput] = useState("1234.56");
+  const [expenseInput, setExpenseInput] = useState("123.45");
+  const [fuelGallonsInput, setFuelGallonsInput] = useState("12");
+  const [fuelPriceInput, setFuelPriceInput] = useState("3.45");
+  const [milesInput, setMilesInput] = useState("300");
+
+  const income = Number.parseFloat(incomeInput) || 0;
+  const expense = Number.parseFloat(expenseInput) || 0;
+  const fuelGallons = Number.parseFloat(fuelGallonsInput) || 0;
+  const fuelPrice = Number.parseFloat(fuelPriceInput) || 0;
+  const miles = Number.parseFloat(milesInput) || 0;
+
+  const net = income - expense;
+  const fuelCost = fuelGallons * fuelPrice;
+  const mpg = useMemo(() => {
+    if (fuelGallons <= 0) {
+      return 0;
+    }
+    return miles / fuelGallons;
+  }, [fuelGallons, miles]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
-        {/* Header Section */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>ThinkTwice</Text>
-            <Text style={styles.name}>Parker</Text>
+    <PageScaffold
+      title="Welcome back"
+      subtitle="Track your money, meals, and routines in one clean place."
+      footer={<BottomNav active="Home" />}
+    >
+      <View style={[styles.balanceCard, shadows.soft]}>
+        <Text style={styles.balanceLabel}>Current Balance</Text>
+        <Text style={styles.balance}>${net.toFixed(2)}</Text>
+
+        <View style={styles.balanceRow}>
+          <View style={styles.metricBlock}>
+            <Text style={styles.smallLabel}>Income</Text>
+            <Text style={styles.income}>+${income.toFixed(2)}</Text>
           </View>
 
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>P</Text>
-          </View>
-        </View>
-
-        {/* Balance Section */}
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Balance</Text>
-          <Text style={styles.balance}>$12,345.67</Text>
-
-          <View style={styles.balanceRow}>
-            <View>
-              
-
-              <Text style={styles.smallLabel}>Income</Text>
-              <Text style={styles.income}>+1234.56</Text>
-            </View>
-
-            <View>
-              <Text style={styles.smallLabel}>Expense</Text>
-              <Text style={styles.expense}>-123.45</Text>
-            </View>
+          <View style={styles.metricBlock}>
+            <Text style={styles.smallLabel}>Expense</Text>
+            <Text style={styles.expense}>-${expense.toFixed(2)}</Text>
           </View>
         </View>
-      </ScrollView>
-
-
-      {/* Footer with expo router navigation */}
-      <View style={styles.footer}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemInactive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/nutrition")}
-        >
-          <Text style={styles.navLabel}>Nutrition</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemActive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/")}
-        >
-          <Text style={styles.navLabelActive}>Home</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemInactive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/profile/profile")}
-        >
-          <Text style={styles.navLabel}>Profile</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemInactive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/fuel")}
-        >
-          <Text style={styles.navLabel}>Fuel</Text>
-        </Pressable>
-
       </View>
-    </SafeAreaView>
+
+      <View style={styles.quickRow}>
+        <View style={styles.quickCard}>
+          <Text style={styles.quickLabel}>Fuel Cost</Text>
+          <Text style={styles.quickValue}>${fuelCost.toFixed(2)}</Text>
+        </View>
+        <View style={styles.quickCard}>
+          <Text style={styles.quickLabel}>MPG</Text>
+          <Text style={styles.quickValue}>{mpg.toFixed(1)}</Text>
+        </View>
+      </View>
+
+      <View style={styles.quickRow}>
+        <View style={styles.quickCard}>
+          <Text style={styles.quickLabel}>Net This Period</Text>
+          <Text style={[styles.quickValue, net >= 0 ? styles.income : styles.expense]}>
+            {net >= 0 ? "+" : "-"}${Math.abs(net).toFixed(2)}
+          </Text>
+        </View>
+        <View style={styles.quickCard}>
+          <Text style={styles.quickLabel}>Fuel Fill-Ups</Text>
+          <Text style={styles.quickValue}>{fuelGallons > 0 ? "1" : "0"}</Text>
+        </View>
+      </View>
+
+      <View style={styles.inputCard}>
+        <Text style={styles.inputTitle}>Quick Entry</Text>
+        <Text style={styles.inputSubtitle}>Add numbers to track finance and gas totals.</Text>
+
+        <View style={styles.inputRow}>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Income ($)</Text>
+            <TextInput
+              value={incomeInput}
+              onChangeText={setIncomeInput}
+              keyboardType="decimal-pad"
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Expense ($)</Text>
+            <TextInput
+              value={expenseInput}
+              onChangeText={setExpenseInput}
+              keyboardType="decimal-pad"
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+        </View>
+
+        <View style={styles.inputRow}>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Gallons</Text>
+            <TextInput
+              value={fuelGallonsInput}
+              onChangeText={setFuelGallonsInput}
+              keyboardType="decimal-pad"
+              style={styles.input}
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Price / Gallon ($)</Text>
+            <TextInput
+              value={fuelPriceInput}
+              onChangeText={setFuelPriceInput}
+              keyboardType="decimal-pad"
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+        </View>
+
+        <View style={styles.inputRow}>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Miles Driven</Text>
+            <TextInput
+              value={milesInput}
+              onChangeText={setMilesInput}
+              keyboardType="decimal-pad"
+              style={styles.input}
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+        </View>
+      </View>
+    </PageScaffold>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0c1320",
-  },
-
-  scroll: {
-    flex: 1,
-  },
-
-  content: {
-    padding: 24,
-    paddingBottom: 24,
-  },
-
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 30,
-  },
-
-  title: {
-    fontSize: 16,
-    color: "#ffffff",
-  },
-
-  name: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#ffffff",
-    marginTop: 4,
-  },
-
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "green",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  avatarText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 20,
-  },
-
-  balanceCard: {
-    backgroundColor: "#111827",
-    borderRadius: 28,
-    padding: 24,
-    marginBottom: 32,
-  },
-
-  balanceLabel: {
-    color: "#9CA3AF",
-    fontSize: 15,
-  },
-
-  balance: {
-    color: "#fff",
-    fontSize: 38,
-    fontWeight: "700",
-    marginVertical: 12,
-  },
-
-  balanceRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-
-  smallLabel: {
-    color: "#9CA3AF",
-    marginBottom: 4,
-  },
-
-  income: {
-    color: "#4ADE80",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-
-  expense: {
-    color: "#F87171",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  footer: {
-    marginHorizontal: 16,
-    marginBottom: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    backgroundColor: "rgba(9, 15, 26, 0.9)",
-    borderColor: "rgba(255, 255, 255, 0.12)",
-    borderWidth: 1,
-    borderRadius: 22,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 4,
-    borderRadius: 12,
-    paddingVertical: 10,
-  },
-  navItemInactive: {
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-  },
-  navItemActive: {
-    backgroundColor: "#22C55E",
-  },
-  navItemPressed: {
-    opacity: 0.85,
-  },
-  navLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#E5E7EB",
-  },
-  navLabelActive: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#052E16",
-  },
-
-
-  
-})
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    balanceCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.xl,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    balanceLabel: {
+      color: colors.textMuted,
+      fontSize: 15,
+    },
+    balance: {
+      color: colors.text,
+      fontSize: 38,
+      fontWeight: "700",
+      marginTop: spacing.xs,
+    },
+    balanceRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    metricBlock: {
+      flex: 1,
+      backgroundColor: colors.surfaceSoft,
+      borderRadius: radii.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    smallLabel: {
+      color: colors.textMuted,
+      marginBottom: 4,
+    },
+    income: {
+      color: colors.success,
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    expense: {
+      color: colors.danger,
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    quickRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    quickCard: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    quickLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    quickValue: {
+      color: colors.text,
+      fontSize: 28,
+      fontWeight: "700",
+    },
+    inputCard: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    inputTitle: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    inputSubtitle: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    inputRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    inputBlock: {
+      flex: 1,
+      gap: 6,
+    },
+    inputLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceSoft,
+      color: colors.text,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 10,
+      fontSize: 16,
+    },
+  });

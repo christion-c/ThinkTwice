@@ -1,119 +1,47 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
-import { router } from "expo-router";
+import { useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
+
+import { useThemeColors } from "./components/AppPreferences";
+import BottomNav from "./components/BottomNav";
+import PageScaffold from "./components/PageScaffold";
+import { radii, spacing, type ThemeColors } from "./components/theme";
 
 export default function Nutrition() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Nutrition Page</Text>
-
-      <View style={styles.footer}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemActive,
-            pressed && styles.navItemPressed,
-          ]}
-        >
-          <Text style={styles.navLabelActive}>Nutrition</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemInactive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/")}
-        >
-          <Text style={styles.navLabel}>Home</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemInactive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/profile/profile")}
-        >
-          <Text style={styles.navLabel}>Profile</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.navItem,
-            styles.navItemInactive,
-            pressed && styles.navItemPressed,
-          ]}
-          onPress={() => router.push("/fuel")}
-        >
-          <Text style={styles.navLabel}>Fuel</Text>
-        </Pressable>
+    <PageScaffold
+      title="Nutrition"
+      subtitle="Keep meals simple, consistent, and easy to review."
+      footer={<BottomNav active="Nutrition" />}
+    >
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Meal Log</Text>
+        <Text style={styles.cardText}>You have not logged meals today. Add breakfast, lunch, or dinner to build your timeline.</Text>
       </View>
-    </View>
+    </PageScaffold>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#111",
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 24,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  footer: {
-    zIndex: 10,
-    position: "absolute",
-    bottom: 24,
-    left: 16,
-    right: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    backgroundColor: "rgba(9, 15, 26, 0.9)",
-    borderColor: "rgba(255, 255, 255, 0.12)",
-    borderWidth: 1,
-    borderRadius: 22,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 4,
-    borderRadius: 12,
-    paddingVertical: 10,
-  },
-  navItemInactive: {
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-  },
-  navItemActive: {
-    backgroundColor: "#22C55E",
-  },
-  navItemPressed: {
-    opacity: 0.85,
-  },
-  navLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#E5E7EB",
-  },
-  navLabelActive: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#052E16",
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    cardText: {
+      color: colors.textMuted,
+      fontSize: 15,
+      lineHeight: 22,
+    },
+  });
