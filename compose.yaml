@@ -1,0 +1,201 @@
+name: thinktwice
+
+services:
+  db:
+    image: postgres:17-alpine
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-thinktwice}
+      POSTGRES_USER: ${POSTGRES_USER:-thinktwice}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-thinktwice_dev}
+
+    ports:
+      - name: postgres
+        target: 5432
+        published: "${POSTGRES_PORT:-5433}"
+        host_ip: 127.0.0.1
+        protocol: tcp
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-thinktwice} -d ${POSTGRES_DB:-thinktwice}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../infra/docker/backend/Dockerfile
+      target: development
+
+    init: true
+
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-thinktwice}:${POSTGRES_PASSWORD:-thinktwice_dev}@db:5432/${POSTGRES_DB:-thinktwice}
+      ML_SERVICE_URL: http://ml:8000
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+
+    ports:
+      - name: backend-http
+        target: 3000
+        published: "${BACKEND_PORT:-3000}"
+        host_ip: 0.0.0.0
+        protocol: tcp
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/backend
+          target: /workspace
+          initial_sync: true
+          ignore:
+            - node_modules/
+            - dist/
+            - package.json
+            - package-lock.json
+
+        - action: rebuild
+          path: ./apps/backend/package.json
+
+        - action: rebuild
+          path: ./apps/backend/package-lock.json
+
+  frontend:
+    profiles:
+      - frontend
+
+    build:
+      context: ./apps/frontend
+      dockerfile: ../../infra/docker/frontend/Dockerfile
+      target: development
+
+    init: true
+
+    environment:
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:3000}
+
+    ports:
+      - name: expo-metro
+        target: 8081
+        published: "${EXPO_PORT:-8081}"
+        host_ip: 0.0.0.0
+        protocol: tcp
+
+    stdin_open: true
+    tty: true
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/frontend
+          target: /workspace
+          initial_sync: true
+          ignore:
+            - node_modules/
+            - .expo/
+            - package.json
+            - package-lock.json
+
+        - action: rebuild
+          path: ./apps/frontend/package.json
+
+        - action: rebuild
+          path: ./apps/frontend/package-lock.json
+
+  ml:
+    profiles:
+      - ml
+
+    build:
+      context: ./services/ml
+      dockerfile: ../../infra/docker/ml/Dockerfile
+      target: development
+
+    init: true
+
+    environment:
+      PORT: 8000
+      BACKEND_URL: http://backend:3000
+
+    ports:
+      - name: ml-http
+        target: 8000
+        published: "${ML_PORT:-8000}"
+        host_ip: 127.0.0.1
+        protocol: tcp
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+    develop:
+      watch:
+        - action: sync
+          path: ./services/ml
+          target: /workspace
+          initial_sync: true
+          ignore:
+            - .venv/
+            - __pycache__/
+            - .pytest_cache/
+            - requirements.txt
+
+        - action: rebuild
+          path: ./services/ml/requirements.txt
+
+  adminer:
+    image: adminer:5
+
+    profiles:
+      - tools
+
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+
+    ports:
+      - name: adminer-http
+        target: 8080
+        published: "${ADMINER_PORT:-8080}"
+        host_ip: 127.0.0.1
+        protocol: tcp
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -1,110 +1,164 @@
-import { useState } from "react";
-import { Text, View, StyleSheet, Pressable, TextInput, NativeSyntheticEvent, TextInputKeyPressEventData  } from "react-native";
+import { useMemo, useState } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
-export default function Index() {
-  
+import { useThemeColors } from "./components/AppPreferences";
+import BottomNav from "./components/BottomNav";
+import PageScaffold from "./components/PageScaffold";
+import { radii, shadows, spacing, type ThemeColors } from "./components/theme";
 
-  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    const key = e.nativeEvent.key;
+export default function Home() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
-    const isControlKey = ["Backspace", "Delete", "ArrowLeft", "ArrowRight"];
-    const isNumber = /^[0-9]$/.test(key);
+  const [incomeInput, setIncomeInput] = useState("1234.56");
+  const [expenseInput, setExpenseInput] = useState("123.45");
 
-    if (!isControlKey.includes(key) && !isNumber) {
-      e.preventDefault();
-    }
+  const income = Number.parseFloat(incomeInput) || 0;
+  const expense = Number.parseFloat(expenseInput) || 0;
 
-  };
-
-  const handleChangeText = (text: string) => {
-    const cleanNumber = text.replace(/[^0-9]/g, "");
-    setBudget(Number(cleanNumber));
-  };
-
-
-  const [ budget, setBudget] = useState(0);
-  
-
-
+  const net = income - expense;
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#111",
-      }}
+    <PageScaffold
+      title="Welcome back"
+      subtitle="Track your money, meals, and routines in one clean place."
+      footer={<BottomNav active="Home" />}
     >
+      <View style={[styles.balanceCard, shadows.soft]}>
+        <Text style={styles.balanceLabel}>Current Balance</Text>
+        <Text style={styles.balance}>${net.toFixed(2)}</Text>
 
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Think Twice</Text>
+        <View style={styles.balanceRow}>
+          <View style={styles.metricBlock}>
+            <Text style={styles.smallLabel}>Income</Text>
+            <Text style={styles.income}>+${income.toFixed(2)}</Text>
+          </View>
+
+          <View style={styles.metricBlock}>
+            <Text style={styles.smallLabel}>Expense</Text>
+            <Text style={styles.expense}>-${expense.toFixed(2)}</Text>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.content}>
-        <Text style={{ fontSize: 27, color: "#fff" }}>Content</Text>
-        <TextInput
-          style={styles.input}
-          onChangeText={handleChangeText}
-          onKeyPress={handleKeyPress}
-          keyboardType="numeric"
-        />
-        <Text style={{ color: "#fff", marginTop: 15, fontSize: 18 }}>{budget}</Text>
-      </View>
+      <View style={styles.inputCard}>
+        <Text style={styles.inputTitle}>Quick Entry</Text>
+        <Text style={styles.inputSubtitle}>Add numbers to track finance totals.</Text>
 
-      <View style={styles.footer}>
-        <Text style={{ fontSize: 18, color: "#fff" }}>Footer</Text>
+        <View style={styles.inputRow}>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Income ($)</Text>
+            <TextInput
+              value={incomeInput}
+              onChangeText={setIncomeInput}
+              keyboardType="decimal-pad"
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Expense ($)</Text>
+            <TextInput
+              value={expenseInput}
+              onChangeText={setExpenseInput}
+              keyboardType="decimal-pad"
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+        </View>
       </View>
-    </View>
+    </PageScaffold>
   );
 }
 
-const styles = StyleSheet.create({
-  footer: {
-    zIndex: 1,
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "#111",
-  },
-
-  header: {
-    zIndex: 1,
-    position: "absolute",
-    top: 0,
-    width: "100%",
-    alignItems: "center",
-    padding: 15,
-    backgroundColor: "#2945b3",
-  },
-  headerText: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-    backgroundColor: "#222",
-  },
-  input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginTop: 20,
-    paddingHorizontal: 10,
-    color: "#000",
-    backgroundColor: "#fff",
-    borderRadius: 5,
-  },
-  button: {
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: "#2945b3",
-    alignItems: "center",
-  }
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    balanceCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.xl,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    balanceLabel: {
+      color: colors.textMuted,
+      fontSize: 15,
+    },
+    balance: {
+      color: colors.text,
+      fontSize: 38,
+      fontWeight: "700",
+      marginTop: spacing.xs,
+    },
+    balanceRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    metricBlock: {
+      flex: 1,
+      backgroundColor: colors.surfaceSoft,
+      borderRadius: radii.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    smallLabel: {
+      color: colors.textMuted,
+      marginBottom: 4,
+    },
+    income: {
+      color: colors.success,
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    expense: {
+      color: colors.danger,
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    inputCard: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    inputTitle: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    inputSubtitle: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    inputRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    inputBlock: {
+      flex: 1,
+      gap: 6,
+    },
+    inputLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceSoft,
+      color: colors.text,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 10,
+      fontSize: 16,
+    },
   });
