@@ -5,7 +5,9 @@ import express, {
 } from "express";
 
 import { env } from "./config/env.js";
+import { authRouter } from "./modules/auth/auth.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
+import { vehicleRouter } from "./modules/vehicles/vehicle.routes.js";
 
 export function createApp() {
   const app = express();
@@ -31,6 +33,8 @@ export function createApp() {
   });
 
   app.use("/health", healthRouter);
+  app.use("/auth", authRouter);
+  app.use("/vehicles", vehicleRouter);
 
   const notFoundHandler: RequestHandler = (_request, response) => {
     response.status(404).json({

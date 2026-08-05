@@ -42,6 +42,15 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-thinktwice}:${POSTGRES_PASSWORD:-thinktwice_dev}@db:5432/${POSTGRES_DB:-thinktwice}
       ML_SERVICE_URL: http://ml:8000
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/firebase-service-account.json
+
+    volumes:
+      - type: bind
+        source: "${FIREBASE_SERVICE_ACCOUNT_PATH:?Set FIREBASE_SERVICE_ACCOUNT_PATH in .env}"
+        target: /run/secrets/firebase-service-account.json
+        read_only: true
+        bind:
+          create_host_path: false
 
     ports:
       - name: backend-http
