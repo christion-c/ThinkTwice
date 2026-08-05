@@ -3,6 +3,9 @@
 .env.local
 .env.*.local
 
+# Local credentials
+/secrets/
+
 # JavaScript dependencies and builds
 **/node_modules/
 **/dist/
@@ -34,5 +37,3 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/settings.json
 .idea/
-
-/secrets/

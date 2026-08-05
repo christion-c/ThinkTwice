@@ -12,24 +12,11 @@ export default function Home() {
 
   const [incomeInput, setIncomeInput] = useState("1234.56");
   const [expenseInput, setExpenseInput] = useState("123.45");
-  const [fuelGallonsInput, setFuelGallonsInput] = useState("12");
-  const [fuelPriceInput, setFuelPriceInput] = useState("3.45");
-  const [milesInput, setMilesInput] = useState("300");
 
   const income = Number.parseFloat(incomeInput) || 0;
   const expense = Number.parseFloat(expenseInput) || 0;
-  const fuelGallons = Number.parseFloat(fuelGallonsInput) || 0;
-  const fuelPrice = Number.parseFloat(fuelPriceInput) || 0;
-  const miles = Number.parseFloat(milesInput) || 0;
 
   const net = income - expense;
-  const fuelCost = fuelGallons * fuelPrice;
-  const mpg = useMemo(() => {
-    if (fuelGallons <= 0) {
-      return 0;
-    }
-    return miles / fuelGallons;
-  }, [fuelGallons, miles]);
 
   return (
     <PageScaffold
@@ -54,33 +41,9 @@ export default function Home() {
         </View>
       </View>
 
-      <View style={styles.quickRow}>
-        <View style={styles.quickCard}>
-          <Text style={styles.quickLabel}>Fuel Cost</Text>
-          <Text style={styles.quickValue}>${fuelCost.toFixed(2)}</Text>
-        </View>
-        <View style={styles.quickCard}>
-          <Text style={styles.quickLabel}>MPG</Text>
-          <Text style={styles.quickValue}>{mpg.toFixed(1)}</Text>
-        </View>
-      </View>
-
-      <View style={styles.quickRow}>
-        <View style={styles.quickCard}>
-          <Text style={styles.quickLabel}>Net This Period</Text>
-          <Text style={[styles.quickValue, net >= 0 ? styles.income : styles.expense]}>
-            {net >= 0 ? "+" : "-"}${Math.abs(net).toFixed(2)}
-          </Text>
-        </View>
-        <View style={styles.quickCard}>
-          <Text style={styles.quickLabel}>Fuel Fill-Ups</Text>
-          <Text style={styles.quickValue}>{fuelGallons > 0 ? "1" : "0"}</Text>
-        </View>
-      </View>
-
       <View style={styles.inputCard}>
         <Text style={styles.inputTitle}>Quick Entry</Text>
-        <Text style={styles.inputSubtitle}>Add numbers to track finance and gas totals.</Text>
+        <Text style={styles.inputSubtitle}>Add numbers to track finance totals.</Text>
 
         <View style={styles.inputRow}>
           <View style={styles.inputBlock}>
@@ -102,45 +65,6 @@ export default function Home() {
               keyboardType="decimal-pad"
               style={styles.input}
               placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Gallons</Text>
-            <TextInput
-              value={fuelGallonsInput}
-              onChangeText={setFuelGallonsInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Price / Gallon ($)</Text>
-            <TextInput
-              value={fuelPriceInput}
-              onChangeText={setFuelPriceInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Miles Driven</Text>
-            <TextInput
-              value={milesInput}
-              onChangeText={setMilesInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0"
               placeholderTextColor={colors.textMuted}
             />
           </View>
@@ -196,30 +120,6 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.danger,
       fontSize: 18,
       fontWeight: "600",
-    },
-    quickRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
-    quickCard: {
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      padding: spacing.md,
-      gap: spacing.xs,
-    },
-    quickLabel: {
-      color: colors.textMuted,
-      fontSize: 13,
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
-    quickValue: {
-      color: colors.text,
-      fontSize: 28,
-      fontWeight: "700",
     },
     inputCard: {
       backgroundColor: colors.surface,
