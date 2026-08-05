@@ -1,14 +1,38 @@
-import { useMemo } from "react";
+import { router } from "expo-router";
+import { signOut } from "firebase/auth";
+import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 
 import { useAppPreferences, useThemeColors } from "../components/AppPreferences";
 import PageScaffold from "../components/PageScaffold";
 import { radii, spacing, type ThemeColors } from "../components/theme";
+import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function ProfileSettings() {
   const colors = useThemeColors();
   const { colorMode, setColorMode, compactCards, setCompactCards, showHints, setShowHints } = useAppPreferences();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
+
+  const handleLogout = async () => {
+    setLogoutError("");
+
+    if (!isFirebaseConfigured || !auth) {
+      setLogoutError("Firebase is not configured yet. Logout is unavailable in preview mode.");
+      return;
+    }
+
+    try {
+      setIsSigningOut(true);
+      await signOut(auth);
+      router.replace("/auth/login");
+    } catch {
+      setLogoutError("Unable to sign out right now. Please try again.");
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <PageScaffold
@@ -54,6 +78,21 @@ export default function ProfileSettings() {
           </View>
           <Switch value={showHints} onValueChange={setShowHints} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
         </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Session</Text>
+        <Text style={styles.cardText}>Sign out of your current account on this device.</Text>
+
+        {logoutError ? <Text style={styles.errorText}>{logoutError}</Text> : null}
+
+        <Pressable
+          onPress={handleLogout}
+          disabled={isSigningOut}
+          style={({ pressed }) => [styles.logoutButton, (pressed || isSigningOut) && styles.buttonPressed]}
+        >
+          <Text style={styles.logoutButtonLabel}>{isSigningOut ? "Signing out..." : "Log Out"}</Text>
+        </Pressable>
       </View>
     </PageScaffold>
   );
@@ -125,5 +164,26 @@ const createStyles = (colors: ThemeColors) =>
     optionCaption: {
       color: colors.textMuted,
       fontSize: 14,
+    },
+    logoutButton: {
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.danger,
+      backgroundColor: "transparent",
+      paddingVertical: 12,
+      alignItems: "center",
+      marginTop: spacing.xs,
+    },
+    logoutButtonLabel: {
+      color: colors.danger,
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    errorText: {
+      color: colors.danger,
+      fontSize: 14,
+    },
+    buttonPressed: {
+      opacity: 0.85,
     },
   });
