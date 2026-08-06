@@ -6,7 +6,6 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { AppPreferencesProvider, useThemeColors } from "./components/AppPreferences";
 import { AuthProvider, useAuth } from "./components/AuthProvider";
 import { FinanceProvider } from "./components/FinanceContext";
-import { isFirebaseConfigured } from "../lib/firebase";
 
 export default function RootLayout() {
   return (
@@ -30,10 +29,6 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (initializing) {
-      return;
-    }
-
-    if (!isFirebaseConfigured) {
       return;
     }
 
