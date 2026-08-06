@@ -16,6 +16,19 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+3. Configure Firebase auth environment values
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Fill in the `EXPO_PUBLIC_FIREBASE_*` variables in `.env` using your Firebase web app config.
+
+   For Google sign-in, also set:
+   - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
+   - `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+   - `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

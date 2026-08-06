@@ -10,9 +10,9 @@ export default function Fuel() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [fuelGallonsInput, setFuelGallonsInput] = useState("12");
-  const [fuelPriceInput, setFuelPriceInput] = useState("3.45");
-  const [milesInput, setMilesInput] = useState("300");
+  const [fuelGallonsInput, setFuelGallonsInput] = useState("0");
+  const [fuelPriceInput, setFuelPriceInput] = useState("0.00");
+  const [milesInput, setMilesInput] = useState("0");
 
   const fuelGallons = Number.parseFloat(fuelGallonsInput) || 0;
   const fuelPrice = Number.parseFloat(fuelPriceInput) || 0;
