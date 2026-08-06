@@ -6,7 +6,7 @@ import { useThemeColors } from "./AppPreferences";
 import { radii, shadows, spacing, type ThemeColors } from "./theme";
 
 const tabs = [
-  { label: "Nutrition", path: "/nutrition" },
+  { label: "Finance", path: "/finance" },
   { label: "Home", path: "/" },
   { label: "Profile", path: "/profile/profile" },
   { label: "Fuel", path: "/fuel" },

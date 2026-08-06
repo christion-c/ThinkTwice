@@ -5,16 +5,19 @@ import { Stack, useRouter, useSegments } from "expo-router";
 
 import { AppPreferencesProvider, useThemeColors } from "./components/AppPreferences";
 import { AuthProvider, useAuth } from "./components/AuthProvider";
+import { FinanceProvider } from "./components/FinanceContext";
 import { isFirebaseConfigured } from "../lib/firebase";
 
 export default function RootLayout() {
   return (
     <AppPreferencesProvider>
-      <AuthProvider>
-        <AuthGate>
-          <AppStack />
-        </AuthGate>
-      </AuthProvider>
+      <FinanceProvider>
+        <AuthProvider>
+          <AuthGate>
+            <AppStack />
+          </AuthGate>
+        </AuthProvider>
+      </FinanceProvider>
     </AppPreferencesProvider>
   );
 }
@@ -64,6 +67,7 @@ function AppStack() {
   return (
     <Stack
       screenOptions={{
+        headerShown: false,
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: "600" },
@@ -74,7 +78,7 @@ function AppStack() {
       <Stack.Screen name="index" options={{ title: "Home" }} />
 
       <Stack.Screen name="fuel" options={{ title: "Fuel" }} />
-      <Stack.Screen name="nutrition" options={{ title: "Nutrition" }} />
+      <Stack.Screen name="finance" options={{ title: "Finance" }} />
 
       <Stack.Screen name="profile/profile" options={{ title: "Profile" }} />
 
