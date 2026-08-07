@@ -105,6 +105,7 @@ services:
 
     environment:
       EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:3000}
+      EXPO_PACKAGER_PROXY_URL: ${EXPO_PACKAGER_PROXY_URL:-}
 
     ports:
       - name: expo-metro
