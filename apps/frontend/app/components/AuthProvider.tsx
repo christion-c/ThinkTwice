@@ -11,6 +11,7 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AUTH_INITIALIZATION_TIMEOUT_MS = 5000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -22,12 +23,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+    const firebaseAuth = auth;
+    let active = true;
+
+    const completeInitialization = (nextUser: User | null) => {
+      if (!active) {
+        return;
+      }
+
       setUser(nextUser);
       setInitializing(false);
-    });
+    };
 
-    return unsubscribe;
+    const timeoutId = setTimeout(() => {
+      console.warn(
+        "Firebase authentication initialization timed out; continuing without a restored session.",
+      );
+      completeInitialization(firebaseAuth.currentUser);
+    }, AUTH_INITIALIZATION_TIMEOUT_MS);
+
+    const unsubscribe = onAuthStateChanged(
+      firebaseAuth,
+      (nextUser) => {
+        if (active) {
+          setUser(nextUser);
+        }
+      },
+      (error) => {
+        console.error("Firebase authentication initialization failed:", error);
+        clearTimeout(timeoutId);
+        completeInitialization(null);
+      },
+    );
+
+    void firebaseAuth
+      .authStateReady()
+      .then(() => {
+        clearTimeout(timeoutId);
+        completeInitialization(firebaseAuth.currentUser);
+      })
+      .catch((error) => {
+        console.error("Firebase authentication initialization failed:", error);
+        clearTimeout(timeoutId);
+        completeInitialization(null);
+      });
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, []);
 
   const value = useMemo(
