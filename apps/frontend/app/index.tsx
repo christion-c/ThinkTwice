@@ -1,17 +1,16 @@
-import { useMemo, useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { useMemo } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 import { useThemeColors } from "./components/AppPreferences";
 import BottomNav from "./components/BottomNav";
+import { useFinance } from "./components/FinanceContext";
 import PageScaffold from "./components/PageScaffold";
 import { radii, shadows, spacing, type ThemeColors } from "./components/theme";
 
 export default function Home() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const [incomeInput, setIncomeInput] = useState("1234.56");
-  const [expenseInput, setExpenseInput] = useState("123.45");
+  const { incomeInput, expenseInput } = useFinance();
 
   const income = Number.parseFloat(incomeInput) || 0;
   const expense = Number.parseFloat(expenseInput) || 0;
@@ -22,6 +21,13 @@ export default function Home() {
     <PageScaffold
       title="Welcome back"
       subtitle="Track your money, meals, and routines in one clean place."
+      headerRight={
+        <Image
+          source={require("../assets/images/ThinkTwice-Logo.png")}
+          style={styles.brandLogo}
+          resizeMode="contain"
+        />
+      }
       footer={<BottomNav active="Home" />}
     >
       <View style={[styles.balanceCard, shadows.soft]}>
@@ -41,34 +47,10 @@ export default function Home() {
         </View>
       </View>
 
-      <View style={styles.inputCard}>
-        <Text style={styles.inputTitle}>Quick Entry</Text>
-        <Text style={styles.inputSubtitle}>Add numbers to track finance totals.</Text>
-
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Income ($)</Text>
-            <TextInput
-              value={incomeInput}
-              onChangeText={setIncomeInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Expense ($)</Text>
-            <TextInput
-              value={expenseInput}
-              onChangeText={setExpenseInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
+      <View style={[styles.fillUpCard, shadows.soft]}>
+        <Text style={styles.fillUpLabel}>Next Estimated Fill-Up</Text>
+        <Text style={styles.fillUpValue}>Saturday, Aug 8</Text>
+        <Text style={styles.fillUpMeta}>Estimated cost: $47.20 • About 3 days left at current driving pace.</Text>
       </View>
     </PageScaffold>
   );
@@ -76,6 +58,10 @@ export default function Home() {
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
+    brandLogo: {
+      width: 42,
+      height: 42,
+    },
     balanceCard: {
       backgroundColor: colors.surface,
       borderRadius: radii.xl,
@@ -121,7 +107,7 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 18,
       fontWeight: "600",
     },
-    inputCard: {
+    fillUpCard: {
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
@@ -129,36 +115,19 @@ const createStyles = (colors: ThemeColors) =>
       padding: spacing.md,
       gap: spacing.sm,
     },
-    inputTitle: {
+    fillUpLabel: {
       color: colors.text,
-      fontSize: 20,
+      fontSize: 16,
       fontWeight: "700",
     },
-    inputSubtitle: {
+    fillUpValue: {
+      color: colors.accent,
+      fontSize: 22,
+      fontWeight: "700",
+    },
+    fillUpMeta: {
       color: colors.textMuted,
       fontSize: 14,
-    },
-    inputRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
-    inputBlock: {
-      flex: 1,
-      gap: 6,
-    },
-    inputLabel: {
-      color: colors.textMuted,
-      fontSize: 13,
-      fontWeight: "600",
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.sm,
-      backgroundColor: colors.surfaceSoft,
-      color: colors.text,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 10,
-      fontSize: 16,
+      lineHeight: 20,
     },
   });

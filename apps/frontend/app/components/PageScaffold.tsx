@@ -9,12 +9,14 @@ import { spacing, type ThemeColors } from "./theme";
 export default function PageScaffold({
   title,
   subtitle,
+  headerRight,
   children,
   footer,
   scrollable = true,
 }: {
   title: string;
   subtitle?: string;
+  headerRight?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
   scrollable?: boolean;
@@ -25,7 +27,10 @@ export default function PageScaffold({
   const body = (
     <View style={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.title}>{title}</Text>
+          {headerRight ? <View style={styles.headerRight}>{headerRight}</View> : null}
+        </View>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
       {children}
@@ -71,11 +76,22 @@ const createStyles = (colors: ThemeColors) =>
     header: {
       gap: 8,
     },
+    headerTopRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    headerRight: {
+      alignItems: "flex-end",
+      justifyContent: "center",
+    },
     title: {
       fontSize: 32,
       fontWeight: "700",
       color: colors.text,
       letterSpacing: 0.2,
+      flexShrink: 1,
     },
     subtitle: {
       fontSize: 16,

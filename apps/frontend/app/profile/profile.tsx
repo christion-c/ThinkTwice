@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -14,29 +14,22 @@ export default function Profile() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <Pressable onPress={() => router.push("/settings/preferences")} style={styles.headerButton}>
-              <Ionicons name="settings-outline" size={20} color={colors.text} />
-            </Pressable>
-          ),
-        }}
-      />
-
-      <PageScaffold
-        title="Profile"
-        subtitle="Manage your account and keep your preferences up to date."
-        footer={<BottomNav active="Profile" />}
-      >
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Account Snapshot</Text>
-          <Text style={styles.cardText}>Signed in as Parker. Visit settings to update account, notifications, and accessibility.</Text>
-          <Text style={styles.modeText}>Appearance: {colorMode === "dark" ? "Dark" : "Light"}</Text>
-        </View>
-      </PageScaffold>
-    </>
+    <PageScaffold
+      title="Profile"
+      subtitle="Manage your account and keep your preferences up to date."
+      headerRight={
+        <Pressable onPress={() => router.push("/settings/preferences")} style={styles.headerButton}>
+          <Ionicons name="settings-outline" size={20} color={colors.text} />
+        </Pressable>
+      }
+      footer={<BottomNav active="Profile" />}
+    >
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Account Snapshot</Text>
+        <Text style={styles.cardText}>Signed in as Parker. Visit settings to update account, notifications, and accessibility.</Text>
+        <Text style={styles.modeText}>Appearance: {colorMode === "dark" ? "Dark" : "Light"}</Text>
+      </View>
+    </PageScaffold>
   );
 }
 
