@@ -1,4 +1,6 @@
-import { Pressable, Text, View} from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { colors, spacing } from "./theme";
 
 export default function NavBar({
     onMenuPress,
@@ -6,16 +8,49 @@ export default function NavBar({
     onMenuPress?: () => void;
 }) {
     return (
-        <View style={{ height: 70, flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 }}>
+        <View style={styles.container}>
             {onMenuPress ? (
-                <Pressable onPress={onMenuPress}>
-                    <Text style={{ color: "#000", fontSize: 28, paddingRight: 20 }}>☰</Text>
+                <Pressable onPress={onMenuPress} style={({ pressed }) => [styles.menuButton, pressed && styles.pressed]}>
+                    <Text style={styles.menuText}>Menu</Text>
                 </Pressable>
             ) : (
-                <View style={{ width: 36 }} />
+                <View style={styles.menuSpacer} />
             )}
 
-            <Text style={{ color: "#fff", fontSize: 28 }}>Think Twice</Text>
+            <Text style={styles.brand}>ThinkTwice</Text>
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        height: 70,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: spacing.md,
+    },
+    menuButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+        borderRadius: 10,
+        backgroundColor: "rgba(255,255,255,0.08)",
+    },
+    menuText: {
+        color: colors.text,
+        fontSize: 14,
+        fontWeight: "600",
+    },
+    pressed: {
+        opacity: 0.82,
+    },
+    menuSpacer: {
+        width: 72,
+    },
+    brand: {
+        color: colors.text,
+        fontSize: 24,
+        fontWeight: "700",
+        letterSpacing: 0.4,
+    },
+});

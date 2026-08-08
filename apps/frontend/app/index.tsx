@@ -1,157 +1,164 @@
-import { useState } from "react";
-import { router } from "expo-router";
-import { Text, View, StyleSheet, Pressable, TextInput, NativeSyntheticEvent, TextInputKeyPressEventData  } from "react-native";
-import SideMenu from "./components/SideMenu"
-import NavBar from "./components/Header"
+import { useMemo, useState } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
+import { useThemeColors } from "./components/AppPreferences";
+import BottomNav from "./components/BottomNav";
+import PageScaffold from "./components/PageScaffold";
+import { radii, shadows, spacing, type ThemeColors } from "./components/theme";
 
-export default function Index() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [ budget, setBudget] = useState(0);
-  
+export default function Home() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    const key = e.nativeEvent.key;
+  const [incomeInput, setIncomeInput] = useState("1234.56");
+  const [expenseInput, setExpenseInput] = useState("123.45");
 
-    const isControlKey = ["Backspace", "Delete", "ArrowLeft", "ArrowRight"];
-    const isNumber = /^[0-9]$/.test(key);
+  const income = Number.parseFloat(incomeInput) || 0;
+  const expense = Number.parseFloat(expenseInput) || 0;
 
-    if (!isControlKey.includes(key) && !isNumber) {
-      e.preventDefault();
-    }
-
-  };
-
-  const handleChangeText = (text: string) => {
-    const cleanNumber = text.replace(/[^0-9]/g, "");
-    setBudget(Number(cleanNumber));
-  };
-  
-
-
+  const net = income - expense;
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#111",
-        bottom: 0,
-      }}
+    <PageScaffold
+      title="Welcome back"
+      subtitle="Track your money, meals, and routines in one clean place."
+      footer={<BottomNav active="Home" />}
     >
-      {isMenuOpen ? (
-        <Pressable style={styles.menuOverlay} onPress={() => setIsMenuOpen(false)}>
-          <Pressable style={styles.menuContainer} onPress={() => {}}>
-            <SideMenu />
-          </Pressable>
-        </Pressable>
-      ) : null}
+      <View style={[styles.balanceCard, shadows.soft]}>
+        <Text style={styles.balanceLabel}>Current Balance</Text>
+        <Text style={styles.balance}>${net.toFixed(2)}</Text>
 
-      <NavBar/>
+        <View style={styles.balanceRow}>
+          <View style={styles.metricBlock}>
+            <Text style={styles.smallLabel}>Income</Text>
+            <Text style={styles.income}>+${income.toFixed(2)}</Text>
+          </View>
 
-      <View style={styles.content}>
-        <Text style={{ fontSize: 27, color: "#fff" }}>Content</Text>
+          <View style={styles.metricBlock}>
+            <Text style={styles.smallLabel}>Expense</Text>
+            <Text style={styles.expense}>-${expense.toFixed(2)}</Text>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.footer}>
-        <Pressable onPress={() => router.push("/nutrition")}>
-                <Text style={styles.link}>Nutrition</Text>
-        </Pressable>
+      <View style={styles.inputCard}>
+        <Text style={styles.inputTitle}>Quick Entry</Text>
+        <Text style={styles.inputSubtitle}>Add numbers to track finance totals.</Text>
 
-        <Pressable onPress={() => router.push("/fuel")}>
-                <Text style={styles.link}>Fuel</Text>
-        </Pressable>
-
-        <Pressable onPress={() => router.push("/profile/profile")}>
-                <Text style={styles.link}>Profile</Text>
-        </Pressable>
+        <View style={styles.inputRow}>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Income ($)</Text>
+            <TextInput
+              value={incomeInput}
+              onChangeText={setIncomeInput}
+              keyboardType="decimal-pad"
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>Expense ($)</Text>
+            <TextInput
+              value={expenseInput}
+              onChangeText={setExpenseInput}
+              keyboardType="decimal-pad"
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+        </View>
       </View>
-
-      {/* <Pressable style={styles.footer} onPress={() => setIsMenuOpen(true)}>
-        <Text style={styles.footerMenuIcon}>☰</Text>
-      </Pressable> */}
-    </View>
+    </PageScaffold>
   );
 }
 
-const styles = StyleSheet.create({
-  menuOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
-  },
-  menuContainer: {
-    bottom: 24,
-    position: "absolute",
-    zIndex: 10,
-    left: 65,
-  },
-  footer: {
-    zIndex: 1,
-    display: "flex",
-    position: "absolute",
-    bottom: 24,
-    width: "80%",
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    color: "#000",
-    borderRadius: 18,
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  link: {
-    fontSize: 18,
-    textDecorationLine: "underline",
-    paddingBottom: 10,
-    borderRadius: 24,
-
-  },
-  footerMenuIcon: {
-    color: "#111",
-    fontSize: 28,
-    lineHeight: 28,
-  },
-
-  header: {
-    zIndex: 1,
-    position: "absolute",
-    top: 0,
-    width: "100%",
-    alignItems: "center",
-    padding: 15,
-    backgroundColor: "#2945b3",
-  },
-  headerText: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-    backgroundColor: "#222",
-  },
-  input: {
-    height: 40,
-    width: "40%",
-    borderColor: "gray",
-    borderWidth: 1,
-    marginTop: 20,
-    paddingHorizontal: 10,
-    color: "#000",
-    backgroundColor: "#fff",
-    borderRadius: 5,
-  },
-  button: {
-    borderRadius: 8,
-    padding: 10,
-    backgroundColor: "#2945b3",
-    alignItems: "center",
-  }
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    balanceCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.xl,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    balanceLabel: {
+      color: colors.textMuted,
+      fontSize: 15,
+    },
+    balance: {
+      color: colors.text,
+      fontSize: 38,
+      fontWeight: "700",
+      marginTop: spacing.xs,
+    },
+    balanceRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    metricBlock: {
+      flex: 1,
+      backgroundColor: colors.surfaceSoft,
+      borderRadius: radii.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    smallLabel: {
+      color: colors.textMuted,
+      marginBottom: 4,
+    },
+    income: {
+      color: colors.success,
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    expense: {
+      color: colors.danger,
+      fontSize: 18,
+      fontWeight: "600",
+    },
+    inputCard: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    inputTitle: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    inputSubtitle: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    inputRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    inputBlock: {
+      flex: 1,
+      gap: 6,
+    },
+    inputLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceSoft,
+      color: colors.text,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 10,
+      fontSize: 16,
+    },
   });
