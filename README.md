@@ -1,3 +1,4 @@
+clear
 # ThinkTwice Development Guide
 
 ThinkTwice uses Docker so every team member works with the same software versions, dependencies, database, and development environment.
