@@ -6,17 +6,20 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { AppPreferencesProvider, useThemeColors } from "./components/AppPreferences";
 import { AuthProvider, useAuth } from "./components/AuthProvider";
 import { FinanceProvider } from "./components/FinanceContext";
+import { VehicleProvider } from "./components/VehicleContext";
 
 export default function RootLayout() {
   return (
     <AppPreferencesProvider>
-      <FinanceProvider>
-        <AuthProvider>
-          <AuthGate>
-            <AppStack />
-          </AuthGate>
-        </AuthProvider>
-      </FinanceProvider>
+      <AuthProvider>
+        <VehicleProvider>
+          <FinanceProvider>
+            <AuthGate>
+              <AppStack />
+            </AuthGate>
+          </FinanceProvider>
+        </VehicleProvider>
+      </AuthProvider>
     </AppPreferencesProvider>
   );
 }
