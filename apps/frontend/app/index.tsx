@@ -1,74 +1,75 @@
-import { useMemo, useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { useMemo } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 import { useThemeColors } from "./components/AppPreferences";
 import BottomNav from "./components/BottomNav";
+import { useFinance } from "./components/FinanceContext";
 import PageScaffold from "./components/PageScaffold";
 import { radii, shadows, spacing, type ThemeColors } from "./components/theme";
+
+const moneyFormat = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
 
 export default function Home() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const [incomeInput, setIncomeInput] = useState("1234.56");
-  const [expenseInput, setExpenseInput] = useState("123.45");
-
-  const income = Number.parseFloat(incomeInput) || 0;
-  const expense = Number.parseFloat(expenseInput) || 0;
-
-  const net = income - expense;
+  const {
+    monthlyIncome,
+    monthlyExpenses,
+    monthlyFixedCosts,
+    monthlyFuelBudget,
+    projectedFillUpCost,
+    projectedDaysUntilFillUp,
+    projectedBudgetAfterEssentials,
+  } = useFinance();
 
   return (
     <PageScaffold
       title="Welcome back"
-      subtitle="Track your money, meals, and routines in one clean place."
+      subtitle="Your monthly plan updates from manual finance and fuel inputs as you go."
+      headerRight={
+        <Image
+          source={require("../assets/images/ThinkTwice-Logo.png")}
+          style={styles.brandLogo}
+          resizeMode="contain"
+        />
+      }
       footer={<BottomNav active="Home" />}
     >
       <View style={[styles.balanceCard, shadows.soft]}>
-        <Text style={styles.balanceLabel}>Current Balance</Text>
-        <Text style={styles.balance}>${net.toFixed(2)}</Text>
+        <Text style={styles.balanceLabel}>Projected Free Cash This Month</Text>
+        <Text style={styles.balance}>{moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
 
         <View style={styles.balanceRow}>
           <View style={styles.metricBlock}>
             <Text style={styles.smallLabel}>Income</Text>
-            <Text style={styles.income}>+${income.toFixed(2)}</Text>
+            <Text style={styles.income}>{moneyFormat.format(monthlyIncome)}</Text>
           </View>
 
           <View style={styles.metricBlock}>
-            <Text style={styles.smallLabel}>Expense</Text>
-            <Text style={styles.expense}>-${expense.toFixed(2)}</Text>
+            <Text style={styles.smallLabel}>Spending</Text>
+            <Text style={styles.expense}>{moneyFormat.format(monthlyExpenses + monthlyFixedCosts)}</Text>
+          </View>
+
+          <View style={styles.metricBlock}>
+            <Text style={styles.smallLabel}>Fuel Budget</Text>
+            <Text style={styles.neutral}>{moneyFormat.format(monthlyFuelBudget)}</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.inputCard}>
-        <Text style={styles.inputTitle}>Quick Entry</Text>
-        <Text style={styles.inputSubtitle}>Add numbers to track finance totals.</Text>
+      <View style={[styles.fillUpCard, shadows.soft]}>
+        <Text style={styles.fillUpLabel}>Tank Forecast</Text>
+        <Text style={styles.fillUpValue}>{Math.max(projectedDaysUntilFillUp, 0).toFixed(1)} days until next fill-up</Text>
+        <Text style={styles.fillUpMeta}>Estimated refill cost: {moneyFormat.format(projectedFillUpCost)} based on your current fuel and mileage inputs.</Text>
+      </View>
 
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Income ($)</Text>
-            <TextInput
-              value={incomeInput}
-              onChangeText={setIncomeInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Expense ($)</Text>
-            <TextInput
-              value={expenseInput}
-              onChangeText={setExpenseInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>What To Do Next</Text>
+        <Text style={styles.summaryText}>Update Fuel after each gas stop and keep Finance current weekly. As data grows, these estimates become your model-ready baseline.</Text>
       </View>
     </PageScaffold>
   );
@@ -76,6 +77,10 @@ export default function Home() {
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
+    brandLogo: {
+      width: 42,
+      height: 42,
+    },
     balanceCard: {
       backgroundColor: colors.surface,
       borderRadius: radii.xl,
@@ -98,9 +103,11 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: "row",
       gap: spacing.sm,
       marginTop: spacing.sm,
+      flexWrap: "wrap",
     },
     metricBlock: {
-      flex: 1,
+      minWidth: "30%",
+      flexGrow: 1,
       backgroundColor: colors.surfaceSoft,
       borderRadius: radii.md,
       padding: spacing.md,
@@ -118,10 +125,15 @@ const createStyles = (colors: ThemeColors) =>
     },
     expense: {
       color: colors.danger,
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: "600",
     },
-    inputCard: {
+    neutral: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    fillUpCard: {
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
@@ -129,36 +141,37 @@ const createStyles = (colors: ThemeColors) =>
       padding: spacing.md,
       gap: spacing.sm,
     },
-    inputTitle: {
+    fillUpLabel: {
       color: colors.text,
-      fontSize: 20,
+      fontSize: 16,
       fontWeight: "700",
     },
-    inputSubtitle: {
+    fillUpValue: {
+      color: colors.accent,
+      fontSize: 22,
+      fontWeight: "700",
+    },
+    fillUpMeta: {
       color: colors.textMuted,
       fontSize: 14,
+      lineHeight: 20,
     },
-    inputRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
-    inputBlock: {
-      flex: 1,
-      gap: 6,
-    },
-    inputLabel: {
-      color: colors.textMuted,
-      fontSize: 13,
-      fontWeight: "600",
-    },
-    input: {
+    summaryCard: {
+      borderRadius: radii.lg,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: radii.sm,
-      backgroundColor: colors.surfaceSoft,
+      backgroundColor: colors.surface,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    summaryTitle: {
       color: colors.text,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 10,
-      fontSize: 16,
+      fontSize: 17,
+      fontWeight: "700",
+    },
+    summaryText: {
+      color: colors.textMuted,
+      lineHeight: 21,
+      fontSize: 14,
     },
   });
