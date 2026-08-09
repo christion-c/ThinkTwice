@@ -141,7 +141,7 @@ export default function Login() {
 
   return (
     <PageScaffold
-      title="Sign In"
+      title="ThinkTwice"
       subtitle="Welcome back. Sign in to continue where you left off."
     >
       <View style={styles.card}>
