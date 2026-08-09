@@ -1,8 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { initializeApp, getApp, getApps } from "firebase/app";
-import type { Auth } from "firebase/auth";
-import { getAuth, getReactNativePersistence, initializeAuth } from "firebase/auth";
+import * as FirebaseAuth from "firebase/auth";
+import type { Auth, Persistence } from "firebase/auth";
 import { Platform } from "react-native";
+
+// Firebase exposes this function for React Native at runtime, but its public
+// wrapper currently selects browser declarations during a universal typecheck.
+// Keep the compatibility bridge local and structurally typed to AsyncStorage.
+const getReactNativePersistence = (
+  FirebaseAuth as typeof FirebaseAuth & {
+    getReactNativePersistence: (storage: typeof AsyncStorage) => Persistence;
+  }
+).getReactNativePersistence;
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? "",
@@ -21,14 +30,14 @@ const auth: Auth | null =
   app === null
     ? null
     : Platform.OS === "web"
-      ? getAuth(app)
+      ? FirebaseAuth.getAuth(app)
       : (() => {
           try {
-            return initializeAuth(app, {
+            return FirebaseAuth.initializeAuth(app, {
               persistence: getReactNativePersistence(AsyncStorage),
             });
           } catch {
-            return getAuth(app);
+            return FirebaseAuth.getAuth(app);
           }
         })();
 

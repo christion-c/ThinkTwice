@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+coverage/
+.env*
+*.py[cod]
+*.log
+.git/
+.cache/
+application_default_credentials.json
+*service-account*.json
+*.pem
+*.p12
+*.pfx

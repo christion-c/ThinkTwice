@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 
-import { auth, isFirebaseConfigured } from "../../lib/firebase";
+import { auth, isFirebaseConfigured } from "../lib/firebase";
 
 type AuthContextValue = {
   user: User | null;

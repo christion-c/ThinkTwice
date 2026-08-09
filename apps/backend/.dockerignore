@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.env*
+*.log
+.git/
+.cache/
+application_default_credentials.json
+*service-account*.json
+*.pem
+*.p12
+*.pfx

@@ -3,10 +3,10 @@ import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 
-import { AppPreferencesProvider, useThemeColors } from "./components/AppPreferences";
-import { AuthProvider, useAuth } from "./components/AuthProvider";
-import { FinanceProvider } from "./components/FinanceContext";
-import { VehicleProvider } from "./components/VehicleContext";
+import { AppPreferencesProvider, useThemeColors } from "../components/AppPreferences";
+import { AuthProvider, useAuth } from "../components/AuthProvider";
+import { FinanceProvider } from "../components/FinanceContext";
+import { VehicleProvider } from "../components/VehicleContext";
 
 export default function RootLayout() {
   return (

@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import PageScaffold from "./PageScaffold";
@@ -6,7 +6,7 @@ import { colors, radii, spacing } from "./theme";
 
 type Action = {
   label: string;
-  path: string;
+  path: Href;
 };
 
 export default function SimpleCardPage({
@@ -32,7 +32,7 @@ export default function SimpleCardPage({
           <View style={styles.actions}>
             {actions.map((action) => (
               <Pressable
-                key={action.path}
+                key={action.label}
                 onPress={() => router.push(action.path)}
                 style={({ pressed }) => [styles.actionButton, pressed && styles.actionPressed]}
               >

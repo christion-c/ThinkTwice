@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-import { useThemeColors } from "./components/AppPreferences";
-import BottomNav from "./components/BottomNav";
-import { useFinance } from "./components/FinanceContext";
-import PageScaffold from "./components/PageScaffold";
-import { radii, spacing, type ThemeColors } from "./components/theme";
+import { useThemeColors } from "../components/AppPreferences";
+import BottomNav from "../components/BottomNav";
+import { useFinance } from "../components/FinanceContext";
+import PageScaffold from "../components/PageScaffold";
+import { radii, spacing, type ThemeColors } from "../components/theme";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",

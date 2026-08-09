@@ -1,4 +1,4 @@
-import SimpleCardPage from "../components/SimpleCardPage";
+import SimpleCardPage from "../../components/SimpleCardPage";
 
 export default function Accessibility() {
   return (

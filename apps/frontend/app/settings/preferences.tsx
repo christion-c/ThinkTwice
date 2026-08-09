@@ -3,9 +3,9 @@ import { signOut } from "firebase/auth";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 
-import { useAppPreferences, useThemeColors } from "../components/AppPreferences";
-import PageScaffold from "../components/PageScaffold";
-import { radii, spacing, type ThemeColors } from "../components/theme";
+import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
+import PageScaffold from "../../components/PageScaffold";
+import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function ProfileSettings() {

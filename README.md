@@ -1,4 +1,3 @@
-clear
 # ThinkTwice Development Guide
 
 ThinkTwice uses Docker so every team member works with the same software versions, dependencies, database, and development environment.
@@ -60,7 +59,30 @@ The `.env` file contains local configuration values.
 
 Do not commit `.env` to GitHub.
 
-## 3. Build the Full Project
+## 3. Configure Google ADC and Firebase
+
+The back end uses Firebase Admin with Application Default Credentials (ADC). For local development, create ADC that impersonates the dedicated development identity; never download a service-account private-key JSON:
+
+```powershell
+gcloud auth application-default login --impersonate-service-account=thinktwice-dev-backend@thinktwice-dev-christion.iam.gserviceaccount.com
+```
+
+Set `GOOGLE_ADC_PATH` in the root `.env` to the absolute path of the generated ADC file, and set `GOOGLE_CLOUD_PROJECT` to the Firebase/Google Cloud project ID.
+
+The front end also reads these values from the root `.env`:
+
+```dotenv
+EXPO_PUBLIC_FIREBASE_API_KEY=
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+EXPO_PUBLIC_FIREBASE_APP_ID=
+```
+
+These six values come from the Firebase web-app configuration. Variables prefixed with `EXPO_PUBLIC_` are compiled into the client and must never contain secrets. Native Google sign-in additionally needs the platform OAuth client IDs in `.env` and an Expo development build; Expo Go is not sufficient for that native module.
+
+## 4. Build the Full Project
 
 Run:
 
@@ -143,11 +165,12 @@ Inside Docker, the services communicate using their service names:
 ```text
 Frontend → backend:3000
 Backend → db:5432
-Backend → ml:8000
-ML service → backend:3000
+ML health service: ml:8000
 ```
 
 Containers should not use `localhost` to communicate with other containers.
+
+The back end does not currently call the ML service, and the ML service does not currently send callbacks to the back end. Those API contracts must be agreed with the back-end and ML owners before implementation.
 
 ---
 
@@ -156,13 +179,13 @@ Containers should not use `localhost` to communicate with other containers.
 Each team member should primarily work inside their assigned folder.
 
 
-Back end:
+Back end (Christion Callahan):
 apps/backend/
 
-Front end:
+Front end (Parker and James Lewis):
 apps/frontend/
 
-Machine learning:
+Machine learning (Gabriel Phipps):
 services/ml/
 
 

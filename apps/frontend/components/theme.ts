@@ -29,7 +29,7 @@ export const palettes = {
   },
 } as const;
 
-export type ThemeColors = (typeof palettes)["dark"];
+export type ThemeColors = (typeof palettes)[ColorMode];
 
 export const getColors = (mode: ColorMode): ThemeColors => palettes[mode];
 

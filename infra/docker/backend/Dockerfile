@@ -24,14 +24,14 @@ FROM node:${NODE_VERSION}-bookworm-slim AS development
 
 WORKDIR /workspace
 
+RUN chown node:node /workspace
+
 ENV NODE_ENV=development \
     npm_config_fund=false \
     npm_config_update_notifier=false
 
-COPY --from=dependencies /workspace/node_modules ./node_modules
+COPY --from=dependencies --chown=node:node /workspace/node_modules ./node_modules
 COPY --chown=node:node . .
-
-RUN chown -R node:node /workspace
 
 USER node
 

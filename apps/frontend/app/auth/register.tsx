@@ -3,9 +3,9 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { useThemeColors } from "../components/AppPreferences";
-import PageScaffold from "../components/PageScaffold";
-import { radii, spacing, type ThemeColors } from "../components/theme";
+import { useThemeColors } from "../../components/AppPreferences";
+import PageScaffold from "../../components/PageScaffold";
+import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function Register() {
