@@ -3,10 +3,11 @@
 ThinkTwice uses Docker so every team member works with the same software versions, dependencies, database, and development environment.
 
 Complete Project Stack:
-* Expo front end
-* Node.js back end
-* Python machine-learning service
-* PostgreSQL database
+
+- Expo front end
+- Node.js back end
+- Python machine-learning service
+- PostgreSQL database
 
 You do not need to install Node.js, npm, Python, PostgreSQL, or project dependencies directly on your computer.
 
@@ -16,10 +17,10 @@ You do not need to install Node.js, npm, Python, PostgreSQL, or project dependen
 
 Install the following:
 
-* Git
-* Docker Desktop
-* Visual Studio Code
-* Expo Go or a mobile emulator for mobile testing
+- Git
+- Docker Desktop
+- Visual Studio Code
+- Expo Go or a mobile emulator for mobile testing
 
 Docker Desktop must be running before starting the project.
 
@@ -57,6 +58,8 @@ cp .env.example .env
 
 The `.env` file contains local configuration values.
 
+Set `FIREBASE_SERVICE_ACCOUNT_PATH` in `.env` to the absolute path of your local Firebase or Google Cloud service account JSON file.
+
 Do not commit `.env` to GitHub.
 
 ## 3. Build the Full Project
@@ -71,9 +74,9 @@ Docker will download the required images and install all project dependencies in
 
 The first build may take longer. Future startups should be much faster.
 
--------------------------------------------------------------------------------------------------
-[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
--------------------------------------------------------------------------------------------------
+---
+
+## [][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
 
 # Daily Workflow
 
@@ -114,10 +117,10 @@ docker compose --profile frontend --profile ml up --watch
 
 This starts:
 
-* Front end
-* Back end
-* Machine-learning service
-* PostgreSQL database
+- Front end
+- Back end
+- Machine-learning service
+- PostgreSQL database
 
 Docker Compose Watch automatically synchronizes source-code changes into the containers.
 
@@ -154,7 +157,6 @@ Containers should not use `localhost` to communicate with other containers.
 
 Each team member should primarily work inside their assigned folder.
 
-
 Back end:
 apps/backend/
 
@@ -163,7 +165,6 @@ apps/frontend/
 
 Machine learning:
 services/ml/
-
 
 Coordinate with the team before changing shared files:
 
