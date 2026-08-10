@@ -1,63 +1,36 @@
-# Welcome to your Expo app 👋
+# ThinkTwice Front End
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This Expo SDK 54 / React Native app uses Expo Router and Firebase Authentication.
 
-## Get started
+## Canonical Docker setup
 
-1. Install dependencies
+From the repository root, copy `.env.example` to `.env`, configure the documented Firebase and API values, then run:
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-3. Configure Firebase auth environment values
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Fill in the `EXPO_PUBLIC_FIREBASE_*` variables in `.env` using your Firebase web app config.
-
-   For Google sign-in, also set:
-   - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
-   - `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
-   - `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```powershell
+docker compose --profile frontend up --watch --build
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Compose passes the root `EXPO_PUBLIC_*` values into the front-end container. These values are public client configuration, not secrets, but `.env` still must not be committed.
 
-## Learn more
+## Standalone setup
 
-To learn more about developing your project with Expo, look at the following resources:
+When working outside Docker:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+cp .env.example .env
+npm ci
+npm start
+```
 
-## Join the community
+Fill in the six `EXPO_PUBLIC_FIREBASE_*` variables. Google sign-in also uses the optional web, iOS, and Android OAuth client IDs; native Google sign-in requires a development build rather than Expo Go.
 
-Join our community of developers creating universal apps.
+## Validation
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm run lint
+npm run typecheck
+npx expo install --check
+npm run export:web
+```
+
+Files inside `app/` are routes and layouts. Put reusable providers, themes, navigation, and presentational components in `components/` so Expo Router does not register them as screens.

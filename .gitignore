@@ -5,6 +5,11 @@
 
 # Local credentials
 /secrets/
+**/application_default_credentials.json
+**/*service-account*.json
+
+# Generated Firebase state
+/.firebase/
 
 # JavaScript dependencies and builds
 **/node_modules/

@@ -11,9 +11,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-import { useAppPreferences, useThemeColors } from "../components/AppPreferences";
-import PageScaffold from "../components/PageScaffold";
-import { radii, spacing, type ThemeColors } from "../components/theme";
+import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
+import PageScaffold from "../../components/PageScaffold";
+import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -26,10 +26,14 @@ export default function Login() {
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-  const isGoogleConfigured =
-    Platform.OS === "web"
-      ? Boolean(googleWebClientId)
-      : Boolean(googleIosClientId || googleAndroidClientId);
+  const isGoogleConfigured = Boolean(
+    Platform.select({
+      web: googleWebClientId,
+      ios: googleIosClientId,
+      android: googleAndroidClientId,
+      default: undefined,
+    }),
+  );
   const useBlackGoogleButton = colorMode === "light";
 
   const [email, setEmail] = useState("");
@@ -55,6 +59,12 @@ export default function Login() {
 
       if (!idToken) {
         setErrorMessage("Google sign-in did not return an ID token.");
+        setIsGoogleSubmitting(false);
+        return;
+      }
+
+      if (!auth) {
+        setErrorMessage("Firebase is not configured yet. Add env values to enable Google sign-in.");
         setIsGoogleSubmitting(false);
         return;
       }

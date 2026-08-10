@@ -3,12 +3,12 @@ import { router } from "expo-router";
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useAppPreferences, useThemeColors } from "../components/AppPreferences";
-import { useAuth } from "../components/AuthProvider";
-import BottomNav from "../components/BottomNav";
-import { useFinance } from "../components/FinanceContext";
-import PageScaffold from "../components/PageScaffold";
-import { radii, spacing, type ThemeColors } from "../components/theme";
+import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
+import { useAuth } from "../../components/AuthProvider";
+import BottomNav from "../../components/BottomNav";
+import { useFinance } from "../../components/FinanceContext";
+import PageScaffold from "../../components/PageScaffold";
+import { radii, spacing, type ThemeColors } from "../../components/theme";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",

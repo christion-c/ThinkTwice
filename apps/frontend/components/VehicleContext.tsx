@@ -16,7 +16,7 @@ import {
   type BackendUserProfile,
   type BackendVehicle,
   updateVehicle,
-} from "../../lib/backend-api";
+} from "../lib/backend-api";
 
 interface SyncVehicleInput {
   nickname: string;
