@@ -83,7 +83,7 @@ export default function Fuel() {
         combinedMpg: parseOptionalNumber(combinedMpgInput),
       });
 
-      setSaveMessage("Vehicle synced with backend.");
+      setSaveMessage("Vehicle Saved.");
     } catch {
       // Vehicle context provides the error message.
     }
@@ -105,8 +105,8 @@ export default function Fuel() {
       <View style={styles.inputCard}>
         <View style={styles.syncHeaderRow}>
           <View>
-            <Text style={styles.inputTitle}>Vehicle Sync</Text>
-            <Text style={styles.inputSubtitle}>Uses backend vehicle fields from your account.</Text>
+            <Text style={styles.inputTitle}>Vehicle</Text>
+            <Text style={styles.inputSubtitle}>Choose or add a vehicle.</Text>
           </View>
 
           <Pressable
@@ -123,7 +123,7 @@ export default function Fuel() {
         {loading ? (
           <View style={styles.loadingRow}>
             <ActivityIndicator color={colors.accent} size="small" />
-            <Text style={styles.inputSubtitle}>Syncing vehicles...</Text>
+            <Text style={styles.inputSubtitle}>Refreshing vehicles...</Text>
           </View>
         ) : null}
 
@@ -213,7 +213,7 @@ export default function Fuel() {
           disabled={syncing}
           style={({ pressed }) => [styles.primaryButton, (pressed || syncing) && styles.buttonPressed]}
         >
-          <Text style={styles.primaryButtonLabel}>{syncing ? "Saving..." : "Save Vehicle to Backend"}</Text>
+          <Text style={styles.primaryButtonLabel}>{syncing ? "Saving..." : "Save Vehicle"}</Text>
         </Pressable>
       </View>
 
