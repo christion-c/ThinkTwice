@@ -1,13 +1,105 @@
-import SimpleCardPage from "../../components/SimpleCardPage";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { useThemeColors } from "../../components/AppPreferences";
+import { useAuth } from "../../components/AuthProvider";
+import PageScaffold from "../../components/PageScaffold";
+import { useVehicle } from "../../components/VehicleContext";
+import { radii, spacing, type ThemeColors } from "../../components/theme";
 
 export default function Account() {
+  const colors = useThemeColors();
+  const { user } = useAuth();
+  const { backendUser, vehicles, selectedVehicle } = useVehicle();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
-    <SimpleCardPage
+    <PageScaffold
       title="Account"
       subtitle="Manage your personal details and account preferences."
-      cardTitle="Account Settings"
-      cardText="Update your name, email, and login preferences from this section."
-      actions={[{ label: "Go to profile", path: "/profile/profile" }]}
-    />
+      headerLeft={
+        <Pressable onPress={() => router.replace("/settings/preferences")} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={18} color={colors.text} />
+          <Text style={styles.backButtonLabel}>Back</Text>
+        </Pressable>
+      }
+    >
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Identity</Text>
+        <Text style={styles.cardText}>Email: {user?.email ?? "Not available"}</Text>
+        <Text style={styles.cardText}>Display name: {user?.displayName ?? "Not set"}</Text>
+        <Text style={styles.cardText}>Email verified: {user?.emailVerified ? "Yes" : "No"}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Backend Sync</Text>
+        <Text style={styles.cardText}>Profile status: {backendUser ? "Connected" : "Not connected"}</Text>
+        <Text style={styles.cardText}>Vehicles stored: {vehicles.length}</Text>
+        <Text style={styles.cardText}>Selected vehicle: {selectedVehicle?.nickname ?? "None"}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Next Steps</Text>
+        <Pressable onPress={() => router.push("/profile/profile")} style={styles.actionButton}>
+          <Text style={styles.actionLabel}>Open profile overview</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push("/settings/preferences")} style={styles.actionButton}>
+          <Text style={styles.actionLabel}>Adjust app preferences</Text>
+        </Pressable>
+      </View>
+    </PageScaffold>
   );
 }
+
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    backButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    backButtonLabel: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    cardText: {
+      color: colors.textMuted,
+      fontSize: 15,
+      lineHeight: 22,
+    },
+    actionButton: {
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 14,
+    },
+    actionLabel: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: "700",
+    },
+  });

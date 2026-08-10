@@ -1,20 +1,22 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useThemeColors } from "./AppPreferences";
+import { useAppPreferences, useThemeColors } from "./AppPreferences";
 import { radii, shadows, spacing, type ThemeColors } from "./theme";
 
 const tabs = [
-  { label: "Finance", path: "/finance" },
-  { label: "Home", path: "/" },
-  { label: "Profile", path: "/profile/profile" },
-  { label: "Fuel", path: "/fuel" },
+  { label: "Finance", path: "/finance", icon: "wallet-outline", activeIcon: "wallet" },
+  { label: "Home", path: "/", icon: "home-outline", activeIcon: "home" },
+  { label: "Profile", path: "/profile/profile", icon: "person-outline", activeIcon: "person" },
+  { label: "Fuel", path: "/fuel", icon: "car-outline", activeIcon: "car" },
 ] as const;
 
 export default function BottomNav({ active }: { active: (typeof tabs)[number]["label"] }) {
   const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { compactCards } = useAppPreferences();
+  const styles = useMemo(() => createStyles(colors, compactCards), [colors, compactCards]);
 
   return (
     <View style={styles.wrap}>
@@ -35,6 +37,11 @@ export default function BottomNav({ active }: { active: (typeof tabs)[number]["l
                 }
               }}
             >
+              <Ionicons
+                name={isActive ? tab.activeIcon : tab.icon}
+                size={compactCards ? 16 : 18}
+                color={isActive ? colors.accent : colors.textMuted}
+              />
               <Text style={isActive ? styles.navLabelActive : styles.navLabel}>{tab.label}</Text>
             </Pressable>
           );
@@ -44,15 +51,15 @@ export default function BottomNav({ active }: { active: (typeof tabs)[number]["l
   );
 }
 
-const createStyles = (colors: ThemeColors) =>
+const createStyles = (colors: ThemeColors, compactCards: boolean) =>
   StyleSheet.create({
     wrap: {
-      paddingHorizontal: spacing.md,
-      paddingBottom: spacing.md,
+      paddingHorizontal: compactCards ? spacing.sm : spacing.md,
+      paddingBottom: compactCards ? spacing.sm : spacing.md,
       backgroundColor: colors.background,
     },
     footer: {
-      paddingVertical: 8,
+      paddingVertical: compactCards ? 6 : 8,
       paddingHorizontal: spacing.sm,
       backgroundColor: colors.surface,
       borderColor: colors.border,
@@ -67,7 +74,8 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: "center",
       marginHorizontal: 4,
       borderRadius: radii.sm,
-      paddingVertical: 9,
+      paddingVertical: compactCards ? 8 : 9,
+      gap: 4,
     },
     navItemInactive: {
       backgroundColor: "transparent",
@@ -79,12 +87,12 @@ const createStyles = (colors: ThemeColors) =>
       opacity: 0.85,
     },
     navLabel: {
-      fontSize: 13,
+      fontSize: compactCards ? 12 : 13,
       fontWeight: "600",
       color: colors.textMuted,
     },
     navLabelActive: {
-      fontSize: 13,
+      fontSize: compactCards ? 12 : 13,
       fontWeight: "700",
       color: colors.accent,
     },

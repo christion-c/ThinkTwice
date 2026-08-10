@@ -77,6 +77,7 @@ function AppStack() {
 
       <Stack.Screen name="fuel" options={{ title: "Fuel" }} />
       <Stack.Screen name="finance" options={{ title: "Finance" }} />
+      <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
 
       <Stack.Screen name="profile/profile" options={{ title: "Profile" }} />
 
