@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-import { useThemeColors } from "./components/AppPreferences";
+import { useAppPreferences, useThemeColors } from "./components/AppPreferences";
 import BottomNav from "./components/BottomNav";
 import { useFinance } from "./components/FinanceContext";
 import PageScaffold from "./components/PageScaffold";
@@ -14,6 +14,7 @@ const moneyFormat = new Intl.NumberFormat("en-US", {
 
 export default function Finance() {
   const colors = useThemeColors();
+  const { showHints } = useAppPreferences();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const {
     incomeInput,
@@ -27,7 +28,16 @@ export default function Finance() {
     monthlyFixedCosts,
     monthlyFuelBudget,
     projectedBudgetAfterEssentials,
+    weeklySpendTarget,
   } = useFinance();
+
+  const healthTone = projectedBudgetAfterEssentials < 0 ? colors.danger : colors.success;
+  const healthMessage =
+    projectedBudgetAfterEssentials < 0
+      ? "Spending is outpacing income. Tighten bills or reserve less discretionary spending."
+      : "Your current budget still leaves room after essential costs and fuel.";
+  const spendingHabitRatio =
+    monthlyIncome > 0 ? (monthlyExpenses + monthlyFixedCosts + monthlyFuelBudget) / monthlyIncome : 0;
 
   return (
     <PageScaffold
@@ -44,9 +54,33 @@ export default function Finance() {
         <Text style={styles.netText}>Projected free cash: {moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
       </View>
 
+      <View style={[styles.healthCard, { borderColor: healthTone }]}> 
+        <Text style={styles.healthTitle}>Budget Health</Text>
+        <Text style={[styles.healthValue, { color: healthTone }]}>{projectedBudgetAfterEssentials < 0 ? "Needs attention" : "Healthy"}</Text>
+        <Text style={styles.healthText}>{healthMessage}</Text>
+      </View>
+
+      <View style={styles.metricsRow}>
+        <View style={styles.metricCard}>
+          <Text style={styles.metricLabel}>Weekly target</Text>
+          <Text style={styles.metricValue}>{moneyFormat.format(weeklySpendTarget)}</Text>
+        </View>
+        <View style={styles.metricCard}>
+          <Text style={styles.metricLabel}>Fuel share</Text>
+          <Text style={styles.metricValue}>
+            {monthlyIncome > 0 ? `${Math.round((monthlyFuelBudget / monthlyIncome) * 100)}%` : "0%"}
+          </Text>
+        </View>
+        <View style={styles.metricCard}>
+          <Text style={styles.metricLabel}>Spent each month</Text>
+          <Text style={styles.metricValue}>{`${Math.round(spendingHabitRatio * 100)}%`}</Text>
+        </View>
+      </View>
+
       <View style={styles.inputCard}>
         <Text style={styles.inputTitle}>Money Check-In</Text>
         <Text style={styles.inputSubtitle}>Update these numbers each week.</Text>
+        {showHints ? <Text style={styles.helperText}>These values auto-save on this device, so you can update them in small check-ins instead of doing a full reset each time.</Text> : null}
 
         <View style={styles.inputRow}>
           <View style={styles.inputBlock}>
@@ -112,6 +146,53 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 15,
       lineHeight: 21,
     },
+    healthCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    healthTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    healthValue: {
+      fontSize: 22,
+      fontWeight: "700",
+    },
+    healthText: {
+      color: colors.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    metricsRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    metricCard: {
+      flex: 1,
+      minWidth: "30%",
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
+    metricLabel: {
+      color: colors.textMuted,
+      fontSize: 13,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    metricValue: {
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: "700",
+    },
     netText: {
       color: colors.accent,
       fontSize: 16,
@@ -134,6 +215,11 @@ const createStyles = (colors: ThemeColors) =>
     inputSubtitle: {
       color: colors.textMuted,
       fontSize: 14,
+    },
+    helperText: {
+      color: colors.accent,
+      fontSize: 13,
+      lineHeight: 19,
     },
     inputRow: {
       flexDirection: "row",

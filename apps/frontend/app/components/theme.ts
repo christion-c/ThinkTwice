@@ -31,7 +31,43 @@ export const palettes = {
 
 export type ThemeColors = (typeof palettes)["dark"];
 
-export const getColors = (mode: ColorMode): ThemeColors => palettes[mode];
+export const getColors = (mode: ColorMode, highContrast = false): ThemeColors => {
+  const basePalette = palettes[mode];
+
+  if (!highContrast) {
+    return basePalette;
+  }
+
+  if (mode === "dark") {
+    return {
+      ...basePalette,
+      background: "#020617",
+      surface: "#0F172A",
+      surfaceSoft: "#172554",
+      border: "rgba(255, 255, 255, 0.22)",
+      text: "#FFFFFF",
+      textMuted: "#D8E3F6",
+      accent: "#5EEAD4",
+      accentDeep: "#042F2E",
+      success: "#6EE7B7",
+      danger: "#FDA4AF",
+    };
+  }
+
+  return {
+    ...basePalette,
+    background: "#FFFFFF",
+    surface: "#FFFFFF",
+    surfaceSoft: "#E2E8F0",
+    border: "rgba(15, 23, 42, 0.28)",
+    text: "#020617",
+    textMuted: "#1E293B",
+    accent: "#0F766E",
+    accentDeep: "#FFFFFF",
+    success: "#166534",
+    danger: "#BE123C",
+  };
+};
 
 export const colors = palettes.dark;
 
