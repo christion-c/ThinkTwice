@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import * as ExpoNotifications from "expo-notifications";
 import { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 
@@ -8,14 +7,14 @@ import { useAppPreferences, useThemeColors } from "../components/AppPreferences"
 import PageScaffold from "../components/PageScaffold";
 import { radii, spacing, type ThemeColors } from "../components/theme";
 
-ExpoNotifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+// ExpoNotifications.setNotificationHandler({
+//   handleNotification: async () => ({
+//     shouldShowBanner: true,
+//     shouldShowList: true,
+//     shouldPlaySound: false,
+//     shouldSetBadge: false,
+//   }),
+// });
 
 export default function NotificationsSettings() {
   const colors = useThemeColors();
