@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
+import { useAuth } from "./AuthProvider";
 import { getColors, type ColorMode } from "./theme";
 
 const PREFERENCES_STORAGE_KEY = "thinktwice.app-preferences";
@@ -11,8 +12,6 @@ type AppPreferencesValue = {
   setColorMode: (mode: ColorMode) => void;
   compactCards: boolean;
   setCompactCards: (value: boolean) => void;
-  showHints: boolean;
-  setShowHints: (value: boolean) => void;
   highContrast: boolean;
   setHighContrast: (value: boolean) => void;
   remindersEnabled: boolean;
@@ -24,18 +23,28 @@ type AppPreferencesValue = {
 const AppPreferencesContext = createContext<AppPreferencesValue | undefined>(undefined);
 
 export function AppPreferencesProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [colorMode, setColorMode] = useState<ColorMode>("dark");
   const [compactCards, setCompactCards] = useState(false);
-  const [showHints, setShowHints] = useState(true);
   const [highContrast, setHighContrast] = useState(false);
   const [remindersEnabled, setRemindersEnabled] = useState(true);
   const [budgetAlertsEnabled, setBudgetAlertsEnabled] = useState(true);
   const hasHydrated = useRef(false);
+  const storageKey = user?.uid ? `${PREFERENCES_STORAGE_KEY}.${user.uid}` : `${PREFERENCES_STORAGE_KEY}.guest`;
+
+  useEffect(() => {
+    setColorMode("dark");
+    setCompactCards(false);
+    setHighContrast(false);
+    setRemindersEnabled(true);
+    setBudgetAlertsEnabled(true);
+    hasHydrated.current = false;
+  }, [user?.uid]);
 
   useEffect(() => {
     const loadPreferences = async () => {
       try {
-        const storedValue = await AsyncStorage.getItem(PREFERENCES_STORAGE_KEY);
+        const storedValue = await AsyncStorage.getItem(storageKey);
 
         if (!storedValue) {
           return;
@@ -44,7 +53,6 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
         const parsedValue = JSON.parse(storedValue) as Partial<{
           colorMode: ColorMode;
           compactCards: boolean;
-          showHints: boolean;
           highContrast: boolean;
           remindersEnabled: boolean;
           budgetAlertsEnabled: boolean;
@@ -56,10 +64,6 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
 
         if (typeof parsedValue.compactCards === "boolean") {
           setCompactCards(parsedValue.compactCards);
-        }
-
-        if (typeof parsedValue.showHints === "boolean") {
-          setShowHints(parsedValue.showHints);
         }
 
         if (typeof parsedValue.highContrast === "boolean") {
@@ -81,7 +85,7 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
     };
 
     void loadPreferences();
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
     if (!hasHydrated.current) {
@@ -89,17 +93,16 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
     }
 
     void AsyncStorage.setItem(
-      PREFERENCES_STORAGE_KEY,
+      storageKey,
       JSON.stringify({
         colorMode,
         compactCards,
-        showHints,
         highContrast,
         remindersEnabled,
         budgetAlertsEnabled,
       }),
     );
-  }, [colorMode, compactCards, showHints, highContrast, remindersEnabled, budgetAlertsEnabled]);
+  }, [colorMode, compactCards, highContrast, remindersEnabled, budgetAlertsEnabled, storageKey]);
 
   const value = useMemo(
     () => ({
@@ -107,8 +110,6 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
       setColorMode,
       compactCards,
       setCompactCards,
-      showHints,
-      setShowHints,
       highContrast,
       setHighContrast,
       remindersEnabled,
@@ -119,7 +120,6 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
     [
       colorMode,
       compactCards,
-      showHints,
       highContrast,
       remindersEnabled,
       budgetAlertsEnabled,

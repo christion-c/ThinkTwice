@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
+import { useAuth } from "./AuthProvider";
 import { useVehicle } from "./VehicleContext";
 
 const FINANCE_STORAGE_KEY = "thinktwice.finance-inputs";
@@ -38,6 +39,7 @@ type FinanceContextValue = {
 const FinanceContext = createContext<FinanceContextValue | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const { selectedVehicle } = useVehicle();
   const [incomeInput, setIncomeInput] = useState("4200");
   const [expenseInput, setExpenseInput] = useState("1700");
@@ -49,10 +51,24 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [tankCapacityInput, setTankCapacityInput] = useState("13.5");
   const [currentTankPercentInput, setCurrentTankPercentInput] = useState("55");
 
+  const storageKey = user?.uid ? `${FINANCE_STORAGE_KEY}.${user.uid}` : `${FINANCE_STORAGE_KEY}.guest`;
+
+  useEffect(() => {
+    setIncomeInput("4200");
+    setExpenseInput("1700");
+    setMonthlyFixedCostsInput("620");
+    setFuelGallonsInput("11.2");
+    setFuelPriceInput("4.25");
+    setMilesPerWeekInput("230");
+    setCombinedMpgInput("28");
+    setTankCapacityInput("13.5");
+    setCurrentTankPercentInput("55");
+  }, [user?.uid]);
+
   useEffect(() => {
     const loadPersistedInputs = async () => {
       try {
-        const storedValue = await AsyncStorage.getItem(FINANCE_STORAGE_KEY);
+        const storedValue = await AsyncStorage.getItem(storageKey);
 
         if (!storedValue) {
           return;
@@ -112,7 +128,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     };
 
     void loadPersistedInputs();
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
     if (selectedVehicle?.combinedMpg !== null && selectedVehicle?.combinedMpg !== undefined) {
@@ -161,7 +177,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void AsyncStorage.setItem(
-      FINANCE_STORAGE_KEY,
+      storageKey,
       JSON.stringify({
         incomeInput,
         expenseInput,
@@ -184,6 +200,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     combinedMpgInput,
     tankCapacityInput,
     currentTankPercentInput,
+    storageKey,
   ]);
 
   const value = useMemo(

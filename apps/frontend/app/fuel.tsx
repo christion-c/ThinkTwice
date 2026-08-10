@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -57,6 +60,10 @@ export default function Fuel() {
   const [modelInput, setModelInput] = useState("");
   const [modelYearInput, setModelYearInput] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  const [flowStep, setFlowStep] = useState<"gallons" | "price" | "miles" | "tankLevel" | null>(null);
+  const [vehicleFlowStep, setVehicleFlowStep] = useState<"nickname" | "year" | "make" | "model" | "mpg" | "tank" | null>(null);
+  const [fieldDraft, setFieldDraft] = useState("");
+  const hasExistingVehicle = Boolean(selectedVehicle ?? vehicles[0]);
 
   useEffect(() => {
     setNicknameInput(selectedVehicle?.nickname ?? "");
@@ -87,6 +94,120 @@ export default function Fuel() {
     } catch {
       // Vehicle context provides the error message.
     }
+  };
+
+  const startFuelFlow = () => {
+    setFlowStep("gallons");
+    setFieldDraft(fuelGallonsInput);
+  };
+
+  const closeFuelFlow = () => {
+    setFlowStep(null);
+    setFieldDraft("");
+  };
+
+  const startVehicleFlow = () => {
+    setVehicleFlowStep("nickname");
+    setFieldDraft(nicknameInput);
+  };
+
+  const closeVehicleFlow = () => {
+    setVehicleFlowStep(null);
+    setFieldDraft("");
+  };
+
+  const saveFuelFlow = () => {
+    if (!flowStep) {
+      return;
+    }
+
+    const trimmedDraft = fieldDraft.trim();
+
+    if (flowStep === "gallons") {
+      setFuelGallonsInput(trimmedDraft);
+    } else if (flowStep === "price") {
+      setFuelPriceInput(trimmedDraft);
+    } else if (flowStep === "miles") {
+      setMilesPerWeekInput(trimmedDraft);
+    } else {
+      setCurrentTankPercentInput(trimmedDraft);
+    }
+
+    const nextStepMap: Record<NonNullable<typeof flowStep>, NonNullable<typeof flowStep> | null> = {
+      gallons: "price",
+      price: "miles",
+      miles: "tankLevel",
+      tankLevel: null,
+    };
+
+    const nextStep = flowStep ? nextStepMap[flowStep] : null;
+
+    if (!nextStep) {
+      closeFuelFlow();
+      return;
+    }
+
+    const nextValue =
+      nextStep === "price"
+        ? fuelPriceInput
+        : nextStep === "miles"
+          ? milesPerWeekInput
+          : currentTankPercentInput;
+
+    setFlowStep(nextStep);
+    setFieldDraft(nextValue);
+  };
+
+  const saveVehicleFlow = () => {
+    if (!vehicleFlowStep) {
+      return;
+    }
+
+    const trimmedDraft = fieldDraft.trim();
+
+    if (vehicleFlowStep === "nickname") {
+      setNicknameInput(trimmedDraft);
+    } else if (vehicleFlowStep === "year") {
+      setModelYearInput(trimmedDraft);
+    } else if (vehicleFlowStep === "make") {
+      setMakeInput(trimmedDraft);
+    } else if (vehicleFlowStep === "model") {
+      setModelInput(trimmedDraft);
+    } else if (vehicleFlowStep === "mpg") {
+      setCombinedMpgInput(trimmedDraft);
+    } else {
+      setTankCapacityInput(trimmedDraft);
+    }
+
+    const nextStepMap: Record<NonNullable<typeof vehicleFlowStep>, NonNullable<typeof vehicleFlowStep> | null> = {
+      nickname: "year",
+      year: "make",
+      make: "model",
+      model: "mpg",
+      mpg: "tank",
+      tank: null,
+    };
+
+    const nextStep = vehicleFlowStep ? nextStepMap[vehicleFlowStep] : null;
+
+    if (!nextStep) {
+      closeVehicleFlow();
+      return;
+    }
+
+    const nextValue =
+      nextStep === "year"
+        ? modelYearInput
+        : nextStep === "make"
+          ? makeInput
+          : nextStep === "model"
+            ? modelInput
+            : nextStep === "mpg"
+              ? combinedMpgInput
+              : tankCapacityInput;
+
+    setVehicleFlowStep(nextStep);
+    setFieldDraft(nextValue);
   };
 
   return (
@@ -156,51 +277,11 @@ export default function Fuel() {
           </Text>
         )}
 
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Nickname</Text>
-            <TextInput
-              value={nicknameInput}
-              onChangeText={setNicknameInput}
-              style={styles.input}
-              placeholder="Daily Driver"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Year</Text>
-            <TextInput
-              value={modelYearInput}
-              onChangeText={setModelYearInput}
-              keyboardType="number-pad"
-              style={styles.input}
-              placeholder="2022"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Make</Text>
-            <TextInput
-              value={makeInput}
-              onChangeText={setMakeInput}
-              style={styles.input}
-              placeholder="Toyota"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Model</Text>
-            <TextInput
-              value={modelInput}
-              onChangeText={setModelInput}
-              style={styles.input}
-              placeholder="Corolla"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
+        <View style={styles.fieldList}>
+          <Pressable onPress={startVehicleFlow} style={styles.primaryButton}>
+            <Text style={styles.primaryButtonLabel}>{hasExistingVehicle ? "Update vehicle details" : "Add vehicle details"}</Text>
+          </Pressable>
+          <Text style={styles.inputSubtitle}>We’ll guide you through nickname, year, make, model, MPG, and tank size one field at a time.</Text>
         </View>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
@@ -213,7 +294,7 @@ export default function Fuel() {
           disabled={syncing}
           style={({ pressed }) => [styles.primaryButton, (pressed || syncing) && styles.buttonPressed]}
         >
-          <Text style={styles.primaryButtonLabel}>{syncing ? "Saving..." : "Save Vehicle"}</Text>
+          <Text style={styles.primaryButtonLabel}>{syncing ? "Saving..." : hasExistingVehicle ? "Update Vehicle" : "Save Vehicle"}</Text>
         </Pressable>
       </View>
 
@@ -232,81 +313,77 @@ export default function Fuel() {
         <Text style={styles.inputTitle}>Fuel Check-In</Text>
         <Text style={styles.inputSubtitle}>Quick updates for better predictions.</Text>
 
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Gallons Per Fill-Up</Text>
-            <TextInput
-              value={fuelGallonsInput}
-              onChangeText={setFuelGallonsInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Price Per Gallon ($)</Text>
-            <TextInput
-              value={fuelPriceInput}
-              onChangeText={setFuelPriceInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Miles Each Week</Text>
-            <TextInput
-              value={milesPerWeekInput}
-              onChangeText={setMilesPerWeekInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Average MPG</Text>
-            <TextInput
-              value={combinedMpgInput}
-              onChangeText={setCombinedMpgInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Tank Size (gal)</Text>
-            <TextInput
-              value={tankCapacityInput}
-              onChangeText={setTankCapacityInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Tank Level (%)</Text>
-            <TextInput
-              value={currentTankPercentInput}
-              onChangeText={setCurrentTankPercentInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
+        <View style={styles.fieldList}>
+          <Pressable onPress={startFuelFlow} style={styles.primaryButton}>
+            <Text style={styles.primaryButtonLabel}>Start fuel check-in</Text>
+          </Pressable>
+          <Text style={styles.inputSubtitle}>We’ll guide you through how many gallons you added, price, miles driven, MPG, and tank level one step at a time for this fuel stop.</Text>
         </View>
       </View>
+
+      <Modal transparent visible={Boolean(flowStep)} animationType="fade" onRequestClose={closeFuelFlow}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+          style={styles.modalBackdrop}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>{flowStep === "gallons" ? "Gallons" : flowStep === "price" ? "Price per gallon" : flowStep === "miles" ? "Miles driven" : "Tank level"}</Text>
+              <Text style={styles.modalHint}>{flowStep === "gallons" ? "Enter the gallons you put in your tank this fill-up." : flowStep === "price" ? "Enter the price you paid per gallon." : flowStep === "miles" ? "Enter the miles you drove since the last fill-up." : "Enter how full the tank is right now."}</Text>
+              <TextInput
+                value={fieldDraft}
+                onChangeText={setFieldDraft}
+                keyboardType={flowStep === "gallons" || flowStep === "price" || flowStep === "miles" || flowStep === "tankLevel" ? "decimal-pad" : "default"}
+                style={styles.modalInput}
+                placeholder="0"
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+              />
+              <View style={styles.modalActions}>
+                <Pressable onPress={closeFuelFlow} style={styles.modalSecondaryButton}>
+                  <Text style={styles.modalSecondaryLabel}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={saveFuelFlow} style={styles.modalPrimaryButton}>
+                  <Text style={styles.modalPrimaryLabel}>{flowStep === "tankLevel" ? "Done" : "Next"}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal transparent visible={Boolean(vehicleFlowStep)} animationType="fade" onRequestClose={closeVehicleFlow}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+          style={styles.modalBackdrop}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>{vehicleFlowStep === "nickname" ? "Nickname" : vehicleFlowStep === "year" ? "Year" : vehicleFlowStep === "make" ? "Make" : vehicleFlowStep === "model" ? "Model" : vehicleFlowStep === "mpg" ? "MPG" : "Tank size"}</Text>
+              <Text style={styles.modalHint}>{vehicleFlowStep === "nickname" ? "Enter a nickname for this vehicle." : vehicleFlowStep === "year" ? "Enter the model year." : vehicleFlowStep === "make" ? "Enter the make." : vehicleFlowStep === "model" ? "Enter the model." : vehicleFlowStep === "mpg" ? "Enter the vehicle’s average MPG." : "Enter the tank size in gallons."}</Text>
+              <TextInput
+                value={fieldDraft}
+                onChangeText={setFieldDraft}
+                keyboardType={vehicleFlowStep === "year" ? "number-pad" : "decimal-pad"}
+                style={styles.modalInput}
+                placeholder={vehicleFlowStep === "year" ? "2022" : "0"}
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+              />
+              <View style={styles.modalActions}>
+                <Pressable onPress={closeVehicleFlow} style={styles.modalSecondaryButton}>
+                  <Text style={styles.modalSecondaryLabel}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={saveVehicleFlow} style={styles.modalPrimaryButton}>
+                  <Text style={styles.modalPrimaryLabel}>{vehicleFlowStep === "tank" ? "Done" : "Next"}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </PageScaffold>
   );
 }
@@ -408,15 +485,18 @@ const createStyles = (colors: ThemeColors) =>
     vehicleChipLabelActive: {
       color: colors.accent,
     },
-    inputRow: {
+    fieldList: {
+      gap: spacing.sm,
+    },
+    inlineFieldRow: {
       flexDirection: "row",
       gap: spacing.sm,
     },
-    inputBlock: {
+    inlineFieldWrap: {
       flex: 1,
       gap: 6,
     },
-    inputLabel: {
+    inlineFieldLabel: {
       color: colors.textMuted,
       fontSize: 13,
       fontWeight: "600",
@@ -430,6 +510,72 @@ const createStyles = (colors: ThemeColors) =>
       paddingHorizontal: spacing.sm,
       paddingVertical: 10,
       fontSize: 16,
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(4, 8, 12, 0.68)",
+    },
+    modalContainer: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.lg,
+    },
+    modalCard: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    modalTitle: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    modalHint: {
+      color: colors.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    modalInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSoft,
+      color: colors.text,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 12,
+      fontSize: 16,
+    },
+    modalActions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    modalSecondaryButton: {
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+    },
+    modalSecondaryLabel: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    modalPrimaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: colors.accent,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+    },
+    modalPrimaryLabel: {
+      color: colors.accentDeep,
+      fontSize: 14,
+      fontWeight: "700",
     },
     secondaryButton: {
       borderRadius: radii.sm,

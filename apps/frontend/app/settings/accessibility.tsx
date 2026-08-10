@@ -12,8 +12,6 @@ export default function Accessibility() {
   const {
     compactCards,
     setCompactCards,
-    showHints,
-    setShowHints,
     highContrast,
     setHighContrast,
   } = useAppPreferences();
@@ -46,20 +44,6 @@ export default function Accessibility() {
           onValueChange={setCompactCards}
           colors={colors}
         />
-        <SettingRow
-          title="Show guidance"
-          caption="Keep helper hints visible under sections."
-          value={showHints}
-          onValueChange={setShowHints}
-          colors={colors}
-        />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Current Setup</Text>
-        <Text style={styles.cardText}>High contrast: {highContrast ? "On" : "Off"}</Text>
-        <Text style={styles.cardText}>Compact layout: {compactCards ? "On" : "Off"}</Text>
-        <Text style={styles.cardText}>Guidance hints: {showHints ? "On" : "Off"}</Text>
       </View>
     </PageScaffold>
   );

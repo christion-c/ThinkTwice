@@ -16,8 +16,6 @@ export default function ProfileSettings() {
     setColorMode,
     compactCards,
     setCompactCards,
-    showHints,
-    setShowHints,
     highContrast,
     setHighContrast,
   } = useAppPreferences();
@@ -95,29 +93,6 @@ export default function ProfileSettings() {
           <Switch value={highContrast} onValueChange={setHighContrast} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
         </View>
 
-        <View style={styles.optionRow}>
-          <View style={styles.optionTextWrap}>
-            <Text style={styles.optionTitle}>Show Quick Hints</Text>
-            <Text style={styles.optionCaption}>Display helper text under sections.</Text>
-          </View>
-          <Switch value={showHints} onValueChange={setShowHints} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
-        </View>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>More Controls</Text>
-        <Pressable onPress={() => router.push("/settings/account")} style={styles.linkRow}>
-          <Text style={styles.linkLabel}>Account details</Text>
-          <Text style={styles.linkHint}>Profile and backend sync</Text>
-        </Pressable>
-        <Pressable onPress={() => router.push("/settings/accessibility")} style={styles.linkRow}>
-          <Text style={styles.linkLabel}>Accessibility</Text>
-          <Text style={styles.linkHint}>Comfort and readability options</Text>
-        </Pressable>
-        <Pressable onPress={() => router.push("/settings/notifications")} style={styles.linkRow}>
-          <Text style={styles.linkLabel}>Notifications</Text>
-          <Text style={styles.linkHint}>Reminders and alert preferences</Text>
-        </Pressable>
       </View>
 
       <View style={styles.card}>

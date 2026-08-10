@@ -1,12 +1,20 @@
-import { useMemo } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { useMemo, useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { radii, spacing, type ThemeColors } from "../components/theme";
-import { useAppPreferences } from "../components/AppPreferences";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -15,8 +23,9 @@ const moneyFormat = new Intl.NumberFormat("en-US", {
 
 export default function Finance() {
   const colors = useThemeColors();
-  const { showHints } = useAppPreferences();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [financeFlowStep, setFinanceFlowStep] = useState<"income" | "expense" | "bills" | null>(null);
+  const [fieldDraft, setFieldDraft] = useState("");
   const {
     incomeInput,
     setIncomeInput,
@@ -33,6 +42,50 @@ export default function Finance() {
   } = useFinance();
 
   const healthTone = projectedBudgetAfterEssentials < 0 ? colors.danger : colors.success;
+  const startFinanceFlow = () => {
+    setFinanceFlowStep("income");
+    setFieldDraft(incomeInput);
+  };
+
+  const closeFinanceFlow = () => {
+    setFinanceFlowStep(null);
+    setFieldDraft("");
+  };
+
+  const saveFinanceFlow = () => {
+    if (!financeFlowStep) {
+      return;
+    }
+
+    const trimmedDraft = fieldDraft.trim();
+
+    if (financeFlowStep === "income") {
+      setIncomeInput(trimmedDraft);
+    } else if (financeFlowStep === "expense") {
+      setExpenseInput(trimmedDraft);
+    } else {
+      setMonthlyFixedCostsInput(trimmedDraft);
+    }
+
+    const nextStepMap: Record<NonNullable<typeof financeFlowStep>, NonNullable<typeof financeFlowStep> | null> = {
+      income: "expense",
+      expense: "bills",
+      bills: null,
+    };
+
+    const nextStep = financeFlowStep ? nextStepMap[financeFlowStep] : null;
+
+    if (!nextStep) {
+      closeFinanceFlow();
+      return;
+    }
+
+    const nextValue = nextStep === "expense" ? expenseInput : monthlyFixedCostsInput;
+
+    setFinanceFlowStep(nextStep);
+    setFieldDraft(nextValue);
+  };
+
   const healthMessage =
     projectedBudgetAfterEssentials < 0
       ? "Spending is outpacing income. Tighten bills or reserve less discretionary spending."
@@ -80,49 +133,48 @@ export default function Finance() {
 
       <View style={styles.inputCard}>
         <Text style={styles.inputTitle}>Money Check-In</Text>
-        <Text style={styles.inputSubtitle}>Update these numbers each week.</Text>
-        {showHints ? <Text style={styles.helperText}>These values auto-save on this device, so you can update them in small check-ins instead of doing a full reset each time.</Text> : null}
+        <Text style={styles.inputSubtitle}>Tap a value to update it in a focused card.</Text>
+        <Text style={styles.helperText}>These values auto-save on this device, so you can update them in small check-ins instead of doing a full reset each time.</Text>
 
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Income ($)</Text>
-            <TextInput
-              value={incomeInput}
-              onChangeText={setIncomeInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Spending ($)</Text>
-            <TextInput
-              value={expenseInput}
-              onChangeText={setExpenseInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Bills ($)</Text>
-            <TextInput
-              value={monthlyFixedCostsInput}
-              onChangeText={setMonthlyFixedCostsInput}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
+        <View style={styles.fieldList}>
+          <Pressable onPress={startFinanceFlow} style={styles.primaryButton}>
+            <Text style={styles.primaryButtonLabel}>Start monthly check-in</Text>
+          </Pressable>
+          <Text style={styles.inputSubtitle}>We’ll guide you through monthly income, spending, and recurring bills one step at a time.</Text>
         </View>
       </View>
+
+      <Modal transparent visible={Boolean(financeFlowStep)} animationType="fade" onRequestClose={closeFinanceFlow}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+          style={styles.modalBackdrop}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>{financeFlowStep === "income" ? "Monthly income" : financeFlowStep === "expense" ? "Monthly spending" : "Static bills"}</Text>
+              <Text style={styles.modalHint}>{financeFlowStep === "income" ? "Enter your normal monthly income." : financeFlowStep === "expense" ? "Enter your typical monthly spending." : "Enter your recurring monthly bills like rent, insurance, or loan payments."}</Text>
+              <TextInput
+                value={fieldDraft}
+                onChangeText={setFieldDraft}
+                keyboardType="decimal-pad"
+                style={styles.modalInput}
+                placeholder="0.00"
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+              />
+              <View style={styles.modalActions}>
+                <Pressable onPress={closeFinanceFlow} style={styles.modalSecondaryButton}>
+                  <Text style={styles.modalSecondaryLabel}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={saveFinanceFlow} style={styles.modalPrimaryButton}>
+                  <Text style={styles.modalPrimaryLabel}>{financeFlowStep === "bills" ? "Done" : "Next"}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </PageScaffold>
   );
 }
@@ -222,21 +274,48 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 13,
       lineHeight: 19,
     },
-    inputRow: {
-      flexDirection: "row",
+    fieldList: {
       gap: spacing.sm,
     },
-    inputBlock: {
+    primaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: colors.accent,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    primaryButtonLabel: {
+      color: colors.accentDeep,
+      fontSize: 15,
+      fontWeight: "700",
+    },
+    modalBackdrop: {
       flex: 1,
-      gap: spacing.xs,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(4, 8, 12, 0.68)",
     },
-    inputLabel: {
+    modalContainer: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.lg,
+    },
+    modalCard: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.lg,
+      gap: spacing.sm,
+    },
+    modalTitle: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    modalHint: {
       color: colors.textMuted,
-      fontSize: 12,
-      textTransform: "uppercase",
-      letterSpacing: 0.6,
+      fontSize: 14,
+      lineHeight: 20,
     },
-    input: {
+    modalInput: {
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: radii.md,
@@ -245,5 +324,34 @@ const createStyles = (colors: ThemeColors) =>
       paddingHorizontal: spacing.md,
       paddingVertical: 12,
       fontSize: 16,
+    },
+    modalActions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    modalSecondaryButton: {
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+    },
+    modalSecondaryLabel: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    modalPrimaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: colors.accent,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+    },
+    modalPrimaryLabel: {
+      color: colors.accentDeep,
+      fontSize: 14,
+      fontWeight: "700",
     },
   });

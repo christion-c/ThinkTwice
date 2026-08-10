@@ -138,9 +138,7 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
         setErrorMessage("");
 
         const currentVehicle =
-          selectedVehicleId === null
-            ? null
-            : vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null;
+          selectedVehicle ?? vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0] ?? null;
 
         const syncedVehicle = currentVehicle
           ? await updateVehicle(user, currentVehicle.id, payload)

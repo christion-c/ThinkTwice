@@ -81,10 +81,11 @@ const createStyles = (colors: ThemeColors, compactCards: boolean) =>
       flex: 1,
     },
     scrollContent: {
+      flexGrow: 1,
       paddingBottom: compactCards ? spacing.lg : spacing.xl,
     },
     content: {
-      flex: 1,
+      flexGrow: 1,
       paddingHorizontal: compactCards ? spacing.md : spacing.lg,
       paddingTop: compactCards ? spacing.md : spacing.lg,
       gap: compactCards ? spacing.md : spacing.lg,

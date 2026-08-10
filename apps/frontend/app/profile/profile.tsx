@@ -22,7 +22,7 @@ export default function Profile() {
   const { colorMode, highContrast, remindersEnabled, budgetAlertsEnabled } = useAppPreferences();
   const { user } = useAuth();
   const { monthlyFuelBudget } = useFinance();
-  const { backendUser, vehicles, selectedVehicle, loading } = useVehicle();
+  const { backendUser, selectedVehicle, loading } = useVehicle();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const accountLabel = user?.displayName || user?.email || "Account owner";
@@ -41,35 +41,19 @@ export default function Profile() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Account Snapshot</Text>
         <Text style={styles.cardText}>Signed in as {accountLabel}.</Text>
-        <Text style={styles.cardText}>Backend profile: {backendUser ? "Connected" : loading ? "Loading" : "Not synced yet"}</Text>
-        <Text style={styles.cardText}>Current monthly fuel reserve: {moneyFormat.format(monthlyFuelBudget)}</Text>
+        <Text style={styles.cardText}>Cloud Status: {backendUser ? "Connected" : loading ? "Loading" : "Not synced yet"}</Text>
+        <Text style={styles.cardText}>Current monthly fuel cost: {moneyFormat.format(monthlyFuelBudget)}</Text>
         <Text style={styles.modeText}>Appearance: {colorMode === "dark" ? "Dark" : "Light"}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Planner Readiness</Text>
-        <Text style={styles.cardText}>Vehicles on file: {vehicles.length}</Text>
+        <Text style={styles.cardTitle}>Account Details</Text>
         <Text style={styles.cardText}>Active vehicle: {selectedVehicle?.nickname ?? "None selected"}</Text>
         <Text style={styles.cardText}>High contrast: {highContrast ? "On" : "Off"}</Text>
         <Text style={styles.cardText}>Reminders: {remindersEnabled ? "On" : "Off"}</Text>
         <Text style={styles.cardText}>Budget alerts: {budgetAlertsEnabled ? "On" : "Off"}</Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Quick Access</Text>
-        <Pressable onPress={() => router.push("/settings/account")} style={styles.linkRow}>
-          <Text style={styles.linkLabel}>Account details</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </Pressable>
-        <Pressable onPress={() => router.push("/settings/notifications")} style={styles.linkRow}>
-          <Text style={styles.linkLabel}>Notifications</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </Pressable>
-        <Pressable onPress={() => router.push("/settings/accessibility")} style={styles.linkRow}>
-          <Text style={styles.linkLabel}>Accessibility</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </Pressable>
-      </View>
     </PageScaffold>
   );
 }

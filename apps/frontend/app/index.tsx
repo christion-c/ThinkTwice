@@ -1,14 +1,15 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useThemeColors } from "../components/AppPreferences";
+import { useAppPreferences, useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { radii, shadows, spacing, type ThemeColors } from "../components/theme";
-import { useAppPreferences } from "../components/AppPreferences";
+import { useAuth } from "../components/AuthProvider";
 import { useVehicle } from "../components/VehicleContext";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
@@ -19,8 +20,10 @@ const moneyFormat = new Intl.NumberFormat("en-US", {
 
 export default function Home() {
   const colors = useThemeColors();
-  const { showHints, remindersEnabled, budgetAlertsEnabled } = useAppPreferences();
+  const { user } = useAuth();
+  const { budgetAlertsEnabled } = useAppPreferences();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [setupChecklistHidden, setSetupChecklistHidden] = useState(false);
   const {
     monthlyIncome,
     monthlyExpenses,
@@ -30,7 +33,7 @@ export default function Home() {
     projectedDaysUntilFillUp,
     projectedBudgetAfterEssentials,
   } = useFinance();
-  const { vehicles, selectedVehicle, backendUser } = useVehicle();
+  const { vehicles } = useVehicle();
 
   const budgetStatus =
     projectedBudgetAfterEssentials < 0
@@ -45,7 +48,7 @@ export default function Home() {
           color: colors.success,
         };
 
-  const setupSteps: Array<{ label: string; complete: boolean; path: "/finance" | "/fuel" }> = [
+  const setupSteps: { label: string; complete: boolean; path: "/finance" | "/fuel" }[] = [
     {
       label: "Budget baseline",
       complete: monthlyIncome > 0 || monthlyExpenses > 0 || monthlyFixedCosts > 0,
@@ -64,6 +67,52 @@ export default function Home() {
   ];
 
   const completionCount = setupSteps.filter((step) => step.complete).length;
+  const accountChecklistKey = user?.uid ? `thinktwice.setup-checklist.${user.uid}` : "thinktwice.setup-checklist.guest";
+  const shouldShowSetupChecklist = !setupChecklistHidden && completionCount < 3;
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setSetupChecklistHidden(false);
+      return;
+    }
+
+    const loadChecklistState = async () => {
+      try {
+        const storedValue = await AsyncStorage.getItem(accountChecklistKey);
+
+        if (!storedValue) {
+          return;
+        }
+
+        const parsedValue = JSON.parse(storedValue) as { hidden?: boolean };
+
+        if (typeof parsedValue.hidden === "boolean") {
+          setSetupChecklistHidden(parsedValue.hidden);
+        }
+      } catch {
+        // Ignore malformed persisted checklist state and keep defaults.
+      }
+    };
+
+    void loadChecklistState();
+  }, [accountChecklistKey, user?.uid]);
+
+  useEffect(() => {
+    if (completionCount === 3 && !setupChecklistHidden) {
+      setSetupChecklistHidden(true);
+    }
+  }, [completionCount, setupChecklistHidden]);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      return;
+    }
+
+    if (setupChecklistHidden || completionCount === 3) {
+      void AsyncStorage.setItem(accountChecklistKey, JSON.stringify({ hidden: true }));
+    }
+  }, [accountChecklistKey, completionCount, setupChecklistHidden, user?.uid]);
+
   const fuelStatus =
     projectedDaysUntilFillUp <= 3
       ? "Refill soon"
@@ -125,22 +174,24 @@ export default function Home() {
         <Text style={styles.fillUpStatus}>{fuelStatus}</Text>
       </View>
 
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Get Fully Set Up</Text>
-        <View style={styles.checklistWrap}>
-          {setupSteps.map((step) => (
-            <Pressable key={step.label} onPress={() => router.push(step.path)} style={styles.checklistRow}>
-              <Ionicons
-                name={step.complete ? "checkmark-circle" : "ellipse-outline"}
-                size={20}
-                color={step.complete ? colors.success : colors.textMuted}
-              />
-              <Text style={styles.checklistLabel}>{step.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            </Pressable>
-          ))}
+      {shouldShowSetupChecklist ? (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Get Fully Set Up</Text>
+          <View style={styles.checklistWrap}>
+            {setupSteps.map((step) => (
+              <Pressable key={step.label} onPress={() => router.push(step.path)} style={styles.checklistRow}>
+                <Ionicons
+                  name={step.complete ? "checkmark-circle" : "ellipse-outline"}
+                  size={20}
+                  color={step.complete ? colors.success : colors.textMuted}
+                />
+                <Text style={styles.checklistLabel}>{step.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </Pressable>
+            ))}
+          </View>
         </View>
-      </View>
+      ) : null}
 
       <View style={styles.quickActionsRow}>
         <QuickActionCard
@@ -157,27 +208,6 @@ export default function Home() {
           icon="car-outline"
           onPress={() => router.push("/fuel")}
         />
-      </View>
-
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Planner Snapshot</Text>
-        <Text style={styles.summaryText}>
-          {selectedVehicle
-            ? `${selectedVehicle.nickname} is the active vehicle for your forecast.`
-            : "Add a vehicle profile to improve MPG and refill cost estimates."}
-        </Text>
-        <Text style={styles.summaryText}>
-          {backendUser
-            ? `Backend sync is connected for ${backendUser.email ?? "your account"}.`
-            : "Sign in with a configured backend to sync vehicles across devices."}
-        </Text>
-        {showHints ? (
-          <Text style={styles.summaryHint}>
-            {remindersEnabled
-              ? "Tip: do a finance check-in once a week and a fuel check-in after every fill-up."
-              : "Tip: turn on reminders in Notifications if you want regular check-ins."}
-          </Text>
-        ) : null}
       </View>
     </PageScaffold>
   );

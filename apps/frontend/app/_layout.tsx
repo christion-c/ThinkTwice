@@ -10,8 +10,8 @@ import { VehicleProvider } from "../components/VehicleContext";
 
 export default function RootLayout() {
   return (
-    <AppPreferencesProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <AppPreferencesProvider>
         <VehicleProvider>
           <FinanceProvider>
             <AuthGate>
@@ -19,8 +19,8 @@ export default function RootLayout() {
             </AuthGate>
           </FinanceProvider>
         </VehicleProvider>
-      </AuthProvider>
-    </AppPreferencesProvider>
+      </AppPreferencesProvider>
+    </AuthProvider>
   );
 }
 
@@ -85,9 +85,6 @@ function AppStack() {
       <Stack.Screen name="auth/register" options={{ title: "Register" }} />
       <Stack.Screen name="auth/forgotPassword" options={{ title: "Forgot Password" }} />
 
-      <Stack.Screen name="settings/accessibility" options={{ title: "Accessibility" }} />
-      <Stack.Screen name="settings/account" options={{ title: "Account" }} />
-      <Stack.Screen name="settings/notifications" options={{ title: "Notifications" }} />
       <Stack.Screen name="settings/preferences" options={{ title: "Profile Settings" }} />
     </Stack>
   );
