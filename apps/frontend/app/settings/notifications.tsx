@@ -192,7 +192,7 @@ const notificationRowStyles = {
   caption: (colors: ThemeColors) => ({
     color: colors.textMuted,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 18,
   }),
 };
 
@@ -235,21 +235,19 @@ const createStyles = (colors: ThemeColors) =>
     permissionText: {
       color: colors.textMuted,
       fontSize: 13,
-      lineHeight: 19,
+      lineHeight: 20,
       marginTop: spacing.xs,
     },
     testButton: {
       marginTop: spacing.xs,
+      alignSelf: "flex-start",
+      backgroundColor: colors.accent,
       borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceSoft,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 12,
-      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 10,
     },
     testButtonLabel: {
-      color: colors.text,
+      color: "#0A0A0A",
       fontSize: 14,
       fontWeight: "700",
     },
