@@ -13,7 +13,7 @@ import {
 
 export const vehicleRouter = Router();
 
-const createVehicleSchema = z
+export const createVehicleSchema = z
   .object({
     nickname: z.string().trim().min(1).max(50),
     make: z.string().trim().min(1).max(100).nullable().optional(),
@@ -34,7 +34,7 @@ const createVehicleSchema = z
   })
   .strict();
 
-const updateVehicleSchema = createVehicleSchema
+export const updateVehicleSchema = createVehicleSchema
   .partial()
   .refine((input) => Object.keys(input).length > 0, {
     message: "At least one vehicle field must be provided",
