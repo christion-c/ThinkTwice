@@ -1,34 +1,12 @@
 import type { ReactNode } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-import { loadJson, saveJson } from "../lib/local-storage";
+import { fetchFinanceInputs, upsertFinanceInputs } from "../lib/backend-api";
+import { useAuth } from "./AuthProvider";
 import { useVehicle } from "./VehicleContext";
 
-const FINANCE_INPUTS_STORAGE_KEY = "thinktwice.financeInputs.v1";
-
-interface StoredFinanceInputs {
-  incomeInput: string;
-  expenseInput: string;
-  monthlyFixedCostsInput: string;
-  fuelGallonsInput: string;
-  fuelPriceInput: string;
-  milesPerWeekInput: string;
-  combinedMpgInput: string;
-  tankCapacityInput: string;
-  currentTankPercentInput: string;
-}
-
-const defaultFinanceInputs: StoredFinanceInputs = {
-  incomeInput: "4200",
-  expenseInput: "1700",
-  monthlyFixedCostsInput: "620",
-  fuelGallonsInput: "11.2",
-  fuelPriceInput: "4.25",
-  milesPerWeekInput: "230",
-  combinedMpgInput: "28",
-  tankCapacityInput: "13.5",
-  currentTankPercentInput: "55",
-};
+const FINANCE_STORAGE_KEY = "thinktwice.finance-inputs";
 
 type FinanceContextValue = {
   incomeInput: string;
@@ -56,82 +34,122 @@ type FinanceContextValue = {
   projectedFillUpCost: number;
   projectedDaysUntilFillUp: number;
   projectedBudgetAfterEssentials: number;
+  weeklySpendTarget: number;
 };
 
 const FinanceContext = createContext<FinanceContextValue | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const { selectedVehicle } = useVehicle();
-  const [incomeInput, setIncomeInput] = useState(defaultFinanceInputs.incomeInput);
-  const [expenseInput, setExpenseInput] = useState(defaultFinanceInputs.expenseInput);
-  const [monthlyFixedCostsInput, setMonthlyFixedCostsInput] = useState(
-    defaultFinanceInputs.monthlyFixedCostsInput,
-  );
-  const [fuelGallonsInput, setFuelGallonsInput] = useState(defaultFinanceInputs.fuelGallonsInput);
-  const [fuelPriceInput, setFuelPriceInput] = useState(defaultFinanceInputs.fuelPriceInput);
-  const [milesPerWeekInput, setMilesPerWeekInput] = useState(defaultFinanceInputs.milesPerWeekInput);
-  const [combinedMpgInput, setCombinedMpgInput] = useState(defaultFinanceInputs.combinedMpgInput);
-  const [tankCapacityInput, setTankCapacityInput] = useState(defaultFinanceInputs.tankCapacityInput);
-  const [currentTankPercentInput, setCurrentTankPercentInput] = useState(
-    defaultFinanceInputs.currentTankPercentInput,
-  );
+  const [incomeInput, setIncomeInput] = useState("");
+  const [expenseInput, setExpenseInput] = useState("");
+  const [monthlyFixedCostsInput, setMonthlyFixedCostsInput] = useState("");
+  const [fuelGallonsInput, setFuelGallonsInput] = useState("");
+  const [fuelPriceInput, setFuelPriceInput] = useState("");
+  const [milesPerWeekInput, setMilesPerWeekInput] = useState("");
+  const [combinedMpgInput, setCombinedMpgInput] = useState("");
+  const [tankCapacityInput, setTankCapacityInput] = useState("");
+  const [currentTankPercentInput, setCurrentTankPercentInput] = useState("");
 
-  // Inputs load asynchronously from device storage, so writes must be
-  // skipped until that load finishes or they'd overwrite it with defaults.
-  const hasLoaded = useRef(false);
+  const storageKey = user?.uid ? `${FINANCE_STORAGE_KEY}.${user.uid}` : `${FINANCE_STORAGE_KEY}.guest`;
 
   useEffect(() => {
-    let isMounted = true;
+    setIncomeInput("");
+    setExpenseInput("");
+    setMonthlyFixedCostsInput("");
+    setFuelGallonsInput("");
+    setFuelPriceInput("");
+    setMilesPerWeekInput("");
+    setCombinedMpgInput("");
+    setTankCapacityInput("");
+    setCurrentTankPercentInput("");
+  }, [user?.uid]);
 
-    void loadJson(FINANCE_INPUTS_STORAGE_KEY, defaultFinanceInputs).then((stored) => {
-      if (!isMounted) {
+  useEffect(() => {
+    const loadPersistedInputs = async () => {
+      try {
+        const storedValue = await AsyncStorage.getItem(storageKey);
+
+        if (storedValue) {
+          const parsedValue = JSON.parse(storedValue) as Partial<Record<
+            | "incomeInput"
+            | "expenseInput"
+            | "monthlyFixedCostsInput"
+            | "fuelGallonsInput"
+            | "fuelPriceInput"
+            | "milesPerWeekInput"
+            | "combinedMpgInput"
+            | "tankCapacityInput"
+            | "currentTankPercentInput",
+            string
+          >>;
+
+          if (typeof parsedValue.incomeInput === "string") {
+            setIncomeInput(parsedValue.incomeInput);
+          }
+
+          if (typeof parsedValue.expenseInput === "string") {
+            setExpenseInput(parsedValue.expenseInput);
+          }
+
+          if (typeof parsedValue.monthlyFixedCostsInput === "string") {
+            setMonthlyFixedCostsInput(parsedValue.monthlyFixedCostsInput);
+          }
+
+          if (typeof parsedValue.fuelGallonsInput === "string") {
+            setFuelGallonsInput(parsedValue.fuelGallonsInput);
+          }
+
+          if (typeof parsedValue.fuelPriceInput === "string") {
+            setFuelPriceInput(parsedValue.fuelPriceInput);
+          }
+
+          if (typeof parsedValue.milesPerWeekInput === "string") {
+            setMilesPerWeekInput(parsedValue.milesPerWeekInput);
+          }
+
+          if (typeof parsedValue.combinedMpgInput === "string") {
+            setCombinedMpgInput(parsedValue.combinedMpgInput);
+          }
+
+          if (typeof parsedValue.tankCapacityInput === "string") {
+            setTankCapacityInput(parsedValue.tankCapacityInput);
+          }
+
+          if (typeof parsedValue.currentTankPercentInput === "string") {
+            setCurrentTankPercentInput(parsedValue.currentTankPercentInput);
+          }
+        }
+      } catch {
+        // Ignore malformed saved inputs and keep defaults.
+      }
+
+      // Cloud data is the source of truth — fetch it after the local cache.
+      if (!user) {
         return;
       }
 
-      setIncomeInput(stored.incomeInput);
-      setExpenseInput(stored.expenseInput);
-      setMonthlyFixedCostsInput(stored.monthlyFixedCostsInput);
-      setFuelGallonsInput(stored.fuelGallonsInput);
-      setFuelPriceInput(stored.fuelPriceInput);
-      setMilesPerWeekInput(stored.milesPerWeekInput);
-      setCombinedMpgInput(stored.combinedMpgInput);
-      setTankCapacityInput(stored.tankCapacityInput);
-      setCurrentTankPercentInput(stored.currentTankPercentInput);
-      hasLoaded.current = true;
-    });
+      try {
+        const cloud = await fetchFinanceInputs(user);
+        setIncomeInput(cloud.incomeInput);
+        setExpenseInput(cloud.expenseInput);
+        setMonthlyFixedCostsInput(cloud.monthlyFixedCostsInput);
+        setFuelGallonsInput(cloud.fuelGallonsInput);
+        setFuelPriceInput(cloud.fuelPriceInput);
+        setMilesPerWeekInput(cloud.milesPerWeekInput);
+        setCombinedMpgInput(cloud.combinedMpgInput);
+        setTankCapacityInput(cloud.tankCapacityInput);
+        setCurrentTankPercentInput(cloud.currentTankPercentInput);
 
-    return () => {
-      isMounted = false;
+        await AsyncStorage.setItem(storageKey, JSON.stringify(cloud));
+      } catch {
+        // Keep the locally cached values if the backend is unavailable.
+      }
     };
-  }, []);
 
-  useEffect(() => {
-    if (!hasLoaded.current) {
-      return;
-    }
-
-    void saveJson<StoredFinanceInputs>(FINANCE_INPUTS_STORAGE_KEY, {
-      incomeInput,
-      expenseInput,
-      monthlyFixedCostsInput,
-      fuelGallonsInput,
-      fuelPriceInput,
-      milesPerWeekInput,
-      combinedMpgInput,
-      tankCapacityInput,
-      currentTankPercentInput,
-    });
-  }, [
-    incomeInput,
-    expenseInput,
-    monthlyFixedCostsInput,
-    fuelGallonsInput,
-    fuelPriceInput,
-    milesPerWeekInput,
-    combinedMpgInput,
-    tankCapacityInput,
-    currentTankPercentInput,
-  ]);
+    void loadPersistedInputs();
+  }, [storageKey, user]);
 
   useEffect(() => {
     if (selectedVehicle?.combinedMpg !== null && selectedVehicle?.combinedMpg !== undefined) {
@@ -173,6 +191,54 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const projectedBudgetAfterEssentials =
     monthlyIncome - monthlyExpenses - monthlyFixedCosts - monthlyFuelBudget;
+  const weeklySpendTarget = Math.max(
+    (monthlyExpenses + monthlyFixedCosts + monthlyFuelBudget) / 4.345,
+    0,
+  );
+
+  const cloudSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const snapshot = {
+      incomeInput,
+      expenseInput,
+      monthlyFixedCostsInput,
+      fuelGallonsInput,
+      fuelPriceInput,
+      milesPerWeekInput,
+      combinedMpgInput,
+      tankCapacityInput,
+      currentTankPercentInput,
+    };
+
+    void AsyncStorage.setItem(storageKey, JSON.stringify(snapshot));
+
+    if (!user) {
+      return;
+    }
+
+    if (cloudSaveTimer.current) {
+      clearTimeout(cloudSaveTimer.current);
+    }
+
+    cloudSaveTimer.current = setTimeout(() => {
+      void upsertFinanceInputs(user, snapshot).catch(() => {
+        // Ignore transient network errors; the next save will retry.
+      });
+    }, 1500);
+  }, [
+    incomeInput,
+    expenseInput,
+    monthlyFixedCostsInput,
+    fuelGallonsInput,
+    fuelPriceInput,
+    milesPerWeekInput,
+    combinedMpgInput,
+    tankCapacityInput,
+    currentTankPercentInput,
+    storageKey,
+    user,
+  ]);
 
   const value = useMemo(
     () => ({
@@ -201,6 +267,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       projectedFillUpCost,
       projectedDaysUntilFillUp,
       projectedBudgetAfterEssentials,
+      weeklySpendTarget,
     }),
     [
       incomeInput,
@@ -219,6 +286,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       projectedFillUpCost,
       projectedDaysUntilFillUp,
       projectedBudgetAfterEssentials,
+      weeklySpendTarget,
     ],
   );
 

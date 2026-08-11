@@ -9,6 +9,7 @@ import BottomNav from "../../components/BottomNav";
 import { useFinance } from "../../components/FinanceContext";
 import PageScaffold from "../../components/PageScaffold";
 import { radii, spacing, type ThemeColors } from "../../components/theme";
+import { useVehicle } from "../../components/VehicleContext";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -18,9 +19,10 @@ const moneyFormat = new Intl.NumberFormat("en-US", {
 
 export default function Profile() {
   const colors = useThemeColors();
-  const { colorMode } = useAppPreferences();
+  const { colorMode, highContrast, remindersEnabled, budgetAlertsEnabled } = useAppPreferences();
   const { user } = useAuth();
   const { monthlyFuelBudget } = useFinance();
+  const { backendUser, selectedVehicle, loading } = useVehicle();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const accountLabel = user?.displayName || user?.email || "Account owner";
@@ -39,14 +41,19 @@ export default function Profile() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Account Snapshot</Text>
         <Text style={styles.cardText}>Signed in as {accountLabel}.</Text>
-        <Text style={styles.cardText}>Current monthly fuel reserve: {moneyFormat.format(monthlyFuelBudget)}</Text>
+        <Text style={styles.cardText}>Cloud Status: {backendUser ? "Connected" : loading ? "Loading" : "Not synced yet"}</Text>
+        <Text style={styles.cardText}>Current monthly fuel cost: {moneyFormat.format(monthlyFuelBudget)}</Text>
         <Text style={styles.modeText}>Appearance: {colorMode === "dark" ? "Dark" : "Light"}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Readiness</Text>
-        <Text style={styles.cardText}>Manual tracking is active. Connect backend sync and ML scoring next to turn this into personalized predictions.</Text>
+        <Text style={styles.cardTitle}>Account Details</Text>
+        <Text style={styles.cardText}>Active vehicle: {selectedVehicle?.nickname ?? "None selected"}</Text>
+        <Text style={styles.cardText}>High contrast: {highContrast ? "On" : "Off"}</Text>
+        <Text style={styles.cardText}>Reminders: {remindersEnabled ? "On" : "Off"}</Text>
+        <Text style={styles.cardText}>Budget alerts: {budgetAlertsEnabled ? "On" : "Off"}</Text>
       </View>
+
     </PageScaffold>
   );
 }
@@ -81,5 +88,18 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 14,
       fontWeight: "600",
       marginTop: 2,
+    },
+    linkRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    linkLabel: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: "600",
     },
   });

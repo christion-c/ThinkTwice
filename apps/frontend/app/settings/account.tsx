@@ -1,92 +1,52 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { signOut } from "firebase/auth";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useThemeColors } from "../../components/AppPreferences";
 import { useAuth } from "../../components/AuthProvider";
 import PageScaffold from "../../components/PageScaffold";
-import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { useVehicle } from "../../components/VehicleContext";
-import { auth, isFirebaseConfigured } from "../../lib/firebase";
+import { radii, spacing, type ThemeColors } from "../../components/theme";
 
 export default function Account() {
   const colors = useThemeColors();
   const { user } = useAuth();
-  const { backendUser } = useVehicle();
+  const { backendUser, vehicles, selectedVehicle } = useVehicle();
   const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const [isSigningOut, setIsSigningOut] = useState(false);
-  const [logoutError, setLogoutError] = useState("");
-
-  const handleLogout = async () => {
-    setLogoutError("");
-
-    if (!isFirebaseConfigured || !auth) {
-      setLogoutError("Firebase is not configured yet. Logout is unavailable in preview mode.");
-      return;
-    }
-
-    try {
-      setIsSigningOut(true);
-      await signOut(auth);
-      router.replace("/auth/login");
-    } catch {
-      setLogoutError("Unable to sign out right now. Please try again.");
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
 
   return (
     <PageScaffold
       title="Account"
       subtitle="Manage your personal details and account preferences."
+      headerLeft={
+        <Pressable onPress={() => router.replace("/settings/preferences")} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={18} color={colors.text} />
+          <Text style={styles.backButtonLabel}>Back</Text>
+        </Pressable>
+      }
     >
-      <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}>
-        <Text style={styles.backButtonLabel}>← Back</Text>
-      </Pressable>
-
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Account Details</Text>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Email</Text>
-          <Text style={styles.detailValue}>{user?.email ?? "—"}</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Display name</Text>
-          <Text style={styles.detailValue}>{user?.displayName ?? "Not set"}</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Email verified</Text>
-          <Text style={styles.detailValue}>{backendUser?.emailVerified ? "Yes" : "No"}</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Member since</Text>
-          <Text style={styles.detailValue}>
-            {backendUser ? new Date(backendUser.createdAt).toLocaleDateString() : "—"}
-          </Text>
-        </View>
+        <Text style={styles.cardTitle}>Identity</Text>
+        <Text style={styles.cardText}>Email: {user?.email ?? "Not available"}</Text>
+        <Text style={styles.cardText}>Display name: {user?.displayName ?? "Not set"}</Text>
+        <Text style={styles.cardText}>Email verified: {user?.emailVerified ? "Yes" : "No"}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Session</Text>
-        <Text style={styles.cardText}>Sign out of your current account on this device.</Text>
+        <Text style={styles.cardTitle}>Backend Sync</Text>
+        <Text style={styles.cardText}>Profile status: {backendUser ? "Connected" : "Not connected"}</Text>
+        <Text style={styles.cardText}>Vehicles stored: {vehicles.length}</Text>
+        <Text style={styles.cardText}>Selected vehicle: {selectedVehicle?.nickname ?? "None"}</Text>
+      </View>
 
-        {logoutError ? <Text style={styles.errorText}>{logoutError}</Text> : null}
-
-        <Pressable
-          onPress={() => {
-            void handleLogout();
-          }}
-          disabled={isSigningOut}
-          style={({ pressed }) => [styles.logoutButton, (pressed || isSigningOut) && styles.buttonPressed]}
-        >
-          <Text style={styles.logoutButtonLabel}>{isSigningOut ? "Signing out..." : "Log Out"}</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Next Steps</Text>
+        <Pressable onPress={() => router.push("/profile/profile")} style={styles.actionButton}>
+          <Text style={styles.actionLabel}>Open profile overview</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push("/settings/preferences")} style={styles.actionButton}>
+          <Text style={styles.actionLabel}>Adjust app preferences</Text>
         </Pressable>
       </View>
     </PageScaffold>
@@ -96,12 +56,19 @@ export default function Account() {
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     backButton: {
-      alignSelf: "flex-start",
-      marginBottom: spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     backButtonLabel: {
-      color: colors.accent,
-      fontSize: 15,
+      color: colors.text,
+      fontSize: 14,
       fontWeight: "600",
     },
     card: {
@@ -121,43 +88,18 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textMuted,
       fontSize: 15,
       lineHeight: 22,
-      marginBottom: spacing.xs,
     },
-    detailRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: 6,
-      gap: spacing.md,
-    },
-    detailLabel: {
-      color: colors.textMuted,
-      fontSize: 14,
-    },
-    detailValue: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    logoutButton: {
+    actionButton: {
       borderRadius: radii.md,
       borderWidth: 1,
-      borderColor: colors.danger,
-      backgroundColor: "transparent",
-      paddingVertical: 12,
-      alignItems: "center",
-      marginTop: spacing.xs,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 14,
     },
-    logoutButtonLabel: {
-      color: colors.danger,
-      fontSize: 16,
+    actionLabel: {
+      color: colors.text,
+      fontSize: 15,
       fontWeight: "700",
-    },
-    errorText: {
-      color: colors.danger,
-      fontSize: 14,
-    },
-    buttonPressed: {
-      opacity: 0.85,
     },
   });

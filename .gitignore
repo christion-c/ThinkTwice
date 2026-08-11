@@ -24,6 +24,11 @@
 **/.pytest_cache/
 **/.mypy_cache/
 
+# ML service runtime/generated data (self-bootstrapping — see services/ml/app/main.py)
+services/ml/budget_data.json
+services/ml/user_history.json
+**/user_history.json
+
 # Test output
 **/coverage/
 

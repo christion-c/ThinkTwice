@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useMemo, useState } from "react";
@@ -10,7 +11,14 @@ import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function ProfileSettings() {
   const colors = useThemeColors();
-  const { colorMode, setColorMode, compactCards, setCompactCards, showHints, setShowHints } = useAppPreferences();
+  const {
+    colorMode,
+    setColorMode,
+    compactCards,
+    setCompactCards,
+    highContrast,
+    setHighContrast,
+  } = useAppPreferences();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
@@ -38,10 +46,13 @@ export default function ProfileSettings() {
     <PageScaffold
       title="Profile Settings"
       subtitle="Adjust a few frontend app options for your experience."
+      headerLeft={
+        <Pressable onPress={() => router.replace("/profile/profile")} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={18} color={colors.text} />
+          <Text style={styles.backButtonLabel}>Back</Text>
+        </Pressable>
+      }
     >
-      <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}>
-        <Text style={styles.backButtonLabel}>← Back</Text>
-      </Pressable>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Appearance</Text>
         <Text style={styles.cardText}>Choose the app color mode.</Text>
@@ -76,11 +87,12 @@ export default function ProfileSettings() {
 
         <View style={styles.optionRow}>
           <View style={styles.optionTextWrap}>
-            <Text style={styles.optionTitle}>Show Quick Hints</Text>
-            <Text style={styles.optionCaption}>Display helper text under sections.</Text>
+            <Text style={styles.optionTitle}>High Contrast</Text>
+            <Text style={styles.optionCaption}>Increase visual separation and stronger text colors.</Text>
           </View>
-          <Switch value={showHints} onValueChange={setShowHints} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
+          <Switch value={highContrast} onValueChange={setHighContrast} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
         </View>
+
       </View>
 
       <View style={styles.card}>
@@ -104,12 +116,19 @@ export default function ProfileSettings() {
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     backButton: {
-      alignSelf: "flex-start",
-      marginBottom: spacing.sm,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     backButtonLabel: {
-      color: colors.accent,
-      fontSize: 15,
+      color: colors.text,
+      fontSize: 14,
       fontWeight: "600",
     },
     card: {
@@ -176,6 +195,24 @@ const createStyles = (colors: ThemeColors) =>
     optionCaption: {
       color: colors.textMuted,
       fontSize: 14,
+    },
+    linkRow: {
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSoft,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 14,
+      gap: 4,
+    },
+    linkLabel: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: "700",
+    },
+    linkHint: {
+      color: colors.textMuted,
+      fontSize: 13,
     },
     logoutButton: {
       borderRadius: radii.md,

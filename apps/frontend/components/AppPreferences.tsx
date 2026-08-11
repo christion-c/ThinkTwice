@@ -1,80 +1,108 @@
 import type { ReactNode } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-import { loadJson, saveJson } from "../lib/local-storage";
+import { useAuth } from "./AuthProvider";
 import { getColors, type ColorMode } from "./theme";
 
-const PREFERENCES_STORAGE_KEY = "thinktwice.preferences.v1";
-
-interface StoredPreferences {
-  colorMode: ColorMode;
-  compactCards: boolean;
-  showHints: boolean;
-  highContrast: boolean;
-}
-
-const defaultPreferences: StoredPreferences = {
-  colorMode: "dark",
-  compactCards: false,
-  showHints: true,
-  highContrast: false,
-};
+const PREFERENCES_STORAGE_KEY = "thinktwice.app-preferences";
 
 type AppPreferencesValue = {
   colorMode: ColorMode;
   setColorMode: (mode: ColorMode) => void;
   compactCards: boolean;
   setCompactCards: (value: boolean) => void;
-  showHints: boolean;
-  setShowHints: (value: boolean) => void;
   highContrast: boolean;
   setHighContrast: (value: boolean) => void;
+  remindersEnabled: boolean;
+  setRemindersEnabled: (value: boolean) => void;
+  budgetAlertsEnabled: boolean;
+  setBudgetAlertsEnabled: (value: boolean) => void;
 };
 
 const AppPreferencesContext = createContext<AppPreferencesValue | undefined>(undefined);
 
 export function AppPreferencesProvider({ children }: { children: ReactNode }) {
-  const [colorMode, setColorMode] = useState<ColorMode>(defaultPreferences.colorMode);
-  const [compactCards, setCompactCards] = useState(defaultPreferences.compactCards);
-  const [showHints, setShowHints] = useState(defaultPreferences.showHints);
-  const [highContrast, setHighContrast] = useState(defaultPreferences.highContrast);
-
-  // Preferences load asynchronously from device storage, so writes must be
-  // skipped until that load finishes or they'd overwrite it with defaults.
-  const hasLoaded = useRef(false);
+  const { user } = useAuth();
+  const [colorMode, setColorMode] = useState<ColorMode>("dark");
+  const [compactCards, setCompactCards] = useState(false);
+  const [highContrast, setHighContrast] = useState(false);
+  const [remindersEnabled, setRemindersEnabled] = useState(true);
+  const [budgetAlertsEnabled, setBudgetAlertsEnabled] = useState(true);
+  const hasHydrated = useRef(false);
+  const storageKey = user?.uid ? `${PREFERENCES_STORAGE_KEY}.${user.uid}` : `${PREFERENCES_STORAGE_KEY}.guest`;
 
   useEffect(() => {
-    let isMounted = true;
+    setColorMode("dark");
+    setCompactCards(false);
+    setHighContrast(false);
+    setRemindersEnabled(true);
+    setBudgetAlertsEnabled(true);
+    hasHydrated.current = false;
+  }, [user?.uid]);
 
-    void loadJson(PREFERENCES_STORAGE_KEY, defaultPreferences).then((stored) => {
-      if (!isMounted) {
-        return;
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const storedValue = await AsyncStorage.getItem(storageKey);
+
+        if (!storedValue) {
+          return;
+        }
+
+        const parsedValue = JSON.parse(storedValue) as Partial<{
+          colorMode: ColorMode;
+          compactCards: boolean;
+          highContrast: boolean;
+          remindersEnabled: boolean;
+          budgetAlertsEnabled: boolean;
+        }>;
+
+        if (parsedValue.colorMode === "dark" || parsedValue.colorMode === "light") {
+          setColorMode(parsedValue.colorMode);
+        }
+
+        if (typeof parsedValue.compactCards === "boolean") {
+          setCompactCards(parsedValue.compactCards);
+        }
+
+        if (typeof parsedValue.highContrast === "boolean") {
+          setHighContrast(parsedValue.highContrast);
+        }
+
+        if (typeof parsedValue.remindersEnabled === "boolean") {
+          setRemindersEnabled(parsedValue.remindersEnabled);
+        }
+
+        if (typeof parsedValue.budgetAlertsEnabled === "boolean") {
+          setBudgetAlertsEnabled(parsedValue.budgetAlertsEnabled);
+        }
+      } catch {
+        // Ignore malformed persisted preferences and keep defaults.
+      } finally {
+        hasHydrated.current = true;
       }
-
-      setColorMode(stored.colorMode);
-      setCompactCards(stored.compactCards);
-      setShowHints(stored.showHints);
-      setHighContrast(stored.highContrast);
-      hasLoaded.current = true;
-    });
-
-    return () => {
-      isMounted = false;
     };
-  }, []);
+
+    void loadPreferences();
+  }, [storageKey]);
 
   useEffect(() => {
-    if (!hasLoaded.current) {
+    if (!hasHydrated.current) {
       return;
     }
 
-    void saveJson<StoredPreferences>(PREFERENCES_STORAGE_KEY, {
-      colorMode,
-      compactCards,
-      showHints,
-      highContrast,
-    });
-  }, [colorMode, compactCards, showHints, highContrast]);
+    void AsyncStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        colorMode,
+        compactCards,
+        highContrast,
+        remindersEnabled,
+        budgetAlertsEnabled,
+      }),
+    );
+  }, [colorMode, compactCards, highContrast, remindersEnabled, budgetAlertsEnabled, storageKey]);
 
   const value = useMemo(
     () => ({
@@ -82,12 +110,20 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
       setColorMode,
       compactCards,
       setCompactCards,
-      showHints,
-      setShowHints,
       highContrast,
       setHighContrast,
+      remindersEnabled,
+      setRemindersEnabled,
+      budgetAlertsEnabled,
+      setBudgetAlertsEnabled,
     }),
-    [colorMode, compactCards, showHints, highContrast],
+    [
+      colorMode,
+      compactCards,
+      highContrast,
+      remindersEnabled,
+      budgetAlertsEnabled,
+    ],
   );
 
   return <AppPreferencesContext.Provider value={value}>{children}</AppPreferencesContext.Provider>;

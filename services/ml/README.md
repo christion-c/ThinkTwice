@@ -4,7 +4,24 @@ FastAPI service exposing:
 
 - `GET /health` — liveness check.
 - `POST /predict` — forecasts next-period fuel and food cost from a user's
-  logged budget entries.
+  logged budget entries. This is the supported, backend-mediated path (see
+  below).
+- `GET /ml-preview`, `POST /fill-up-history` — an earlier, self-contained
+  prototype that blends a math-based fuel forecast (fit on synthetic
+  `budget_data.json` sample data) with a per-user fill-up history. History
+  is read from the backend's `/fill-up-history/internal` endpoint first,
+  falling back to a local JSON cache
+  (`ML_HISTORY_PATH`, defaults to `/home/appuser/.cache/thinktwice/user_history.json`)
+  if the backend is unreachable. Used by the frontend's internal debug
+  routes (`apps/frontend/app/ml-preview.tsx`,
+  `apps/frontend/app/debug/ml-account.tsx`), not the main app flow.
+
+  **Known gap:** neither this endpoint nor the backend's
+  `/fill-up-history/internal` endpoint it calls require authentication —
+  `/fill-up-history/internal` accepts any `firebase_uid` as a query
+  parameter and returns that user's fill-up history. Fine for now since
+  these are debug-only routes not linked from primary navigation, but
+  worth locking down before this becomes user-facing.
 
 ## `POST /predict` contract
 

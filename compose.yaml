@@ -104,14 +104,12 @@ services:
 
     init: true
 
+    env_file:
+      - ./apps/frontend/.env
+
     environment:
       EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:3000}
-      EXPO_PUBLIC_FIREBASE_API_KEY: ${EXPO_PUBLIC_FIREBASE_API_KEY:-}
-      EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: ${EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN:-}
-      EXPO_PUBLIC_FIREBASE_PROJECT_ID: ${EXPO_PUBLIC_FIREBASE_PROJECT_ID:-}
-      EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: ${EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET:-}
-      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:-}
-      EXPO_PUBLIC_FIREBASE_APP_ID: ${EXPO_PUBLIC_FIREBASE_APP_ID:-}
+      EXPO_PUBLIC_ML_API_URL: ${EXPO_PUBLIC_ML_API_URL:-http://ml:8000}
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID:-}
       EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ${EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID:-}
       EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: ${EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID:-}
@@ -128,6 +126,8 @@ services:
 
     depends_on:
       backend:
+        condition: service_healthy
+      ml:
         condition: service_healthy
 
     develop:
@@ -162,6 +162,7 @@ services:
     environment:
       PORT: 8000
       BACKEND_URL: http://backend:3000
+      ML_HISTORY_PATH: /home/appuser/.cache/thinktwice/user_history.json
 
     ports:
       - name: ml-http
@@ -180,6 +181,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+    volumes:
+      - ml_history_data:/home/appuser/.cache/thinktwice
 
     develop:
       watch:
@@ -218,3 +222,4 @@ services:
 
 volumes:
   postgres_data:
+  ml_history_data:
