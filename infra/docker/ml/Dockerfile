@@ -24,8 +24,11 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 COPY --chown=appuser:appuser . .
 
+RUN mkdir -p /home/appuser/.cache/thinktwice \
+    && chown -R appuser:appuser /home/appuser/.cache/thinktwice
+
 USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

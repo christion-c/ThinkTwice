@@ -1,0 +1,212 @@
+[
+  {
+    "date": "2026-01-01",
+    "fuel_cost": 5.88,
+    "food_cost": 15.9,
+    "miles_driven": 110,
+    "meals": 10
+  },
+  {
+    "date": "2026-01-02",
+    "fuel_cost": 6.91,
+    "food_cost": 18.6,
+    "miles_driven": 130,
+    "meals": 12
+  },
+  {
+    "date": "2026-01-03",
+    "fuel_cost": 7.43,
+    "food_cost": 19.8,
+    "miles_driven": 135,
+    "meals": 14
+  },
+  {
+    "date": "2026-01-04",
+    "fuel_cost": 7.06,
+    "food_cost": 22.5,
+    "miles_driven": 155,
+    "meals": 16
+  },
+  {
+    "date": "2026-01-05",
+    "fuel_cost": 8.09,
+    "food_cost": 14.2,
+    "miles_driven": 175,
+    "meals": 8
+  },
+  {
+    "date": "2026-01-06",
+    "fuel_cost": 8.61,
+    "food_cost": 15.4,
+    "miles_driven": 180,
+    "meals": 10
+  },
+  {
+    "date": "2026-01-07",
+    "fuel_cost": 6.07,
+    "food_cost": 18.1,
+    "miles_driven": 95,
+    "meals": 12
+  },
+  {
+    "date": "2026-01-08",
+    "fuel_cost": 5.7,
+    "food_cost": 20.8,
+    "miles_driven": 115,
+    "meals": 14
+  },
+  {
+    "date": "2026-01-09",
+    "fuel_cost": 6.22,
+    "food_cost": 22.0,
+    "miles_driven": 120,
+    "meals": 16
+  },
+  {
+    "date": "2026-01-10",
+    "fuel_cost": 7.25,
+    "food_cost": 13.7,
+    "miles_driven": 140,
+    "meals": 8
+  },
+  {
+    "date": "2026-01-11",
+    "fuel_cost": 8.28,
+    "food_cost": 16.4,
+    "miles_driven": 160,
+    "meals": 10
+  },
+  {
+    "date": "2026-01-12",
+    "fuel_cost": 7.4,
+    "food_cost": 17.6,
+    "miles_driven": 165,
+    "meals": 12
+  },
+  {
+    "date": "2026-01-13",
+    "fuel_cost": 8.43,
+    "food_cost": 20.3,
+    "miles_driven": 185,
+    "meals": 14
+  },
+  {
+    "date": "2026-01-14",
+    "fuel_cost": 5.89,
+    "food_cost": 23.0,
+    "miles_driven": 100,
+    "meals": 16
+  },
+  {
+    "date": "2026-01-15",
+    "fuel_cost": 6.41,
+    "food_cost": 13.2,
+    "miles_driven": 105,
+    "meals": 8
+  },
+  {
+    "date": "2026-01-16",
+    "fuel_cost": 6.04,
+    "food_cost": 15.9,
+    "miles_driven": 125,
+    "meals": 10
+  },
+  {
+    "date": "2026-01-17",
+    "fuel_cost": 7.07,
+    "food_cost": 18.6,
+    "miles_driven": 145,
+    "meals": 12
+  },
+  {
+    "date": "2026-01-18",
+    "fuel_cost": 7.59,
+    "food_cost": 19.8,
+    "miles_driven": 150,
+    "meals": 14
+  },
+  {
+    "date": "2026-01-19",
+    "fuel_cost": 8.62,
+    "food_cost": 22.5,
+    "miles_driven": 170,
+    "meals": 16
+  },
+  {
+    "date": "2026-01-20",
+    "fuel_cost": 8.25,
+    "food_cost": 14.2,
+    "miles_driven": 190,
+    "meals": 8
+  },
+  {
+    "date": "2026-01-21",
+    "fuel_cost": 5.2,
+    "food_cost": 15.4,
+    "miles_driven": 90,
+    "meals": 10
+  },
+  {
+    "date": "2026-01-22",
+    "fuel_cost": 6.23,
+    "food_cost": 18.1,
+    "miles_driven": 110,
+    "meals": 12
+  },
+  {
+    "date": "2026-01-23",
+    "fuel_cost": 7.26,
+    "food_cost": 20.8,
+    "miles_driven": 130,
+    "meals": 14
+  },
+  {
+    "date": "2026-01-24",
+    "fuel_cost": 6.38,
+    "food_cost": 22.0,
+    "miles_driven": 135,
+    "meals": 16
+  },
+  {
+    "date": "2026-01-25",
+    "fuel_cost": 7.41,
+    "food_cost": 13.7,
+    "miles_driven": 155,
+    "meals": 8
+  },
+  {
+    "date": "2026-01-26",
+    "fuel_cost": 8.44,
+    "food_cost": 16.4,
+    "miles_driven": 175,
+    "meals": 10
+  },
+  {
+    "date": "2026-01-27",
+    "fuel_cost": 8.96,
+    "food_cost": 17.6,
+    "miles_driven": 180,
+    "meals": 12
+  },
+  {
+    "date": "2026-01-28",
+    "fuel_cost": 5.02,
+    "food_cost": 20.3,
+    "miles_driven": 95,
+    "meals": 14
+  },
+  {
+    "date": "2026-01-29",
+    "fuel_cost": 6.05,
+    "food_cost": 23.0,
+    "miles_driven": 115,
+    "meals": 16
+  },
+  {
+    "date": "2026-01-30",
+    "fuel_cost": 6.57,
+    "food_cost": 13.2,
+    "miles_driven": 120,
+    "meals": 8
+  }
+]

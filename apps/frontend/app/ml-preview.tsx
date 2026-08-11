@@ -1,0 +1,381 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+
+import BottomNav from "../components/BottomNav";
+import PageScaffold from "../components/PageScaffold";
+import { useThemeColors } from "../components/AppPreferences";
+import { useAuth } from "../components/AuthProvider";
+import { radii, spacing, type ThemeColors } from "../components/theme";
+
+interface MlPreviewResponse {
+  rows: number;
+  history_count: number;
+  next_week: {
+    miles_driven: number;
+  };
+  fuel_prediction: number;
+  total_prediction: number;
+  feedback: string;
+  explanation: string;
+  sample_rows: Array<{
+    date: string;
+    fuel_cost: number;
+    miles_driven: number;
+  }>;
+}
+
+export default function MlPreviewPage() {
+  const colors = useThemeColors();
+  const { user } = useAuth();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const [milesInput, setMilesInput] = useState("120");
+  const [data, setData] = useState<MlPreviewResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const requestIdRef = useRef(0);
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorDelayMs = 30000;
+
+  const loadPreview = async (miles: string) => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = null;
+    }
+
+    setLoading(true);
+    setError("");
+
+    errorTimeoutRef.current = setTimeout(() => {
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
+
+      if (data) {
+        return;
+      }
+
+      setError("Preview service is still warming up. Please wait a moment.");
+      setLoading(false);
+    }, errorDelayMs);
+
+    const configuredBaseUrl = process.env.EXPO_PUBLIC_ML_API_URL?.trim();
+    const userId = user?.uid ?? "guest";
+    const candidates = [
+      configuredBaseUrl ? `${configuredBaseUrl.replace(/\/+$/, "")}/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}` : null,
+      `http://ml:8000/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}`,
+      `http://127.0.0.1:8000/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}`,
+      `http://localhost:8000/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}`,
+      `http://10.0.2.2:8000/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}`,
+    ].filter((value): value is string => Boolean(value));
+
+    let lastError = "";
+
+    for (const [index, url] of candidates.entries()) {
+      try {
+        const response = await fetch(url, { headers: { Accept: "application/json" } });
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+        const payload = (await response.json()) as MlPreviewResponse;
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+
+        if (errorTimeoutRef.current) {
+          clearTimeout(errorTimeoutRef.current);
+          errorTimeoutRef.current = null;
+        }
+
+        setData(payload);
+        setLoading(false);
+        setError("");
+        return;
+      } catch (fetchError) {
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+
+        const message = fetchError instanceof Error ? fetchError.message : "Unknown error";
+        lastError = `Preview service is unavailable right now. (${message})`;
+
+        if (index < candidates.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
+      }
+    }
+
+    if (requestIdRef.current !== requestId) {
+      return;
+    }
+
+    if (data) {
+      setLoading(false);
+      setError("");
+      return;
+    }
+
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = null;
+    }
+
+    setError(lastError || "Preview service is unavailable right now.");
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void loadPreview(milesInput);
+
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <PageScaffold title="ML Preview" subtitle="Basic prediction prototype beside the existing math-based budget flow." footer={<BottomNav active="Home" />}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Basic ML preview</Text>
+        <Text style={styles.text}>This page is only for observing the prototype. The current budget math still remains active.</Text>
+
+        <View style={styles.formRow}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Miles driven</Text>
+            <TextInput
+              value={milesInput}
+              onChangeText={setMilesInput}
+              keyboardType="numeric"
+              style={styles.input}
+              placeholder="120"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+        </View>
+
+        <View style={styles.userInfoBox}>
+          <Text style={styles.userInfoLabel}>Active account</Text>
+          <Text style={styles.userInfoValue}>{user?.uid ?? "guest"}</Text>
+          <Text style={styles.userInfoHint}>History count: {data?.history_count ?? 0}</Text>
+        </View>
+
+        <Pressable
+          onPress={() => {
+            void loadPreview(milesInput);
+          }}
+          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
+        >
+          <Text style={styles.primaryButtonLabel}>{loading ? "Predicting..." : "Run prediction"}</Text>
+        </Pressable>
+
+        {loading ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.accent} />
+            <Text style={styles.text}>Loading preview data...</Text>
+          </View>
+        ) : null}
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {data ? (
+          <>
+            <View style={styles.feedbackBox}>
+              <Text style={styles.feedbackLabel}>Model feedback</Text>
+              <Text style={styles.feedbackText}>{data.feedback}</Text>
+            </View>
+
+            <View style={styles.explanationBox}>
+              <Text style={styles.feedbackLabel}>How the estimate is built</Text>
+              <Text style={styles.feedbackText}>{data.explanation}</Text>
+            </View>
+
+            <View style={styles.metricRow}>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricLabel}>Rows</Text>
+                <Text style={styles.metricValue}>{data.rows}</Text>
+              </View>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricLabel}>Fuel prediction</Text>
+                <Text style={styles.metricValue}>${data.fuel_prediction.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.metricRow}>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricLabel}>Total prediction</Text>
+                <Text style={styles.metricValue}>${data.total_prediction.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            <Text style={styles.smallTitle}>Sample rows</Text>
+            {data.sample_rows.map((row) => (
+              <View key={row.date} style={styles.rowBox}>
+                <Text style={styles.rowText}>{row.date}</Text>
+                <Text style={styles.rowText}>miles: {row.miles_driven}</Text>
+                <Text style={styles.rowText}>fuel: ${row.fuel_cost.toFixed(2)}</Text>
+              </View>
+            ))}
+          </>
+        ) : null}
+      </View>
+    </PageScaffold>
+  );
+}
+
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    title: {
+      color: colors.text,
+      fontSize: 20,
+      fontWeight: "700",
+    },
+    smallTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    text: {
+      color: colors.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    formRow: {
+      gap: spacing.sm,
+    },
+    inputGroup: {
+      gap: 4,
+    },
+    label: {
+      color: colors.text,
+      fontSize: 12,
+      fontWeight: "600",
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      color: colors.text,
+      backgroundColor: colors.background,
+    },
+    primaryButton: {
+      alignSelf: "flex-start",
+      backgroundColor: colors.accent,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    buttonPressed: {
+      opacity: 0.8,
+    },
+    primaryButtonLabel: {
+      color: colors.surface,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    loadingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    error: {
+      color: colors.danger,
+      fontSize: 14,
+    },
+    metricRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    metricBox: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing.sm,
+      gap: 4,
+    },
+    userInfoBox: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing.sm,
+      backgroundColor: colors.background,
+      gap: 4,
+    },
+    userInfoLabel: {
+      color: colors.textMuted,
+      fontSize: 12,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    userInfoValue: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    userInfoHint: {
+      color: colors.textMuted,
+      fontSize: 13,
+    },
+    feedbackBox: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing.sm,
+      backgroundColor: colors.background,
+    },
+    explanationBox: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing.sm,
+      backgroundColor: colors.background,
+    },
+    feedbackLabel: {
+      color: colors.textMuted,
+      fontSize: 12,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+      marginBottom: 4,
+    },
+    feedbackText: {
+      color: colors.text,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    metricLabel: {
+      color: colors.textMuted,
+      fontSize: 12,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    metricValue: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    rowBox: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing.sm,
+      gap: 2,
+    },
+    rowText: {
+      color: colors.textMuted,
+      fontSize: 13,
+    },
+  });
