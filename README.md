@@ -1,37 +1,43 @@
 # ThinkTwice Development Guide
 
-ThinkTwice uses Docker so every team member works with the same software versions, dependencies, database, and development environment.
+## What the Project Delivers
 
-Complete Project Stack:
-* Expo front end
-* Node.js back end
-* Python machine-learning service
+ThinkTwice is an ADHD-friendly personal finance and habit-tracking app. Instead of just showing where money went, it turns everyday spending and driving/eating habits into forward-looking predictions — for example, projecting that a recurring $35/week coffee habit becomes roughly $140 by the end of the month — so users can adjust before small habits become bigger problems.
+
+**Complete project stack:**
+
+* Expo front end (React Native, web + mobile)
+* Node.js / Express back end (REST API)
+* Python / FastAPI machine-learning service (spending forecasts)
 * PostgreSQL database
+* Firebase Authentication
 
-You do not need to install Node.js, npm, Python, PostgreSQL, or project dependencies directly on your computer.
+The whole stack runs in Docker, so every team member works with the same versions, dependencies, database, and environment. **You do not need to install Node.js, npm, Python, PostgreSQL, or any project dependency directly on your computer** — Docker handles all of it.
+
+**Team ownership** — work primarily inside your own folder, and coordinate with the team before changing anything shared:
+
+| Area | Owner(s) | Folder |
+| --- | --- | --- |
+| Back end | Christion Callahan | `apps/backend/` |
+| Front end | Parker and James Lewis | `apps/frontend/` |
+| Machine learning | Gabriel Phipps | `services/ml/` |
+
+Shared files that need coordination before changing: `compose.yaml`, `.env.example`, `infra/`, `packages/`, database schemas, and API request/response formats.
 
 ---
 
-# Required Software
+## After You Clone the Repo
 
-Install the following:
+Complete these steps once, the first time you set up the project.
+
+### 1. Install required software
 
 * Git
-* Docker Desktop
+* Docker Desktop (must be running before you start the project)
 * Visual Studio Code
-* Expo Go or a mobile emulator for mobile testing
+* Expo Go, or a mobile emulator, for mobile testing
 
-Docker Desktop must be running before starting the project.
-
----
-
-# First-Time Setup
-
-Complete these steps once after cloning the repository.
-
-## 1. Clone the Repository
-
-Open PowerShell or a terminal:
+### 2. Clone and open the repository
 
 ```powershell
 git clone <repository-url>
@@ -41,7 +47,7 @@ code .
 
 Replace `<repository-url>` with the GitHub repository URL.
 
-## 2. Create the Environment File
+### 3. Create your environment file
 
 Windows PowerShell:
 
@@ -55,21 +61,22 @@ macOS or Linux:
 cp .env.example .env
 ```
 
-The `.env` file contains local configuration values.
+The `.env` file holds your local configuration. **Never commit `.env` to GitHub.**
 
-Do not commit `.env` to GitHub.
+### 4. Configure Google ADC and Firebase
 
-## 3. Configure Google ADC and Firebase
-
-The back end uses Firebase Admin with Application Default Credentials (ADC). For local development, create ADC that impersonates the dedicated development identity; never download a service-account private-key JSON:
+The back end uses Firebase Admin with Application Default Credentials (ADC). For local development, create ADC that impersonates the dedicated development identity — never download a service-account private-key JSON:
 
 ```powershell
 gcloud auth application-default login --impersonate-service-account=thinktwice-dev-backend@thinktwice-dev-christion.iam.gserviceaccount.com
 ```
 
-Set `GOOGLE_ADC_PATH` in the root `.env` to the absolute path of the generated ADC file, and set `GOOGLE_CLOUD_PROJECT` to the Firebase/Google Cloud project ID.
+In your root `.env`, set:
 
-The front end also reads these values from the root `.env`:
+* `GOOGLE_ADC_PATH` — the absolute path to the ADC file that command generated
+* `GOOGLE_CLOUD_PROJECT` — the Firebase/Google Cloud project ID
+
+The front end also reads six Firebase web-app values from the root `.env`:
 
 ```dotenv
 EXPO_PUBLIC_FIREBASE_API_KEY=
@@ -80,330 +87,92 @@ EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
 ```
 
-These six values come from the Firebase web-app configuration. Variables prefixed with `EXPO_PUBLIC_` are compiled into the client and must never contain secrets. Native Google sign-in additionally needs the platform OAuth client IDs in `.env` and an Expo development build; Expo Go is not sufficient for that native module.
+These come from the Firebase web-app configuration. `EXPO_PUBLIC_*` variables are compiled into the client, so they must never contain secrets. Native Google sign-in additionally needs the platform OAuth client IDs in `.env` and an Expo development build — Expo Go alone is not enough for that native module.
 
-## 4. Build the Full Project
-
-Run:
+### 5. Build the full project
 
 ```powershell
 docker compose --profile frontend --profile ml build
 ```
 
-Docker will download the required images and install all project dependencies inside the containers.
+Docker downloads the required images and installs all project dependencies inside the containers. The first build can take a while; later startups are much faster.
 
-The first build may take longer. Future startups should be much faster.
+---
 
--------------------------------------------------------------------------------------------------
-[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]
--------------------------------------------------------------------------------------------------
+## Every Day You Work On It
 
-# Daily Workflow
-
-Follow these steps whenever opening the project.
-
-## 1. Start Docker Desktop
+### 1. Start Docker Desktop
 
 Wait until Docker Desktop reports that Docker is running.
 
-## 2. Open the Project
-
-Open the `ThinkTwice` folder in Visual Studio Code.
-
-## 3. Pull the Latest Changes
+### 2. Get the latest code
 
 ```powershell
 git checkout main
 git pull
 ```
 
-Create or switch to your feature branch before editing files.
-Switch to an existing branch:
+Then create or switch to your feature branch — do not make normal changes directly on `main`:
 
 ```powershell
+git checkout -b feature/your-feature-name
+# or, to resume existing work:
 git checkout feature/your-feature-name
 git pull
 ```
 
-Do not make normal development changes directly on `main`.
-
-## 4. Start the Full Project
-
-Run:
+### 3. Start the full project
 
 ```powershell
 docker compose --profile frontend --profile ml up --watch
 ```
 
-This starts:
+This starts the front end, back end, ML service, and PostgreSQL. Docker Compose Watch syncs source changes into the containers automatically, so development services restart on their own as you edit files.
 
-* Front end
-* Back end
-* Machine-learning service
-* PostgreSQL database
+Once it's running, the services are available at:
 
-Docker Compose Watch automatically synchronizes source-code changes into the containers.
+| Service | Address |
+| --- | --- |
+| Front end / Expo | `http://localhost:8081` |
+| Back-end API | `http://localhost:3000` |
+| Back-end health check | `http://localhost:3000/health` |
+| Machine-learning service | `http://localhost:8000` |
+| PostgreSQL from your computer | `localhost:5433` |
 
-Development services should restart automatically when files change.
+Inside Docker, containers talk to each other by service name, never `localhost` — for example `backend:3000`, `db:5432`, `ml:8000`.
 
----
+If you're testing the front end from an Android emulator or a physical phone instead of a web browser, see [Front-End API Address by Platform](#front-end-api-address-by-platform) below.
 
-# Project Addresses
+### 4. If dependencies changed
 
-Once the containers are running, the services are available at:
-
-| Service                      | Address                        |
-| ---------------------------- | ------------------------------ |
-| Front end / Expo             | `http://localhost:8081`        |
-| Back-end API                 | `http://localhost:3000`        |
-| Back-end health check        | `http://localhost:3000/health` |
-| Machine-learning service     | `http://localhost:8000`        |
-| PostgreSQL from the computer | `localhost:5433`               |
-
-Inside Docker, the services communicate using their service names:
+Dependencies don't reinstall automatically during normal development. After pulling changes to any of these files, rebuild:
 
 ```text
-Frontend → backend:3000
-Backend → db:5432
-ML health service: ml:8000
-```
-
-Containers should not use `localhost` to communicate with other containers.
-
-The back end does not currently call the ML service, and the ML service does not currently send callbacks to the back end. Those API contracts must be agreed with the back-end and ML owners before implementation.
-
----
-
-# Working on the Project
-
-Each team member should primarily work inside their assigned folder.
-
-
-Back end (Christion Callahan):
-apps/backend/
-
-Front end (Parker and James Lewis):
-apps/frontend/
-
-Machine learning (Gabriel Phipps):
-services/ml/
-
-
-Coordinate with the team before changing shared files:
-
-compose.yaml
-.env.example
-infra/
-packages/
-database schemas
-API request and response formats
-
----
-
-# Checking Container Status
-
-Run:
-
-```powershell
-docker compose ps
-```
-
-Running services should display statuses such as:
-
-running
-healthy
-
----
-
-# Viewing Logs
-
-View all project logs:
-
-```powershell
-docker compose logs -f
-```
-
-View logs for a specific service:
-
-```powershell
-docker compose logs -f backend
-```
-
-```powershell
-docker compose logs -f frontend
-```
-
-```powershell
-docker compose logs -f ml
-```
-
-```powershell
-docker compose logs -f db
-```
-
-Press `Ctrl + C` to stop following logs.
-
----
-
-# Stopping the Project
-
-While the project is running in the terminal, press:
-
-Ctrl + C
-
-Then run:
-
-docker compose down
-
-This stops and removes the containers but preserves the PostgreSQL database.
-
-The next time the project is opened, run:
-
-docker compose --profile frontend --profile ml up --watch
-
----
-
-# Database Warning
-
-The following command deletes the local PostgreSQL database:
-
-docker compose down --volumes
-
-Do not use `--volumes` unless you intentionally want to erase all local database data.
-
-For normal shutdown, use:
-
-docker compose down
-
----
-
-# When Dependencies Change
-
-Dependencies do not reinstall during normal development.
-
-A rebuild is required when dependency files change, including:
-
 apps/backend/package.json
 apps/backend/package-lock.json
 apps/frontend/package.json
 apps/frontend/package-lock.json
 services/ml/requirements.txt
-
-After pulling dependency changes, run:
-
-docker compose --profile frontend --profile ml up --watch --build
-
-Docker will rebuild the affected services and install the updated dependencies.
-
-Do not manually install project dependencies on the host computer.
-
----
-
-# Front-End API Address
-
-The front end uses `EXPO_PUBLIC_API_URL` from the `.env` file.
-
-## Web Browser
-
-```dotenv
-EXPO_PUBLIC_API_URL=http://localhost:3000
 ```
-
-## Android Emulator
-
-```dotenv
-EXPO_PUBLIC_API_URL=http://10.0.2.2:3000
-```
-
-## Physical Phone
-
-Find the computer’s IPv4 address:
-
-```powershell
-ipconfig
-```
-
-Update `.env` with the address:
-
-```dotenv
-EXPO_PUBLIC_API_URL=http://192.168.1.100:3000
-```
-
-The phone and computer must be connected to the same network.
-
-Restart the front-end container after changing `.env`:
-
-```powershell
-docker compose restart frontend
-```
-
----
-
-# Common Commands
-
-## Start the Full Project
-
-```powershell
-docker compose --profile frontend --profile ml up --watch
-```
-
-## Start and Rebuild
 
 ```powershell
 docker compose --profile frontend --profile ml up --watch --build
 ```
 
-## Stop the Project
+Never install dependencies directly on the host computer — do it through Docker so everyone stays in sync.
+
+### 5. Useful commands while working
 
 ```powershell
-docker compose down
+docker compose ps                    # check container status
+docker compose logs -f               # view all logs
+docker compose logs -f backend       # view one service's logs (backend, frontend, ml, or db)
+docker compose restart backend       # restart one service
+docker compose exec backend sh       # open a shell in a container
+docker compose config                # validate the compose configuration
 ```
 
-## Check Container Status
-
-```powershell
-docker compose ps
-```
-
-## View All Logs
-
-```powershell
-docker compose logs -f
-```
-
-## Restart a Service
-
-```powershell
-docker compose restart backend
-```
-
-Replace `backend` with `frontend`, `ml`, or `db` when needed.
-
-## Open a Back-End Container Shell
-
-```powershell
-docker compose exec backend sh
-```
-
-## Validate the Compose Configuration
-
-```powershell
-docker compose config
-```
-
----
-
-# Git Workflow
-
-Before starting work:
-
-```powershell
-git checkout main
-git pull
-git checkout -b feature/your-feature-name
-```
-
-After completing work:
+### 6. Save your work
 
 ```powershell
 git status
@@ -412,102 +181,50 @@ git commit -m "describe the completed work"
 git push -u origin feature/your-feature-name
 ```
 
-Create a pull request on GitHub before merging into `main`.
-
-Do not commit:
-
-```text
-.env
-node_modules/
-dist/
-.venv/
-__pycache__/
-.expo/
-```
+Open a pull request on GitHub before merging into `main`. Never commit `.env`, `node_modules/`, `dist/`, `.venv/`, `__pycache__/`, or `.expo/`.
 
 ---
 
-# Troubleshooting
+## When You're Done for the Day
 
-## Docker Is Not Running
-
-Start Docker Desktop and wait until it is ready.
-
-Then retry:
-
-```powershell
-docker compose --profile frontend --profile ml up --watch
-```
-
-## Containers Will Not Start
-
-Check their status:
-
-```powershell
-docker compose ps
-```
-
-View the logs:
-
-```powershell
-docker compose logs
-```
-
-## Dependencies Are Missing
-
-Rebuild the project:
-
-```powershell
-docker compose --profile frontend --profile ml up --watch --build
-```
-
-## A Port Is Already in Use
-
-Stop existing project containers:
+While the project is running in your terminal, press `Ctrl + C`, then run:
 
 ```powershell
 docker compose down
 ```
 
-Then start the project again.
+This stops and removes the containers **but keeps your PostgreSQL data** for next time. Next time you sit down, just repeat [Every Day You Work On It](#every-day-you-work-on-it) starting from `docker compose --profile frontend --profile ml up --watch`.
 
-## The Database Is Not Connecting
-
-Check the database logs:
-
-```powershell
-docker compose logs db
-```
-
-Confirm that the database is healthy:
-
-```powershell
-docker compose ps
-```
-
-## Docker Configuration Changed
-
-Validate the configuration:
-
-```powershell
-docker compose config
-```
+> **Database warning:** `docker compose down --volumes` deletes your local PostgreSQL data. Only use `--volumes` if you intentionally want to wipe your local database — for normal shutdown, use plain `docker compose down`.
 
 ---
 
-# Daily Command Summary
+## Front-End API Address by Platform
 
-Every team member follows the same process:
+The front end reads `EXPO_PUBLIC_API_URL` from `.env`. Set it based on how you're viewing the app, then restart the front-end container (`docker compose restart frontend`):
 
-```powershell
-git pull
-docker compose --profile frontend --profile ml up --watch
-```
+| Testing on | `EXPO_PUBLIC_API_URL` |
+| --- | --- |
+| Web browser | `http://localhost:3000` |
+| Android emulator | `http://10.0.2.2:3000` |
+| Physical phone | `http://<your-computer's-IPv4>:3000` (find it with `ipconfig`; phone and computer must share a network) |
 
-When finished:
+---
 
-```powershell
-docker compose down
-```
+## Troubleshooting
+
+**Docker is not running** — start Docker Desktop, wait until it's ready, then retry `docker compose --profile frontend --profile ml up --watch`.
+
+**Containers will not start** — check `docker compose ps` and `docker compose logs`.
+
+**Dependencies are missing** — rebuild: `docker compose --profile frontend --profile ml up --watch --build`.
+
+**A port is already in use** — run `docker compose down` to stop any existing project containers, then start again.
+
+**The database is not connecting** — check `docker compose logs db` and confirm it's healthy with `docker compose ps`.
+
+**Docker configuration changed** — validate it with `docker compose config`.
+
+---
 
 Everyone should use the committed Docker configuration as the standard development environment. Do not change shared infrastructure files without communicating with the team, and never commit secrets or local environment files.
