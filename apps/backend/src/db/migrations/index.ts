@@ -1,5 +1,7 @@
 import { createUsersMigration } from "./001-create-users.js";
 import { createVehiclesMigration } from "./002-create-vehicles.js";
+import { createFinanceInputsMigration } from "./003-create-finance-inputs.js";
+import { createFillUpHistoryMigration } from "./004-create-fill-up-history.js";
 import type { Migration } from "./migration.types.js";
 
 /**
@@ -10,4 +12,6 @@ import type { Migration } from "./migration.types.js";
 export const migrations: readonly Migration[] = [
   createUsersMigration,
   createVehiclesMigration,
+  createFinanceInputsMigration,
+  createFillUpHistoryMigration,
 ];

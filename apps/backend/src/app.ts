@@ -6,6 +6,8 @@ import express, {
 
 import { env } from "./config/env.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { fillUpHistoryRouter } from "./modules/fill-up-history/fill-up-history.routes.js";
+import { financeRouter } from "./modules/finance/finance.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
 import { vehicleRouter } from "./modules/vehicles/vehicle.routes.js";
 
@@ -34,6 +36,8 @@ export function createApp() {
 
   app.use("/health", healthRouter);
   app.use("/auth", authRouter);
+  app.use("/finance", financeRouter);
+  app.use("/fill-up-history", fillUpHistoryRouter);
   app.use("/vehicles", vehicleRouter);
 
   const notFoundHandler: RequestHandler = (_request, response) => {

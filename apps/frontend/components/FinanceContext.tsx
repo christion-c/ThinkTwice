@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
+import { fetchFinanceInputs, upsertFinanceInputs } from "../lib/backend-api";
 import { useAuth } from "./AuthProvider";
 import { useVehicle } from "./VehicleContext";
 
@@ -70,65 +71,85 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       try {
         const storedValue = await AsyncStorage.getItem(storageKey);
 
-        if (!storedValue) {
-          return;
-        }
+        if (storedValue) {
+          const parsedValue = JSON.parse(storedValue) as Partial<Record<
+            | "incomeInput"
+            | "expenseInput"
+            | "monthlyFixedCostsInput"
+            | "fuelGallonsInput"
+            | "fuelPriceInput"
+            | "milesPerWeekInput"
+            | "combinedMpgInput"
+            | "tankCapacityInput"
+            | "currentTankPercentInput",
+            string
+          >>;
 
-        const parsedValue = JSON.parse(storedValue) as Partial<Record<
-          | "incomeInput"
-          | "expenseInput"
-          | "monthlyFixedCostsInput"
-          | "fuelGallonsInput"
-          | "fuelPriceInput"
-          | "milesPerWeekInput"
-          | "combinedMpgInput"
-          | "tankCapacityInput"
-          | "currentTankPercentInput",
-          string
-        >>;
+          if (typeof parsedValue.incomeInput === "string") {
+            setIncomeInput(parsedValue.incomeInput);
+          }
 
-        if (typeof parsedValue.incomeInput === "string") {
-          setIncomeInput(parsedValue.incomeInput);
-        }
+          if (typeof parsedValue.expenseInput === "string") {
+            setExpenseInput(parsedValue.expenseInput);
+          }
 
-        if (typeof parsedValue.expenseInput === "string") {
-          setExpenseInput(parsedValue.expenseInput);
-        }
+          if (typeof parsedValue.monthlyFixedCostsInput === "string") {
+            setMonthlyFixedCostsInput(parsedValue.monthlyFixedCostsInput);
+          }
 
-        if (typeof parsedValue.monthlyFixedCostsInput === "string") {
-          setMonthlyFixedCostsInput(parsedValue.monthlyFixedCostsInput);
-        }
+          if (typeof parsedValue.fuelGallonsInput === "string") {
+            setFuelGallonsInput(parsedValue.fuelGallonsInput);
+          }
 
-        if (typeof parsedValue.fuelGallonsInput === "string") {
-          setFuelGallonsInput(parsedValue.fuelGallonsInput);
-        }
+          if (typeof parsedValue.fuelPriceInput === "string") {
+            setFuelPriceInput(parsedValue.fuelPriceInput);
+          }
 
-        if (typeof parsedValue.fuelPriceInput === "string") {
-          setFuelPriceInput(parsedValue.fuelPriceInput);
-        }
+          if (typeof parsedValue.milesPerWeekInput === "string") {
+            setMilesPerWeekInput(parsedValue.milesPerWeekInput);
+          }
 
-        if (typeof parsedValue.milesPerWeekInput === "string") {
-          setMilesPerWeekInput(parsedValue.milesPerWeekInput);
-        }
+          if (typeof parsedValue.combinedMpgInput === "string") {
+            setCombinedMpgInput(parsedValue.combinedMpgInput);
+          }
 
-        if (typeof parsedValue.combinedMpgInput === "string") {
-          setCombinedMpgInput(parsedValue.combinedMpgInput);
-        }
+          if (typeof parsedValue.tankCapacityInput === "string") {
+            setTankCapacityInput(parsedValue.tankCapacityInput);
+          }
 
-        if (typeof parsedValue.tankCapacityInput === "string") {
-          setTankCapacityInput(parsedValue.tankCapacityInput);
-        }
-
-        if (typeof parsedValue.currentTankPercentInput === "string") {
-          setCurrentTankPercentInput(parsedValue.currentTankPercentInput);
+          if (typeof parsedValue.currentTankPercentInput === "string") {
+            setCurrentTankPercentInput(parsedValue.currentTankPercentInput);
+          }
         }
       } catch {
         // Ignore malformed saved inputs and keep defaults.
       }
+
+      // Cloud data is the source of truth — fetch it after the local cache.
+      if (!user) {
+        return;
+      }
+
+      try {
+        const cloud = await fetchFinanceInputs(user);
+        setIncomeInput(cloud.incomeInput);
+        setExpenseInput(cloud.expenseInput);
+        setMonthlyFixedCostsInput(cloud.monthlyFixedCostsInput);
+        setFuelGallonsInput(cloud.fuelGallonsInput);
+        setFuelPriceInput(cloud.fuelPriceInput);
+        setMilesPerWeekInput(cloud.milesPerWeekInput);
+        setCombinedMpgInput(cloud.combinedMpgInput);
+        setTankCapacityInput(cloud.tankCapacityInput);
+        setCurrentTankPercentInput(cloud.currentTankPercentInput);
+
+        await AsyncStorage.setItem(storageKey, JSON.stringify(cloud));
+      } catch {
+        // Keep the locally cached values if the backend is unavailable.
+      }
     };
 
     void loadPersistedInputs();
-  }, [storageKey]);
+  }, [storageKey, user]);
 
   useEffect(() => {
     if (selectedVehicle?.combinedMpg !== null && selectedVehicle?.combinedMpg !== undefined) {
@@ -175,21 +196,36 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     0,
   );
 
+  const cloudSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    void AsyncStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        incomeInput,
-        expenseInput,
-        monthlyFixedCostsInput,
-        fuelGallonsInput,
-        fuelPriceInput,
-        milesPerWeekInput,
-        combinedMpgInput,
-        tankCapacityInput,
-        currentTankPercentInput,
-      }),
-    );
+    const snapshot = {
+      incomeInput,
+      expenseInput,
+      monthlyFixedCostsInput,
+      fuelGallonsInput,
+      fuelPriceInput,
+      milesPerWeekInput,
+      combinedMpgInput,
+      tankCapacityInput,
+      currentTankPercentInput,
+    };
+
+    void AsyncStorage.setItem(storageKey, JSON.stringify(snapshot));
+
+    if (!user) {
+      return;
+    }
+
+    if (cloudSaveTimer.current) {
+      clearTimeout(cloudSaveTimer.current);
+    }
+
+    cloudSaveTimer.current = setTimeout(() => {
+      void upsertFinanceInputs(user, snapshot).catch(() => {
+        // Ignore transient network errors; the next save will retry.
+      });
+    }, 1500);
   }, [
     incomeInput,
     expenseInput,
@@ -201,6 +237,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     tankCapacityInput,
     currentTankPercentInput,
     storageKey,
+    user,
   ]);
 
   const value = useMemo(

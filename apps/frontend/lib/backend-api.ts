@@ -160,3 +160,63 @@ export async function updateVehicle(
 
   return response.vehicle;
 }
+
+export interface BackendFinanceInputs {
+  incomeInput: string;
+  expenseInput: string;
+  monthlyFixedCostsInput: string;
+  fuelGallonsInput: string;
+  fuelPriceInput: string;
+  milesPerWeekInput: string;
+  combinedMpgInput: string;
+  tankCapacityInput: string;
+  currentTankPercentInput: string;
+}
+
+export async function fetchFinanceInputs(
+  user: User,
+): Promise<BackendFinanceInputs> {
+  const headers = await getAuthHeader(user);
+  const response = await requestBackend<{ inputs: BackendFinanceInputs }>(
+    "/finance/inputs",
+    { method: "GET", headers },
+  );
+  return response.inputs;
+}
+
+export async function upsertFinanceInputs(
+  user: User,
+  inputs: BackendFinanceInputs,
+): Promise<BackendFinanceInputs> {
+  const headers = await getAuthHeader(user);
+  const response = await requestBackend<{ inputs: BackendFinanceInputs }>(
+    "/finance/inputs",
+    {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify(inputs),
+    },
+  );
+  return response.inputs;
+}
+
+export interface FillUpHistoryEntry {
+  milesDriven: number;
+  fuelPrice: number;
+  combinedMpg: number;
+  tankCapacity: number;
+  gallons: number;
+  observedCost: number;
+}
+
+export async function saveFillUpHistory(
+  user: User,
+  entry: FillUpHistoryEntry,
+): Promise<void> {
+  const headers = await getAuthHeader(user);
+  await requestBackend<undefined>("/fill-up-history", {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify(entry),
+  });
+}

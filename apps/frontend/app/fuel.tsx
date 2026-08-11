@@ -17,6 +17,7 @@ import { useAuth } from "../components/AuthProvider";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { useVehicle } from "../components/VehicleContext";
+import { saveFillUpHistory } from "../lib/backend-api";
 import { radii, shadows, spacing, type ThemeColors } from "../components/theme";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
@@ -127,46 +128,21 @@ export default function Fuel() {
   };
 
   const persistFillUpHistory = async () => {
-    if (!user?.uid) {
+    if (!user) {
       return;
     }
 
-    const payload = {
-      user_id: user.uid,
-      miles_driven: parseOptionalNumber(milesPerWeekInput) || 0,
-      fuel_price: parseOptionalNumber(fuelPriceInput) || 0,
-      combined_mpg: parseOptionalNumber(combinedMpgInput) || 0,
-      tank_capacity: parseOptionalNumber(tankCapacityInput) || 0,
-      gallons: parseOptionalNumber(fuelGallonsInput) || 0,
-      observed_cost: (parseOptionalNumber(fuelGallonsInput) ?? 0) * (parseOptionalNumber(fuelPriceInput) ?? 0),
-      timestamp: new Date().toISOString(),
-    };
-
     try {
-      const configuredBaseUrl = process.env.EXPO_PUBLIC_ML_API_URL?.trim();
-      const candidates = [
-        configuredBaseUrl ? `${configuredBaseUrl.replace(/\/+$/, "")}/fill-up-history` : null,
-        "http://ml:8000/fill-up-history",
-        "http://127.0.0.1:8000/fill-up-history",
-        "http://localhost:8000/fill-up-history",
-        "http://10.0.2.2:8000/fill-up-history",
-      ].filter((value): value is string => Boolean(value));
-
-      for (const url of candidates) {
-        try {
-          const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-
-          if (response.ok) {
-            return;
-          }
-        } catch {
-          // Try the next candidate.
-        }
-      }
+      await saveFillUpHistory(user, {
+        milesDriven: parseOptionalNumber(milesPerWeekInput) || 0,
+        fuelPrice: parseOptionalNumber(fuelPriceInput) || 0,
+        combinedMpg: parseOptionalNumber(combinedMpgInput) || 0,
+        tankCapacity: parseOptionalNumber(tankCapacityInput) || 0,
+        gallons: parseOptionalNumber(fuelGallonsInput) || 0,
+        observedCost:
+          (parseOptionalNumber(fuelGallonsInput) ?? 0) *
+          (parseOptionalNumber(fuelPriceInput) ?? 0),
+      });
     } catch {
       // Ignore history save failures so the fuel flow remains uninterrupted.
     }

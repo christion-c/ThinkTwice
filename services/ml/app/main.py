@@ -2,6 +2,9 @@ import json
 import os
 from pathlib import Path
 from typing import Any
+import urllib.request
+import urllib.parse
+import urllib.error
 
 import pandas as pd
 from fastapi import FastAPI
@@ -76,7 +79,34 @@ def build_dataset() -> list[dict[str, Any]]:
     return rows
 
 
+BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:3000").rstrip("/")
+
+
 def load_user_history(user_id: str | None = None) -> list[dict[str, Any]]:
+    # Try the backend first so history is durable across container restarts.
+    if user_id:
+        try:
+            encoded = urllib.parse.quote(user_id, safe="")
+            url = f"{BACKEND_URL}/fill-up-history/internal?firebase_uid={encoded}"
+            with urllib.request.urlopen(url, timeout=3) as resp:  # noqa: S310
+                payload = json.loads(resp.read().decode("utf-8"))
+            entries = payload.get("entries", [])
+            if isinstance(entries, list):
+                return [
+                    {
+                        "miles_driven": e.get("milesDriven", 0),
+                        "fuel_price": e.get("fuelPrice", 0),
+                        "combined_mpg": e.get("combinedMpg", 0),
+                        "tank_capacity": e.get("tankCapacity", 0),
+                        "gallons": e.get("gallons", 0),
+                        "observed_cost": e.get("observedCost", 0),
+                    }
+                    for e in entries
+                    if isinstance(e, dict)
+                ]
+        except Exception:  # noqa: BLE001
+            pass  # Fall through to the local file cache below.
+
     if not HISTORY_PATH.exists():
         return []
 
