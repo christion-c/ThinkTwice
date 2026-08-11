@@ -31,7 +31,6 @@ export default function Fuel() {
     selectedVehicle,
     selectedVehicleId,
     loading,
-    syncing,
     errorMessage,
     refreshVehicles,
     selectVehicle,
@@ -77,18 +76,27 @@ export default function Fuel() {
     setSaveMessage("");
   }, [selectedVehicle]);
 
-  const handleSaveVehicle = async () => {
+  const handleSaveVehicle = async (values?: {
+    nickname: string;
+    make: string;
+    model: string;
+    modelYear: number | null;
+    tankCapacityGallons: number | null;
+    combinedMpg: number | null;
+  }) => {
     setSaveMessage("");
 
     try {
-      await syncVehicle({
-        nickname: nicknameInput,
-        make: makeInput,
-        model: modelInput,
-        modelYear: parseOptionalInt(modelYearInput),
-        tankCapacityGallons: parseOptionalNumber(tankCapacityInput),
-        combinedMpg: parseOptionalNumber(combinedMpgInput),
-      });
+      await syncVehicle(
+        values ?? {
+          nickname: nicknameInput,
+          make: makeInput,
+          model: modelInput,
+          modelYear: parseOptionalInt(modelYearInput),
+          tankCapacityGallons: parseOptionalNumber(tankCapacityInput),
+          combinedMpg: parseOptionalNumber(combinedMpgInput),
+        },
+      );
 
       setSaveMessage("Vehicle Saved.");
     } catch {
@@ -158,26 +166,25 @@ export default function Fuel() {
     setFieldDraft(nextValue);
   };
 
-  const saveVehicleFlow = () => {
+  const saveVehicleFlow = async () => {
     if (!vehicleFlowStep) {
       return;
     }
 
     const trimmedDraft = fieldDraft.trim();
+    const nextNicknameInput = vehicleFlowStep === "nickname" ? trimmedDraft : nicknameInput;
+    const nextModelYearInput = vehicleFlowStep === "year" ? trimmedDraft : modelYearInput;
+    const nextMakeInput = vehicleFlowStep === "make" ? trimmedDraft : makeInput;
+    const nextModelInput = vehicleFlowStep === "model" ? trimmedDraft : modelInput;
+    const nextCombinedMpgInput = vehicleFlowStep === "mpg" ? trimmedDraft : combinedMpgInput;
+    const nextTankCapacityInput = vehicleFlowStep === "tank" ? trimmedDraft : tankCapacityInput;
 
-    if (vehicleFlowStep === "nickname") {
-      setNicknameInput(trimmedDraft);
-    } else if (vehicleFlowStep === "year") {
-      setModelYearInput(trimmedDraft);
-    } else if (vehicleFlowStep === "make") {
-      setMakeInput(trimmedDraft);
-    } else if (vehicleFlowStep === "model") {
-      setModelInput(trimmedDraft);
-    } else if (vehicleFlowStep === "mpg") {
-      setCombinedMpgInput(trimmedDraft);
-    } else {
-      setTankCapacityInput(trimmedDraft);
-    }
+    setNicknameInput(nextNicknameInput);
+    setModelYearInput(nextModelYearInput);
+    setMakeInput(nextMakeInput);
+    setModelInput(nextModelInput);
+    setCombinedMpgInput(nextCombinedMpgInput);
+    setTankCapacityInput(nextTankCapacityInput);
 
     const nextStepMap: Record<NonNullable<typeof vehicleFlowStep>, NonNullable<typeof vehicleFlowStep> | null> = {
       nickname: "year",
@@ -192,19 +199,27 @@ export default function Fuel() {
 
     if (!nextStep) {
       closeVehicleFlow();
+      await handleSaveVehicle({
+        nickname: nextNicknameInput,
+        make: nextMakeInput,
+        model: nextModelInput,
+        modelYear: parseOptionalInt(nextModelYearInput),
+        tankCapacityGallons: parseOptionalNumber(nextTankCapacityInput),
+        combinedMpg: parseOptionalNumber(nextCombinedMpgInput),
+      });
       return;
     }
 
     const nextValue =
       nextStep === "year"
-        ? modelYearInput
+        ? nextModelYearInput
         : nextStep === "make"
-          ? makeInput
+          ? nextMakeInput
           : nextStep === "model"
-            ? modelInput
+            ? nextModelInput
             : nextStep === "mpg"
-              ? combinedMpgInput
-              : tankCapacityInput;
+              ? nextCombinedMpgInput
+              : nextTankCapacityInput;
 
     setVehicleFlowStep(nextStep);
     setFieldDraft(nextValue);
@@ -281,21 +296,10 @@ export default function Fuel() {
           <Pressable onPress={startVehicleFlow} style={styles.primaryButton}>
             <Text style={styles.primaryButtonLabel}>{hasExistingVehicle ? "Update vehicle details" : "Add vehicle details"}</Text>
           </Pressable>
-          <Text style={styles.inputSubtitle}>We’ll guide you through nickname, year, make, model, MPG, and tank size one field at a time.</Text>
         </View>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
         {saveMessage ? <Text style={styles.successText}>{saveMessage}</Text> : null}
-
-        <Pressable
-          onPress={() => {
-            void handleSaveVehicle();
-          }}
-          disabled={syncing}
-          style={({ pressed }) => [styles.primaryButton, (pressed || syncing) && styles.buttonPressed]}
-        >
-          <Text style={styles.primaryButtonLabel}>{syncing ? "Saving..." : hasExistingVehicle ? "Update Vehicle" : "Save Vehicle"}</Text>
-        </Pressable>
       </View>
 
       <View style={styles.quickRow}>
@@ -311,13 +315,12 @@ export default function Fuel() {
 
       <View style={styles.inputCard}>
         <Text style={styles.inputTitle}>Fuel Check-In</Text>
-        <Text style={styles.inputSubtitle}>Quick updates for better predictions.</Text>
+        <Text style={styles.inputSubtitle}>Check in after every fill-up.</Text>
 
         <View style={styles.fieldList}>
           <Pressable onPress={startFuelFlow} style={styles.primaryButton}>
             <Text style={styles.primaryButtonLabel}>Start fuel check-in</Text>
           </Pressable>
-          <Text style={styles.inputSubtitle}>We’ll guide you through how many gallons you added, price, miles driven, MPG, and tank level one step at a time for this fuel stop.</Text>
         </View>
       </View>
 
@@ -376,7 +379,7 @@ export default function Fuel() {
                 <Pressable onPress={closeVehicleFlow} style={styles.modalSecondaryButton}>
                   <Text style={styles.modalSecondaryLabel}>Cancel</Text>
                 </Pressable>
-                <Pressable onPress={saveVehicleFlow} style={styles.modalPrimaryButton}>
+                <Pressable onPress={() => { void saveVehicleFlow(); }} style={styles.modalPrimaryButton}>
                   <Text style={styles.modalPrimaryLabel}>{vehicleFlowStep === "tank" ? "Done" : "Next"}</Text>
                 </Pressable>
               </View>

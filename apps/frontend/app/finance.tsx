@@ -95,7 +95,7 @@ export default function Finance() {
 
   return (
     <PageScaffold
-      title="Finance"
+      title="Finances"
       subtitle="Build your monthly budget and reserve room for fuel before surprises hit."
       footer={<BottomNav active="Finance" />}
     >
@@ -104,8 +104,8 @@ export default function Finance() {
         <Text style={styles.cardText}>Take-home income: {moneyFormat.format(monthlyIncome)}</Text>
         <Text style={styles.cardText}>Variable spending: {moneyFormat.format(monthlyExpenses)}</Text>
         <Text style={styles.cardText}>Fixed costs: {moneyFormat.format(monthlyFixedCosts)}</Text>
-        <Text style={styles.cardText}>Fuel reserve: {moneyFormat.format(monthlyFuelBudget)}</Text>
-        <Text style={styles.netText}>Projected free cash: {moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
+        <Text style={styles.cardText}>Monthly Fuel Cost: {moneyFormat.format(monthlyFuelBudget)}</Text>
+        <Text style={styles.netText}>Projected Available Balance: {moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
       </View>
 
       <View style={[styles.healthCard, { borderColor: healthTone }]}> 
@@ -132,15 +132,13 @@ export default function Finance() {
       </View>
 
       <View style={styles.inputCard}>
-        <Text style={styles.inputTitle}>Money Check-In</Text>
-        <Text style={styles.inputSubtitle}>Tap a value to update it in a focused card.</Text>
-        <Text style={styles.helperText}>These values auto-save on this device, so you can update them in small check-ins instead of doing a full reset each time.</Text>
+        <Text style={styles.inputTitle}>Budget Check-In</Text>
 
         <View style={styles.fieldList}>
           <Pressable onPress={startFinanceFlow} style={styles.primaryButton}>
             <Text style={styles.primaryButtonLabel}>Start monthly check-in</Text>
           </Pressable>
-          <Text style={styles.inputSubtitle}>We’ll guide you through monthly income, spending, and recurring bills one step at a time.</Text>
+          <Text style={styles.inputSubtitle}>Enter your monthly income, spending, and recurring bills one step at a time.</Text>
         </View>
       </View>
 
