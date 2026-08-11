@@ -29,7 +29,18 @@ export const palettes = {
   },
 } as const;
 
-export type ThemeColors = (typeof palettes)[ColorMode];
+export interface ThemeColors {
+  background: string;
+  surface: string;
+  surfaceSoft: string;
+  border: string;
+  text: string;
+  textMuted: string;
+  accent: string;
+  accentDeep: string;
+  success: string;
+  danger: string;
+}
 
 export const getColors = (mode: ColorMode, highContrast = false): ThemeColors => {
   const basePalette = palettes[mode];

@@ -67,9 +67,13 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    setBackendUser(null);
+    setVehicles([]);
+    setSelectedVehicleId(null);
+    setErrorMessage("");
+
     try {
       setLoading(true);
-      setErrorMessage("");
 
       const [profile, nextVehicles] = await Promise.all([
         fetchCurrentUserProfile(user),
@@ -137,8 +141,7 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
         setSyncing(true);
         setErrorMessage("");
 
-        const currentVehicle =
-          selectedVehicle ?? vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0] ?? null;
+        const currentVehicle = selectedVehicle ?? null;
 
         const syncedVehicle = currentVehicle
           ? await updateVehicle(user, currentVehicle.id, payload)

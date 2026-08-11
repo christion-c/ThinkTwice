@@ -41,28 +41,28 @@ const FinanceContext = createContext<FinanceContextValue | undefined>(undefined)
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { selectedVehicle } = useVehicle();
-  const [incomeInput, setIncomeInput] = useState("4200");
-  const [expenseInput, setExpenseInput] = useState("1700");
-  const [monthlyFixedCostsInput, setMonthlyFixedCostsInput] = useState("620");
-  const [fuelGallonsInput, setFuelGallonsInput] = useState("11.2");
-  const [fuelPriceInput, setFuelPriceInput] = useState("4.25");
-  const [milesPerWeekInput, setMilesPerWeekInput] = useState("230");
-  const [combinedMpgInput, setCombinedMpgInput] = useState("28");
-  const [tankCapacityInput, setTankCapacityInput] = useState("13.5");
-  const [currentTankPercentInput, setCurrentTankPercentInput] = useState("55");
+  const [incomeInput, setIncomeInput] = useState("");
+  const [expenseInput, setExpenseInput] = useState("");
+  const [monthlyFixedCostsInput, setMonthlyFixedCostsInput] = useState("");
+  const [fuelGallonsInput, setFuelGallonsInput] = useState("");
+  const [fuelPriceInput, setFuelPriceInput] = useState("");
+  const [milesPerWeekInput, setMilesPerWeekInput] = useState("");
+  const [combinedMpgInput, setCombinedMpgInput] = useState("");
+  const [tankCapacityInput, setTankCapacityInput] = useState("");
+  const [currentTankPercentInput, setCurrentTankPercentInput] = useState("");
 
   const storageKey = user?.uid ? `${FINANCE_STORAGE_KEY}.${user.uid}` : `${FINANCE_STORAGE_KEY}.guest`;
 
   useEffect(() => {
-    setIncomeInput("4200");
-    setExpenseInput("1700");
-    setMonthlyFixedCostsInput("620");
-    setFuelGallonsInput("11.2");
-    setFuelPriceInput("4.25");
-    setMilesPerWeekInput("230");
-    setCombinedMpgInput("28");
-    setTankCapacityInput("13.5");
-    setCurrentTankPercentInput("55");
+    setIncomeInput("");
+    setExpenseInput("");
+    setMonthlyFixedCostsInput("");
+    setFuelGallonsInput("");
+    setFuelPriceInput("");
+    setMilesPerWeekInput("");
+    setCombinedMpgInput("");
+    setTankCapacityInput("");
+    setCurrentTankPercentInput("");
   }, [user?.uid]);
 
   useEffect(() => {

@@ -68,6 +68,7 @@ export default function Home() {
 
   const completionCount = setupSteps.filter((step) => step.complete).length;
   const accountChecklistKey = user?.uid ? `thinktwice.setup-checklist.${user.uid}` : "thinktwice.setup-checklist.guest";
+  const shouldShowSetupStatus = !setupChecklistHidden && completionCount < 3;
   const shouldShowSetupChecklist = !setupChecklistHidden && completionCount < 3;
 
   useEffect(() => {
@@ -134,9 +135,11 @@ export default function Home() {
       footer={<BottomNav active="Home" />}
     >
       <View style={[styles.balanceCard, shadows.soft]}>
-        <View style={styles.statusPill}>
-          <Text style={styles.statusPillLabel}>{completionCount}/3 setup steps complete</Text>
-        </View>
+        {shouldShowSetupStatus ? (
+          <View style={styles.statusPill}>
+            <Text style={styles.statusPillLabel}>{completionCount}/3 setup steps complete</Text>
+          </View>
+        ) : null}
         <Text style={styles.balanceLabel}>Projected Free Cash This Month</Text>
         <Text style={styles.balance}>{moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
         <Text style={[styles.budgetStatusText, { color: budgetStatus.color }]}>{budgetStatus.title}</Text>
@@ -263,8 +266,8 @@ const quickActionStyles = {
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     brandLogo: {
-      width: 42,
-      height: 42,
+      width: 64,
+      height: 64,
     },
     balanceCard: {
       backgroundColor: colors.surface,
