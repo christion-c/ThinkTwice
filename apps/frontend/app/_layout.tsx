@@ -86,6 +86,7 @@ function AppStack() {
       <Stack.Screen name="auth/forgotPassword" options={{ title: "Forgot Password" }} />
 
       <Stack.Screen name="settings/preferences" options={{ title: "Profile Settings" }} />
+      <Stack.Screen name="debug/ml-account" options={{ title: "Internal ML Debug" }} />
     </Stack>
   );
 }

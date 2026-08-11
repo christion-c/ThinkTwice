@@ -13,6 +13,7 @@ import {
 
 import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
+import { useAuth } from "../components/AuthProvider";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { useVehicle } from "../components/VehicleContext";
@@ -25,6 +26,7 @@ const moneyFormat = new Intl.NumberFormat("en-US", {
 
 export default function Fuel() {
   const colors = useThemeColors();
+  const { user } = useAuth();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const {
     vehicles,
@@ -124,7 +126,53 @@ export default function Fuel() {
     setFieldDraft("");
   };
 
-  const saveFuelFlow = () => {
+  const persistFillUpHistory = async () => {
+    if (!user?.uid) {
+      return;
+    }
+
+    const payload = {
+      user_id: user.uid,
+      miles_driven: parseOptionalNumber(milesPerWeekInput) || 0,
+      fuel_price: parseOptionalNumber(fuelPriceInput) || 0,
+      combined_mpg: parseOptionalNumber(combinedMpgInput) || 0,
+      tank_capacity: parseOptionalNumber(tankCapacityInput) || 0,
+      gallons: parseOptionalNumber(fuelGallonsInput) || 0,
+      observed_cost: (parseOptionalNumber(fuelGallonsInput) ?? 0) * (parseOptionalNumber(fuelPriceInput) ?? 0),
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      const configuredBaseUrl = process.env.EXPO_PUBLIC_ML_API_URL?.trim();
+      const candidates = [
+        configuredBaseUrl ? `${configuredBaseUrl.replace(/\/+$/, "")}/fill-up-history` : null,
+        "http://ml:8000/fill-up-history",
+        "http://127.0.0.1:8000/fill-up-history",
+        "http://localhost:8000/fill-up-history",
+        "http://10.0.2.2:8000/fill-up-history",
+      ].filter((value): value is string => Boolean(value));
+
+      for (const url of candidates) {
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (response.ok) {
+            return;
+          }
+        } catch {
+          // Try the next candidate.
+        }
+      }
+    } catch {
+      // Ignore history save failures so the fuel flow remains uninterrupted.
+    }
+  };
+
+  const saveFuelFlow = async () => {
     if (!flowStep) {
       return;
     }
@@ -152,6 +200,7 @@ export default function Fuel() {
 
     if (!nextStep) {
       closeFuelFlow();
+      await persistFillUpHistory();
       return;
     }
 
