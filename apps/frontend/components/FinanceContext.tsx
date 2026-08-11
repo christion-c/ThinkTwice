@@ -1,7 +1,34 @@
 import type { ReactNode } from "react";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
+import { loadJson, saveJson } from "../lib/local-storage";
 import { useVehicle } from "./VehicleContext";
+
+const FINANCE_INPUTS_STORAGE_KEY = "thinktwice.financeInputs.v1";
+
+interface StoredFinanceInputs {
+  incomeInput: string;
+  expenseInput: string;
+  monthlyFixedCostsInput: string;
+  fuelGallonsInput: string;
+  fuelPriceInput: string;
+  milesPerWeekInput: string;
+  combinedMpgInput: string;
+  tankCapacityInput: string;
+  currentTankPercentInput: string;
+}
+
+const defaultFinanceInputs: StoredFinanceInputs = {
+  incomeInput: "4200",
+  expenseInput: "1700",
+  monthlyFixedCostsInput: "620",
+  fuelGallonsInput: "11.2",
+  fuelPriceInput: "4.25",
+  milesPerWeekInput: "230",
+  combinedMpgInput: "28",
+  tankCapacityInput: "13.5",
+  currentTankPercentInput: "55",
+};
 
 type FinanceContextValue = {
   incomeInput: string;
@@ -35,15 +62,76 @@ const FinanceContext = createContext<FinanceContextValue | undefined>(undefined)
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const { selectedVehicle } = useVehicle();
-  const [incomeInput, setIncomeInput] = useState("4200");
-  const [expenseInput, setExpenseInput] = useState("1700");
-  const [monthlyFixedCostsInput, setMonthlyFixedCostsInput] = useState("620");
-  const [fuelGallonsInput, setFuelGallonsInput] = useState("11.2");
-  const [fuelPriceInput, setFuelPriceInput] = useState("4.25");
-  const [milesPerWeekInput, setMilesPerWeekInput] = useState("230");
-  const [combinedMpgInput, setCombinedMpgInput] = useState("28");
-  const [tankCapacityInput, setTankCapacityInput] = useState("13.5");
-  const [currentTankPercentInput, setCurrentTankPercentInput] = useState("55");
+  const [incomeInput, setIncomeInput] = useState(defaultFinanceInputs.incomeInput);
+  const [expenseInput, setExpenseInput] = useState(defaultFinanceInputs.expenseInput);
+  const [monthlyFixedCostsInput, setMonthlyFixedCostsInput] = useState(
+    defaultFinanceInputs.monthlyFixedCostsInput,
+  );
+  const [fuelGallonsInput, setFuelGallonsInput] = useState(defaultFinanceInputs.fuelGallonsInput);
+  const [fuelPriceInput, setFuelPriceInput] = useState(defaultFinanceInputs.fuelPriceInput);
+  const [milesPerWeekInput, setMilesPerWeekInput] = useState(defaultFinanceInputs.milesPerWeekInput);
+  const [combinedMpgInput, setCombinedMpgInput] = useState(defaultFinanceInputs.combinedMpgInput);
+  const [tankCapacityInput, setTankCapacityInput] = useState(defaultFinanceInputs.tankCapacityInput);
+  const [currentTankPercentInput, setCurrentTankPercentInput] = useState(
+    defaultFinanceInputs.currentTankPercentInput,
+  );
+
+  // Inputs load asynchronously from device storage, so writes must be
+  // skipped until that load finishes or they'd overwrite it with defaults.
+  const hasLoaded = useRef(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void loadJson(FINANCE_INPUTS_STORAGE_KEY, defaultFinanceInputs).then((stored) => {
+      if (!isMounted) {
+        return;
+      }
+
+      setIncomeInput(stored.incomeInput);
+      setExpenseInput(stored.expenseInput);
+      setMonthlyFixedCostsInput(stored.monthlyFixedCostsInput);
+      setFuelGallonsInput(stored.fuelGallonsInput);
+      setFuelPriceInput(stored.fuelPriceInput);
+      setMilesPerWeekInput(stored.milesPerWeekInput);
+      setCombinedMpgInput(stored.combinedMpgInput);
+      setTankCapacityInput(stored.tankCapacityInput);
+      setCurrentTankPercentInput(stored.currentTankPercentInput);
+      hasLoaded.current = true;
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      return;
+    }
+
+    void saveJson<StoredFinanceInputs>(FINANCE_INPUTS_STORAGE_KEY, {
+      incomeInput,
+      expenseInput,
+      monthlyFixedCostsInput,
+      fuelGallonsInput,
+      fuelPriceInput,
+      milesPerWeekInput,
+      combinedMpgInput,
+      tankCapacityInput,
+      currentTankPercentInput,
+    });
+  }, [
+    incomeInput,
+    expenseInput,
+    monthlyFixedCostsInput,
+    fuelGallonsInput,
+    fuelPriceInput,
+    milesPerWeekInput,
+    combinedMpgInput,
+    tankCapacityInput,
+    currentTankPercentInput,
+  ]);
 
   useEffect(() => {
     if (selectedVehicle?.combinedMpg !== null && selectedVehicle?.combinedMpg !== undefined) {

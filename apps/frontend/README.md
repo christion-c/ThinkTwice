@@ -34,3 +34,7 @@ npm run export:web
 ```
 
 Files inside `app/` are routes and layouts. Put reusable providers, themes, navigation, and presentational components in `components/` so Expo Router does not register them as screens.
+
+## Troubleshooting: stale typed-route errors
+
+Expo Router's typed routes cache (`.expo/types/router.d.ts`) is gitignored and only regenerates while `expo start` is running. If a route file was moved, renamed, or added and `npm run typecheck` reports errors on route paths that look correct, the cache is stale rather than the code being wrong. Run `npm run clean` (removes `.expo/` and `dist/`) and try again.

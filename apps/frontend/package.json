@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "export:web": "expo export --platform web"
+    "export:web": "expo export --platform web",
+    "clean": "rm -rf .expo dist"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

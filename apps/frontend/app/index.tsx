@@ -69,7 +69,7 @@ export default function Home() {
 
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>What To Do Next</Text>
-        <Text style={styles.summaryText}>Update Fuel after each gas stop and keep Finance current weekly. As data grows, these estimates become your model-ready baseline.</Text>
+        <Text style={styles.summaryText}>Update Fuel after each gas stop, keep Finance current weekly, and log a daily Nutrition check-in. Once you have a few check-ins, ThinkTwice can forecast where your spending is headed.</Text>
       </View>
     </PageScaffold>
   );

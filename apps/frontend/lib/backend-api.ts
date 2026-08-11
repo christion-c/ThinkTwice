@@ -46,6 +46,38 @@ export interface UpdateBackendVehicleInput {
   combinedMpg?: number | null;
 }
 
+export interface BackendBudgetEntry {
+  id: string;
+  userId: string;
+  entryDate: string;
+  fuelCost: number | null;
+  foodCost: number | null;
+  milesDriven: number | null;
+  meals: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBackendBudgetEntryInput {
+  entryDate: string;
+  fuelCost?: number | null;
+  foodCost?: number | null;
+  milesDriven?: number | null;
+  meals?: number | null;
+}
+
+export interface BudgetPrediction {
+  predictedFuelCost: number;
+  predictedFoodCost: number;
+  predictedTotal: number;
+  method: "average" | "linear_regression";
+  sampleSize: number;
+}
+
+export type PredictionResult =
+  | { available: true; prediction: BudgetPrediction }
+  | { available: false; message: string };
+
 function getApiBaseUrl() {
   if (!apiBaseUrl) {
     throw new Error("EXPO_PUBLIC_API_URL is missing. Add it to apps/frontend/.env.");
@@ -159,4 +191,58 @@ export async function updateVehicle(
   );
 
   return response.vehicle;
+}
+
+export async function fetchBudgetEntries(
+  user: User,
+): Promise<BackendBudgetEntry[]> {
+  const headers = await getAuthHeader(user);
+  const response = await requestBackend<{ entries: BackendBudgetEntry[] }>(
+    "/budget-entries",
+    {
+      method: "GET",
+      headers,
+    },
+  );
+
+  return response.entries;
+}
+
+export async function createBudgetEntry(
+  user: User,
+  input: CreateBackendBudgetEntryInput,
+): Promise<BackendBudgetEntry> {
+  const headers = await getAuthHeader(user);
+  const response = await requestBackend<{ entry: BackendBudgetEntry }>(
+    "/budget-entries",
+    {
+      method: "POST",
+      headers: {
+        ...headers,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+  );
+
+  return response.entry;
+}
+
+export async function deleteBudgetEntry(
+  user: User,
+  entryId: string,
+): Promise<void> {
+  const headers = await getAuthHeader(user);
+  await requestBackend<void>(`/budget-entries/${entryId}`, {
+    method: "DELETE",
+    headers,
+  });
+}
+
+export async function fetchPredictions(user: User): Promise<PredictionResult> {
+  const headers = await getAuthHeader(user);
+  return requestBackend<PredictionResult>("/predictions", {
+    method: "GET",
+    headers,
+  });
 }

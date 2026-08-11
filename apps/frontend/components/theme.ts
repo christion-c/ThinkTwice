@@ -2,7 +2,20 @@ import { StyleSheet } from "react-native";
 
 export type ColorMode = "dark" | "light";
 
-export const palettes = {
+export interface ThemeColors {
+  background: string;
+  surface: string;
+  surfaceSoft: string;
+  border: string;
+  text: string;
+  textMuted: string;
+  accent: string;
+  accentDeep: string;
+  success: string;
+  danger: string;
+}
+
+export const palettes: Record<ColorMode, ThemeColors> = {
   dark: {
     background: "#0F172A",
     surface: "#16213A",
@@ -27,11 +40,39 @@ export const palettes = {
     success: "#16A34A",
     danger: "#E11D48",
   },
-} as const;
+};
 
-export type ThemeColors = (typeof palettes)[ColorMode];
+/**
+ * High contrast keeps each mode's accent/status colors (so the app still
+ * looks like itself) but pushes background/text/border to their most
+ * legible extremes, and thickens borders so card edges stay visible.
+ */
+const highContrastOverrides: Record<ColorMode, Partial<ThemeColors>> = {
+  dark: {
+    background: "#000000",
+    surface: "#000000",
+    surfaceSoft: "#111111",
+    border: "rgba(255, 255, 255, 0.4)",
+    text: "#FFFFFF",
+    textMuted: "#E2E8F0",
+  },
+  light: {
+    background: "#FFFFFF",
+    surface: "#FFFFFF",
+    surfaceSoft: "#F1F5F9",
+    border: "rgba(0, 0, 0, 0.5)",
+    text: "#000000",
+    textMuted: "#1F2937",
+  },
+};
 
-export const getColors = (mode: ColorMode): ThemeColors => palettes[mode];
+export const getColors = (
+  mode: ColorMode,
+  highContrast = false,
+): ThemeColors =>
+  highContrast
+    ? { ...palettes[mode], ...highContrastOverrides[mode] }
+    : palettes[mode];
 
 export const colors = palettes.dark;
 

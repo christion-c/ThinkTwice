@@ -7,9 +7,10 @@ import { radii, shadows, spacing, type ThemeColors } from "./theme";
 
 const tabs = [
   { label: "Finance", path: "/finance" },
-  { label: "Home", path: "/" },
-  { label: "Profile", path: "/profile/profile" },
   { label: "Fuel", path: "/fuel" },
+  { label: "Home", path: "/" },
+  { label: "Nutrition", path: "/nutrition" },
+  { label: "Profile", path: "/profile/profile" },
 ] as const;
 
 export default function BottomNav({ active }: { active: (typeof tabs)[number]["label"] }) {

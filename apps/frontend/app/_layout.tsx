@@ -5,6 +5,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 
 import { AppPreferencesProvider, useThemeColors } from "../components/AppPreferences";
 import { AuthProvider, useAuth } from "../components/AuthProvider";
+import { BudgetProvider } from "../components/BudgetContext";
 import { FinanceProvider } from "../components/FinanceContext";
 import { VehicleProvider } from "../components/VehicleContext";
 
@@ -14,9 +15,11 @@ export default function RootLayout() {
       <AuthProvider>
         <VehicleProvider>
           <FinanceProvider>
-            <AuthGate>
-              <AppStack />
-            </AuthGate>
+            <BudgetProvider>
+              <AuthGate>
+                <AppStack />
+              </AuthGate>
+            </BudgetProvider>
           </FinanceProvider>
         </VehicleProvider>
       </AuthProvider>
@@ -77,6 +80,7 @@ function AppStack() {
 
       <Stack.Screen name="fuel" options={{ title: "Fuel" }} />
       <Stack.Screen name="finance" options={{ title: "Finance" }} />
+      <Stack.Screen name="nutrition" options={{ title: "Nutrition" }} />
 
       <Stack.Screen name="profile/profile" options={{ title: "Profile" }} />
 
