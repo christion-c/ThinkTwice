@@ -1,15 +1,16 @@
 {
   "expo": {
-    "name": "frontend",
+    "name": "ThinkTwice",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "thinktwice",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thinktwice.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -20,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.khonshusentme.frontend"
+      "package": "com.thinktwice.app"
     },
     "web": {
       "output": "static",
