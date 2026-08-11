@@ -15,6 +15,22 @@ jobs:
     defaults:
       run:
         working-directory: apps/backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: thinktwice_test
+          POSTGRES_USER: thinktwice_test
+          POSTGRES_PASSWORD: thinktwice_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U thinktwice_test -d thinktwice_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://thinktwice_test:thinktwice_test@localhost:5432/thinktwice_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,6 +41,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
+      - run: npm test
 
   frontend:
     name: Frontend
@@ -60,8 +77,9 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: services/ml/requirements.txt
-      - run: python -m pip install -r requirements.txt
+      - run: python -m pip install -r requirements-dev.txt
       - run: python -m pip check
       - run: python -m pip install pip-audit
       - run: python -m pip_audit -r requirements.txt
       - run: python -c "from app.main import app; assert any(route.path == '/health' for route in app.routes)"
+      - run: python -m pytest
