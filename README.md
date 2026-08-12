@@ -228,3 +228,5 @@ The front end reads `EXPO_PUBLIC_API_URL` from `.env`. Set it based on how you'r
 ---
 
 Everyone should use the committed Docker configuration as the standard development environment. Do not change shared infrastructure files without communicating with the team, and never commit secrets or local environment files.
+
+Deploying backend to firebase: npx firebase-tools@latest deploy --only hosting
