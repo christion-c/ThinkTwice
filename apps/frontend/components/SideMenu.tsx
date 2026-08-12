@@ -18,9 +18,9 @@ export default function SideMenu() {
         <Text style={styles.link}>Profile</Text>
       </Pressable>
 
-      <Pressable onPress={() => router.push("/nutrition")}>
+      {/* <Pressable onPress={() => router.push("/nutrition")}>
         <Text style={styles.link}>Nutrition</Text>
-      </Pressable>
+      </Pressable> */}
     </View>
   );
 }
