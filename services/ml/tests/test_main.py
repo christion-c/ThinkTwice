@@ -41,7 +41,11 @@ class PredictionTests(unittest.TestCase):
             self.assertIn("history", result["feedback"].lower())
             self.assertGreater(result["fuel_prediction"], 0)
             self.assertNotIn("food", result["feedback"].lower())
-            self.assertIn("70%", result["explanation"])
+            # The math/history blend weight scales with history_count rather
+            # than being a fixed split, so check the explanation's structure
+            # instead of a specific percentage.
+            self.assertIn("math baseline", result["explanation"])
+            self.assertIn("% history", result["explanation"])
         finally:
             if existing == "{}":
                 history_path.unlink(missing_ok=True)

@@ -62,10 +62,9 @@ fillUpHistoryRouter.get(
   requireAuth,
   syncCurrentUser,
   async (request, response, next) => {
-    const currentUser = request.currentUser;
+    const currentUser = requireCurrentUser(request, response);
 
     if (!currentUser) {
-      response.status(500).json({ error: "User profile unavailable" });
       return;
     }
 

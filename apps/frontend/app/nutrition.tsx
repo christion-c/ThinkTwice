@@ -22,7 +22,7 @@ export default function Nutrition() {
         <Text style={styles.cardTitle}>Check back soon</Text>
         <Text style={styles.cardText}>
           Daily nutrition check-ins are paused while the team finishes this feature. Your fuel and
-          finance data on the other screens aren't affected.
+          finance data on the other screens aren’t affected.
         </Text>
       </View>
     </PageScaffold>
