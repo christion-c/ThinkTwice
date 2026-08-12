@@ -52,9 +52,11 @@ fillUpHistoryRouter.post(
     }
 
     try {
+      const { recordedAt, ...fillUpEntry } = result.data;
+
       await insertFillUpHistory(currentUser.id, {
-        ...result.data,
-        recordedAt: result.data.recordedAt ? new Date(result.data.recordedAt) : undefined,
+        ...fillUpEntry,
+        ...(recordedAt ? { recordedAt: new Date(recordedAt) } : {}),
       });
       response.status(204).end();
     } catch (error) {

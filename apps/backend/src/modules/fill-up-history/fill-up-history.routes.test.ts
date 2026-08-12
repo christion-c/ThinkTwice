@@ -17,6 +17,19 @@ test("entrySchema accepts an explicit fill-up date", () => {
   assert.equal(result.success, true);
 });
 
+test("entrySchema accepts a missing fill-up date", () => {
+  const result = entrySchema.safeParse({
+    milesDriven: 150,
+    fuelPrice: 3.89,
+    combinedMpg: 30,
+    tankCapacity: 14,
+    gallons: 12.4,
+    observedCost: 48.14,
+  });
+
+  assert.equal(result.success, true);
+});
+
 test("entrySchema rejects an invalid fill-up date", () => {
   const result = entrySchema.safeParse({
     milesDriven: 150,
