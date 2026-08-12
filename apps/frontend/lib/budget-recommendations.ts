@@ -31,7 +31,7 @@ export function getBudgetRecommendations(input: RecommendationInput): string[] {
 
   if (breakdown.entryCount === 0) {
     return [
-      "Log a few days of fuel and food costs to unlock recommendations tailored to your actual spending.",
+      "Recommendations here are based on daily fuel and food check-ins, which are paused right now — nothing tailored to show yet.",
     ];
   }
 

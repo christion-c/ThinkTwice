@@ -2,14 +2,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "../components/AuthProvider";
-import { useBudget } from "../components/BudgetContext";
 import { useFinance } from "../components/FinanceContext";
 import { useVehicle } from "../components/VehicleContext";
 
 export type SetupStep = {
   label: string;
   complete: boolean;
-  path: "/finance" | "/fuel" | "/nutrition";
+  path: "/finance" | "/fuel";
 };
 
 /**
@@ -23,7 +22,6 @@ export function useSetupChecklist() {
   const { monthlyIncome, monthlyExpenses, monthlyFixedCosts, projectedFillUpCost, projectedDaysUntilFillUp } =
     useFinance();
   const { vehicles } = useVehicle();
-  const { entries } = useBudget();
 
   const [setupChecklistHidden, setSetupChecklistHidden] = useState(false);
 
@@ -42,11 +40,6 @@ export function useSetupChecklist() {
       label: "Vehicle profile",
       complete: vehicles.length > 0,
       path: "/fuel",
-    },
-    {
-      label: "Nutrition check-in",
-      complete: entries.length > 0,
-      path: "/nutrition",
     },
   ];
 

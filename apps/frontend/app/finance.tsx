@@ -155,7 +155,7 @@ export default function Finance() {
         <Text style={styles.inputSubtitle}>
           {spendingBreakdown.entryCount > 0
             ? `Discretionary spending is ${discretionaryPercent}% of what you've logged.`
-            : "Log a Nutrition check-in (fuel and food cost together) to see your breakdown here."}
+            : "Daily check-ins that feed this breakdown are paused right now, so there's nothing to show yet."}
         </Text>
       </View>
 

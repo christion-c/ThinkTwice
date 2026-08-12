@@ -228,6 +228,31 @@ export async function upsertFinanceInputs(
 
 export type FillUpHistoryEntry = SharedFillUpHistoryEntry;
 
+export interface SavedFillUpHistoryEntry {
+  milesDriven: number;
+  fuelPrice: number;
+  combinedMpg: number;
+  tankCapacity: number;
+  gallons: number;
+  observedCost: number;
+  recordedAt: string;
+}
+
+export async function fetchFillUpHistory(
+  user: User,
+): Promise<SavedFillUpHistoryEntry[]> {
+  const headers = await getAuthHeader(user);
+  const response = await requestBackend<{ entries: SavedFillUpHistoryEntry[] }>(
+    "/fill-up-history",
+    {
+      method: "GET",
+      headers,
+    },
+  );
+
+  return response.entries;
+}
+
 export async function saveFillUpHistory(
   user: User,
   entry: FillUpHistoryEntry,

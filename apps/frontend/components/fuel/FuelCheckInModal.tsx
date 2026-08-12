@@ -15,15 +15,22 @@ import type { createFuelStyles } from "./fuel.styles";
 const TITLES: Record<FuelFlowStep, string> = {
   gallons: "Gallons",
   price: "Price per gallon",
-  miles: "Miles driven",
+  miles: "Miles since last fill-up",
   tankLevel: "Tank level",
 };
 
 const HINTS: Record<FuelFlowStep, string> = {
   gallons: "Enter the gallons you put in your tank this fill-up.",
   price: "Enter the price you paid per gallon.",
-  miles: "Enter the miles you drove since the last fill-up.",
+  miles: "Enter the miles you drove since your previous fill-up.",
   tankLevel: "Enter how full the tank is right now.",
+};
+
+const PLACEHOLDERS: Record<FuelFlowStep, string> = {
+  gallons: "0",
+  price: "0.00",
+  miles: "0",
+  tankLevel: "0%",
 };
 
 type Props = {
@@ -61,7 +68,7 @@ export default function FuelCheckInModal({
               onChangeText={onChangeDraft}
               keyboardType="decimal-pad"
               style={styles.modalInput}
-              placeholder="0"
+              placeholder={flowStep ? PLACEHOLDERS[flowStep] : "0"}
               placeholderTextColor={colors.textMuted}
               autoFocus
             />

@@ -30,6 +30,15 @@ const HINTS: Record<VehicleFlowStep, string> = {
   tank: "Enter the tank size in gallons.",
 };
 
+const PLACEHOLDERS: Record<VehicleFlowStep, string> = {
+  nickname: "eg. My daily driver",
+  year: "eg. 2016",
+  make: "eg. Toyota, Ford, Nissan",
+  model: "Model Name",
+  mpg: "0",
+  tank: "0",
+};
+
 type Props = {
   vehicleFlowStep: VehicleFlowStep | null;
   fieldDraft: string;
@@ -70,7 +79,7 @@ export default function VehicleFormModal({
               onChangeText={onChangeDraft}
               keyboardType={vehicleFlowStep === "year" ? "number-pad" : "decimal-pad"}
               style={styles.modalInput}
-              placeholder={vehicleFlowStep === "year" ? "2022" : "0"}
+              placeholder={vehicleFlowStep ? PLACEHOLDERS[vehicleFlowStep] : "0"}
               placeholderTextColor={colors.textMuted}
               autoFocus
             />
