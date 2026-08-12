@@ -74,3 +74,21 @@ export async function listFillUpHistoryByFirebaseUid(
 
   return result.rows.map(mapRow);
 }
+
+export async function listFillUpHistoryByUserId(
+  userId: string,
+): Promise<FillUpEntry[]> {
+  const result = await database.query<FillUpRow>(
+    `
+      SELECT
+        miles_driven, fuel_price, combined_mpg,
+        tank_capacity, gallons, observed_cost, recorded_at
+      FROM fill_up_history
+      WHERE user_id = $1
+      ORDER BY recorded_at DESC
+    `,
+    [userId],
+  );
+
+  return result.rows.map(mapRow);
+}

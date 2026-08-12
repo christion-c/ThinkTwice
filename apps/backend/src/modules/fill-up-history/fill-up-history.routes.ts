@@ -7,6 +7,7 @@ import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 import { requireCurrentUser } from "../../lib/route-helpers.js";
 import {
   insertFillUpHistory,
+  listFillUpHistoryByUserId,
   listFillUpHistoryByFirebaseUid,
 } from "./fill-up-history.repository.js";
 
@@ -47,6 +48,30 @@ fillUpHistoryRouter.post(
     try {
       await insertFillUpHistory(currentUser.id, result.data);
       response.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * Returns fill-up history for the authenticated user.
+ */
+fillUpHistoryRouter.get(
+  "/",
+  requireAuth,
+  syncCurrentUser,
+  async (request, response, next) => {
+    const currentUser = request.currentUser;
+
+    if (!currentUser) {
+      response.status(500).json({ error: "User profile unavailable" });
+      return;
+    }
+
+    try {
+      const entries = await listFillUpHistoryByUserId(currentUser.id);
+      response.status(200).json({ entries });
     } catch (error) {
       next(error);
     }

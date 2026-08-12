@@ -2,7 +2,12 @@ import type { ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-import { fetchFinanceInputs, upsertFinanceInputs } from "../lib/backend-api";
+import {
+  fetchFinanceInputs,
+  fetchFillUpHistory,
+  type SavedFillUpHistoryEntry,
+  upsertFinanceInputs,
+} from "../lib/backend-api";
 import { useAuth } from "./AuthProvider";
 import { useVehicle } from "./VehicleContext";
 
@@ -51,6 +56,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [combinedMpgInput, setCombinedMpgInput] = useState("");
   const [tankCapacityInput, setTankCapacityInput] = useState("");
   const [currentTankPercentInput, setCurrentTankPercentInput] = useState("");
+  const [fillUpHistory, setFillUpHistory] = useState<SavedFillUpHistoryEntry[]>([]);
 
   const storageKey = user?.uid ? `${FINANCE_STORAGE_KEY}.${user.uid}` : `${FINANCE_STORAGE_KEY}.guest`;
 
@@ -152,6 +158,25 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   }, [storageKey, user]);
 
   useEffect(() => {
+    if (!user) {
+      setFillUpHistory([]);
+      return;
+    }
+
+    const loadFillUpHistory = async () => {
+      try {
+        const entries = await fetchFillUpHistory(user);
+        setFillUpHistory(entries);
+      } catch {
+        // Keep forecasting with manual inputs when history is unavailable.
+        setFillUpHistory([]);
+      }
+    };
+
+    void loadFillUpHistory();
+  }, [user]);
+
+  useEffect(() => {
     if (selectedVehicle?.combinedMpg !== null && selectedVehicle?.combinedMpg !== undefined) {
       setCombinedMpgInput(String(selectedVehicle.combinedMpg));
     }
@@ -169,25 +194,59 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const monthlyFixedCosts = parseMoney(monthlyFixedCostsInput);
   const fuelGallons = parseMoney(fuelGallonsInput);
   const fuelPrice = parseMoney(fuelPriceInput);
-  const milesPerWeek = parseMoney(milesPerWeekInput);
+  const milesSinceLastFillUp = parseMoney(milesPerWeekInput);
   const combinedMpg = parseMoney(combinedMpgInput);
   const tankCapacity = parseMoney(tankCapacityInput);
   const currentTankPercent = parseMoney(currentTankPercentInput);
 
-  const projectedFillUpGallons = fuelGallons > 0 ? fuelGallons : tankCapacity;
-  const projectedFillUpCost = projectedFillUpGallons * fuelPrice;
+  const stats = useMemo(() => computeFillUpStats(fillUpHistory), [fillUpHistory]);
 
-  const monthlyMiles = milesPerWeek * 4.345;
-  const monthlyFuelGallons = combinedMpg > 0 ? monthlyMiles / combinedMpg : 0;
-  const monthlyFuelBudget = monthlyFuelGallons * fuelPrice;
+  const effectiveFuelPrice =
+    stats.typicalFuelPrice > 0 && fuelPrice > 0
+      ? (stats.typicalFuelPrice * 0.75) + (fuelPrice * 0.25)
+      : stats.typicalFuelPrice > 0
+        ? stats.typicalFuelPrice
+        : fuelPrice;
 
-  const availableRangeMiles =
-    combinedMpg > 0 && tankCapacity > 0
-      ? (currentTankPercent / 100) * tankCapacity * combinedMpg
+  const effectiveMpg =
+    stats.typicalMpg > 0 && combinedMpg > 0
+      ? (stats.typicalMpg * 0.7) + (combinedMpg * 0.3)
+      : stats.typicalMpg > 0
+        ? stats.typicalMpg
+        : combinedMpg;
+
+  const effectiveTankCapacity = tankCapacity > 0 ? tankCapacity : stats.typicalTankCapacity;
+
+  const fallbackCycleDays = stats.typicalCycleDays > 0 ? stats.typicalCycleDays : 7;
+  const fallbackDailyMiles = milesSinceLastFillUp > 0 ? milesSinceLastFillUp / fallbackCycleDays : 0;
+  const dailyMilesEstimate = stats.dailyMiles > 0 ? stats.dailyMiles : fallbackDailyMiles;
+
+  const needsFromTankLevel =
+    effectiveTankCapacity > 0 && currentTankPercent >= 0 && currentTankPercent <= 100
+      ? effectiveTankCapacity * Math.max(1 - (currentTankPercent / 100), 0)
       : 0;
 
-  const projectedDaysUntilFillUp =
-    milesPerWeek > 0 ? (availableRangeMiles / milesPerWeek) * 7 : 0;
+  const projectedFillUpGallons =
+    needsFromTankLevel > 0
+      ? needsFromTankLevel
+      : fuelGallons > 0
+        ? fuelGallons
+        : stats.typicalFillUpGallons > 0
+          ? stats.typicalFillUpGallons
+          : effectiveTankCapacity;
+
+  const projectedFillUpCost = projectedFillUpGallons * effectiveFuelPrice;
+
+  const monthlyMiles = dailyMilesEstimate * 30.4375;
+  const monthlyFuelGallons = effectiveMpg > 0 ? monthlyMiles / effectiveMpg : 0;
+  const monthlyFuelBudget = monthlyFuelGallons * effectiveFuelPrice;
+
+  const availableRangeMiles =
+    effectiveMpg > 0 && effectiveTankCapacity > 0
+      ? (Math.max(Math.min(currentTankPercent, 100), 0) / 100) * effectiveTankCapacity * effectiveMpg
+      : 0;
+
+  const projectedDaysUntilFillUp = dailyMilesEstimate > 0 ? availableRangeMiles / dailyMilesEstimate : 0;
 
   const projectedBudgetAfterEssentials =
     monthlyIncome - monthlyExpenses - monthlyFixedCosts - monthlyFuelBudget;
@@ -306,4 +365,90 @@ export function useFinance() {
 function parseMoney(value: string) {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function computeFillUpStats(entries: SavedFillUpHistoryEntry[]) {
+  const sorted = [...entries]
+    .filter((entry) => Number.isFinite(Date.parse(entry.recordedAt)))
+    .sort((a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt));
+
+  const prices = sorted.map((entry) => positiveOrNull(entry.fuelPrice));
+  const gallons = sorted.map((entry) => positiveOrNull(entry.gallons));
+  const tankCapacities = sorted.map((entry) => positiveOrNull(entry.tankCapacity));
+
+  const mpgSamples = sorted.map((entry) => {
+    if (entry.milesDriven > 0 && entry.gallons > 0) {
+      return entry.milesDriven / entry.gallons;
+    }
+
+    return positiveOrNull(entry.combinedMpg);
+  });
+
+  const dailyMilesSamples: number[] = [];
+  const cycleDaysSamples: number[] = [];
+
+  for (let index = 0; index < sorted.length - 1; index += 1) {
+    const current = sorted[index];
+    const previous = sorted[index + 1];
+    const elapsedDays =
+      (Date.parse(current.recordedAt) - Date.parse(previous.recordedAt)) /
+      (1000 * 60 * 60 * 24);
+
+    if (!Number.isFinite(elapsedDays) || elapsedDays <= 0 || elapsedDays > 45) {
+      continue;
+    }
+
+    cycleDaysSamples.push(elapsedDays);
+
+    if (current.milesDriven > 0) {
+      dailyMilesSamples.push(current.milesDriven / elapsedDays);
+    }
+  }
+
+  return {
+    typicalFuelPrice: robustRecencyAverage(prices),
+    typicalFillUpGallons: robustRecencyAverage(gallons),
+    typicalTankCapacity: robustRecencyAverage(tankCapacities),
+    typicalMpg: robustRecencyAverage(mpgSamples),
+    dailyMiles: robustRecencyAverage(dailyMilesSamples),
+    typicalCycleDays: robustRecencyAverage(cycleDaysSamples),
+  };
+}
+
+function robustRecencyAverage(values: Array<number | null>) {
+  const finiteValues = values.filter((value): value is number =>
+    typeof value === "number" && Number.isFinite(value) && value > 0,
+  );
+
+  if (finiteValues.length === 0) {
+    return 0;
+  }
+
+  const recentValues = finiteValues.slice(0, 20);
+  const sorted = [...recentValues].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)] ?? recentValues[0] ?? 0;
+  const absDeviations = sorted.map((value) => Math.abs(value - median));
+  const sortedDeviations = [...absDeviations].sort((a, b) => a - b);
+  const mad = sortedDeviations[Math.floor(sortedDeviations.length / 2)] ?? 0;
+
+  const filteredValues =
+    mad > 0
+      ? recentValues.filter((value) => Math.abs(value - median) <= (3 * mad))
+      : recentValues;
+
+  const stableValues = filteredValues.length > 0 ? filteredValues : recentValues;
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  stableValues.forEach((value, index) => {
+    const weight = Math.exp(-index / 5);
+    weightedSum += value * weight;
+    totalWeight += weight;
+  });
+
+  return totalWeight > 0 ? weightedSum / totalWeight : 0;
+}
+
+function positiveOrNull(value: number) {
+  return Number.isFinite(value) && value > 0 ? value : null;
 }
