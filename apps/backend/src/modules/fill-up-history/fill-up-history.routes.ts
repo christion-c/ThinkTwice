@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { requireAuth } from "../../middleware/require-auth.js";
+import { requireInternalService } from "../../middleware/require-internal-service.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 import {
   insertFillUpHistory,
@@ -56,7 +57,7 @@ fillUpHistoryRouter.post(
  * Returns fill-up history for a Firebase UID.
  * Internal-only — called by the ML service on the Docker network.
  */
-fillUpHistoryRouter.get("/internal", async (request, response, next) => {
+fillUpHistoryRouter.get("/internal", requireInternalService, async (request, response, next) => {
   const firebaseUid =
     typeof request.query["firebase_uid"] === "string"
       ? request.query["firebase_uid"]

@@ -114,6 +114,7 @@ def build_dataset() -> list[dict[str, Any]]:
 
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:3000").rstrip("/")
+INTERNAL_SERVICE_TOKEN = os.getenv("INTERNAL_SERVICE_TOKEN", "")
 
 
 def load_user_history(user_id: str | None = None) -> list[dict[str, Any]]:
@@ -122,7 +123,10 @@ def load_user_history(user_id: str | None = None) -> list[dict[str, Any]]:
         try:
             encoded = urllib.parse.quote(user_id, safe="")
             url = f"{BACKEND_URL}/fill-up-history/internal?firebase_uid={encoded}"
-            with urllib.request.urlopen(url, timeout=3) as resp:  # noqa: S310
+            request = urllib.request.Request(
+                url, headers={"X-Internal-Token": INTERNAL_SERVICE_TOKEN}
+            )
+            with urllib.request.urlopen(request, timeout=3) as resp:  # noqa: S310
                 payload = json.loads(resp.read().decode("utf-8"))
             entries = payload.get("entries", [])
             if isinstance(entries, list):

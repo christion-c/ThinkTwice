@@ -40,6 +40,7 @@ services:
       NODE_ENV: development
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-thinktwice}:${POSTGRES_PASSWORD:-thinktwice_dev}@db:5432/${POSTGRES_DB:-thinktwice}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev-only-internal-token-change-me}
       ML_SERVICE_URL: http://ml:8000
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       GOOGLE_APPLICATION_CREDENTIALS: /run/gcloud/application_default_credentials.json
@@ -162,6 +163,7 @@ services:
     environment:
       PORT: 8000
       BACKEND_URL: http://backend:3000
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev-only-internal-token-change-me}
       ML_HISTORY_PATH: /home/appuser/.cache/thinktwice/user_history.json
 
     ports:

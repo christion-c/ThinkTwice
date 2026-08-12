@@ -120,15 +120,19 @@ implementation was kept rather than both:
   artifacts on `main`; removed from git and gitignored (the code
   self-bootstraps them; the ML README already documented this convention).
 
-**Known gap surfaced, not fixed:** the backend's
-`GET /fill-up-history/internal` endpoint (called by the ML service's
-`/ml-preview`) has no authentication and accepts any `firebase_uid` as a
-query parameter — confirmed live (curling it with an arbitrary UID returns
-that "user"'s data). Low risk today since it's only reached from two
-debug-only frontend routes not linked in navigation, but it's a real IDOR
-and should be locked down (shared secret header, or requireAuth + matching
-UID) before `/ml-preview` becomes a real feature. Coordinate with the ML
-and backend owners since it's a cross-service contract change.
+**Fixed 2026-08-12:** the backend's `GET /fill-up-history/internal` endpoint
+(called by the ML service's `/ml-preview`) had no authentication and accepted
+any `firebase_uid` as a query parameter — confirmed live on the deployed
+Cloud Run backend (curling it with an arbitrary UID returned `200` with no
+auth challenge). This had been noted as low-risk on the assumption it was
+only reachable from two debug-only frontend routes and the Docker network,
+but once the backend was deployed publicly that assumption no longer held —
+the endpoint was reachable directly over the internet regardless of what the
+frontend linked to. Fixed with a shared-secret header
+(`INTERNAL_SERVICE_TOKEN`, checked via `requireInternalService` with a
+timing-safe comparison) rather than `requireAuth`, since the caller is the
+ML service, not an end user. Verified locally: no header → 401, wrong token
+→ 401, correct token → 200.
 
 ## Known incomplete or external work
 

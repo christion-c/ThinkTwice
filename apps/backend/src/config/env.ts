@@ -10,6 +10,10 @@ const environmentSchema = z.object({
 
   DATABASE_URL: z.string().min(1),
 
+  // Shared secret for service-to-service routes (e.g. the ML service
+  // fetching another user's fill-up history). Not a Firebase user token.
+  INTERNAL_SERVICE_TOKEN: z.string().min(1),
+
   ML_SERVICE_URL: z
     .string()
     .url()
