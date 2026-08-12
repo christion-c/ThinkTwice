@@ -381,4 +381,3 @@
 //   const parsedValue = Number.parseInt(trimmedValue, 10);
 //   return Number.isFinite(parsedValue) ? parsedValue : null;
 // }
->>>>>>> b479907 (made ml learning less dramatic off smaller inputs)
