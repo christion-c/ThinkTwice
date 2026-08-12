@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useAppPreferences, useThemeColors } from "../components/AppPreferences";
+import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
