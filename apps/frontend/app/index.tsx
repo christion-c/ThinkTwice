@@ -109,13 +109,16 @@ export default function Home() {
           icon="car-outline"
           onPress={() => router.push("/fuel")}
         />
-        <QuickActionCard
+
+        {/* nutrition is not complete do not use while this is commented out */}
+
+        {/* <QuickActionCard
           colors={colors}
           title="Log nutrition"
           description="Track a daily check-in for forecasts."
           icon="restaurant-outline"
           onPress={() => router.push("/nutrition")}
-        />
+        /> */}
       </View>
     </PageScaffold>
   );

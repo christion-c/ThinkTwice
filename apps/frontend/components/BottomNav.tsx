@@ -9,9 +9,12 @@ import { radii, shadows, spacing, type ThemeColors } from "./theme";
 const tabs = [
   { label: "Finance", path: "/finance", icon: "wallet-outline", activeIcon: "wallet" },
   { label: "Home", path: "/", icon: "home-outline", activeIcon: "home" },
-  { label: "Fuel", path: "/fuel", icon: "car-outline", activeIcon: "car" },
-  { label: "Nutrition", path: "/nutrition", icon: "restaurant-outline", activeIcon: "restaurant" },
   { label: "Profile", path: "/profile/profile", icon: "person-outline", activeIcon: "person" },
+  { label: "Fuel", path: "/fuel", icon: "car-outline", activeIcon: "car" },
+
+  // nutrition is not complete do not use while this is commented out
+  // { label: "Nutrition", path: "/nutrition", icon: "restaurant-outline", activeIcon: "restaurant" },
+
 ] as const;
 
 export default function BottomNav({ active }: { active: (typeof tabs)[number]["label"] }) {
