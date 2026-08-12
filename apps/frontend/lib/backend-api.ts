@@ -226,9 +226,6 @@ export async function upsertFinanceInputs(
   return response.inputs;
 }
 
-<<<<<<< HEAD
-export type FillUpHistoryEntry = SharedFillUpHistoryEntry;
-=======
 export interface FillUpHistoryEntry {
   milesDriven: number;
   fuelPrice: number;
@@ -263,7 +260,6 @@ export async function fetchFillUpHistory(
 
   return response.entries;
 }
->>>>>>> b479907 (made ml learning less dramatic off smaller inputs)
 
 export async function saveFillUpHistory(
   user: User,
