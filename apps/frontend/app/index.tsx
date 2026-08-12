@@ -21,7 +21,6 @@ const moneyFormat = new Intl.NumberFormat("en-US", {
 export default function Home() {
   const colors = useThemeColors();
   const { user } = useAuth();
-  const { budgetAlertsEnabled } = useAppPreferences();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [setupChecklistHidden, setSetupChecklistHidden] = useState(false);
   const {
