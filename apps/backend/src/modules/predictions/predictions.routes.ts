@@ -1,5 +1,7 @@
 import { Router } from "express";
 
+import type { BudgetPrediction } from "@thinktwice/shared-types";
+
 import { env } from "../../config/env.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
@@ -16,14 +18,6 @@ export const predictionsRouter = Router();
  */
 const MIN_ENTRIES_FOR_FORECAST = 3;
 const ENTRIES_CONSIDERED = 60;
-
-interface MlPredictResponse {
-  predictedFuelCost: number;
-  predictedFoodCost: number;
-  predictedTotal: number;
-  method: "average" | "linear_regression";
-  sampleSize: number;
-}
 
 predictionsRouter.use(requireAuth, syncCurrentUser);
 
@@ -76,7 +70,7 @@ predictionsRouter.get("/", async (request, response, next) => {
       return;
     }
 
-    const prediction = (await mlResponse.json()) as MlPredictResponse;
+    const prediction = (await mlResponse.json()) as BudgetPrediction;
 
     response.status(200).json({
       available: true,

@@ -1,4 +1,10 @@
 # syntax=docker/dockerfile:1.7
+#
+# Build context is the repo root (not apps/backend) so that packages/
+# shared-types — a type-only package apps/backend imports via a tsconfig
+# path alias — is available to `npm run build`'s tsc invocation. Nothing
+# under packages/ ships in the production image: shared-types has no
+# runtime code, so `import type` erases it entirely at compile time.
 
 ARG NODE_VERSION=22
 
@@ -12,26 +18,27 @@ WORKDIR /workspace
 ENV npm_config_fund=false \
     npm_config_update_notifier=false
 
-COPY package.json package-lock.json ./
+COPY apps/backend/package.json apps/backend/package-lock.json ./apps/backend/
 
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+    npm --prefix apps/backend ci
 
 # ---------------------------------------------------------
 # Development
 # ---------------------------------------------------------
 FROM node:${NODE_VERSION}-bookworm-slim AS development
 
-WORKDIR /workspace
+WORKDIR /workspace/apps/backend
 
-RUN chown node:node /workspace
+RUN mkdir -p /workspace/packages && chown -R node:node /workspace
 
 ENV NODE_ENV=development \
     npm_config_fund=false \
     npm_config_update_notifier=false
 
-COPY --from=dependencies --chown=node:node /workspace/node_modules ./node_modules
-COPY --chown=node:node . .
+COPY --from=dependencies --chown=node:node /workspace/apps/backend/node_modules ./node_modules
+COPY --chown=node:node apps/backend/. .
+COPY --chown=node:node packages/ /workspace/packages/
 
 USER node
 
@@ -44,10 +51,11 @@ CMD ["npm", "run", "dev"]
 # ---------------------------------------------------------
 FROM dependencies AS build
 
-COPY . .
+COPY apps/backend/. /workspace/apps/backend/
+COPY packages/ /workspace/packages/
 
-RUN npm run build \
-    && npm prune --omit=dev
+RUN npm --prefix apps/backend run build \
+    && npm --prefix apps/backend prune --omit=dev
 
 # ---------------------------------------------------------
 # Production
@@ -58,10 +66,10 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=build --chown=node:node /workspace/package.json ./
-COPY --from=build --chown=node:node /workspace/package-lock.json ./
-COPY --from=build --chown=node:node /workspace/node_modules ./node_modules
-COPY --from=build --chown=node:node /workspace/dist ./dist
+COPY --from=build --chown=node:node /workspace/apps/backend/package.json ./
+COPY --from=build --chown=node:node /workspace/apps/backend/package-lock.json ./
+COPY --from=build --chown=node:node /workspace/apps/backend/node_modules ./node_modules
+COPY --from=build --chown=node:node /workspace/apps/backend/dist ./dist
 
 USER node
 

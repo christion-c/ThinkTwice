@@ -30,8 +30,11 @@ services:
 
   backend:
     build:
-      context: ./apps/backend
-      dockerfile: ../../infra/docker/backend/Dockerfile
+      # Repo root, not ./apps/backend — the backend imports type-only
+      # shapes from packages/shared-types via a tsconfig path alias, so
+      # the build context has to reach it. See infra/docker/backend/Dockerfile.
+      context: .
+      dockerfile: infra/docker/backend/Dockerfile
       target: development
 
     init: true
@@ -80,13 +83,18 @@ services:
       watch:
         - action: sync
           path: ./apps/backend
-          target: /workspace
+          target: /workspace/apps/backend
           initial_sync: true
           ignore:
             - node_modules/
             - dist/
             - package.json
             - package-lock.json
+
+        - action: sync
+          path: ./packages
+          target: /workspace/packages
+          initial_sync: true
 
         - action: rebuild
           path: ./apps/backend/package.json

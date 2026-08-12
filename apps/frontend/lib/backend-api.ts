@@ -1,82 +1,32 @@
 import type { User } from "firebase/auth";
 
+import type {
+  BudgetEntry,
+  BudgetPrediction,
+  CreateBudgetEntryInput,
+  CreateVehicleInput,
+  FinanceInputs,
+  FillUpHistoryEntry as SharedFillUpHistoryEntry,
+  PredictionResult,
+  UpdateVehicleInput,
+  UserProfile,
+  Vehicle,
+} from "@thinktwice/shared-types";
+
 const rawApiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim() ?? "";
 
 export const apiBaseUrl = rawApiBaseUrl.replace(/\/+$/, "");
 
-export interface BackendUserProfile {
-  id: string;
-  firebaseUid: string;
-  email: string | null;
-  displayName: string | null;
-  photoUrl: string | null;
-  emailVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface BackendVehicle {
-  id: string;
-  userId: string;
-  nickname: string;
-  make: string | null;
-  model: string | null;
-  modelYear: number | null;
-  tankCapacityGallons: number | null;
-  combinedMpg: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateBackendVehicleInput {
-  nickname: string;
-  make?: string | null;
-  model?: string | null;
-  modelYear?: number | null;
-  tankCapacityGallons?: number | null;
-  combinedMpg?: number | null;
-}
-
-export interface UpdateBackendVehicleInput {
-  nickname?: string;
-  make?: string | null;
-  model?: string | null;
-  modelYear?: number | null;
-  tankCapacityGallons?: number | null;
-  combinedMpg?: number | null;
-}
-
-export interface BackendBudgetEntry {
-  id: string;
-  userId: string;
-  entryDate: string;
-  fuelCost: number | null;
-  foodCost: number | null;
-  milesDriven: number | null;
-  meals: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateBackendBudgetEntryInput {
-  entryDate: string;
-  fuelCost?: number | null;
-  foodCost?: number | null;
-  milesDriven?: number | null;
-  meals?: number | null;
-}
-
-export interface BudgetPrediction {
-  predictedFuelCost: number;
-  predictedFoodCost: number;
-  predictedTotal: number;
-  method: "average" | "linear_regression";
-  sampleSize: number;
-}
-
-export type PredictionResult =
-  | { available: true; prediction: BudgetPrediction }
-  | { available: false; message: string };
+// Re-exported under this file's existing names so every consumer of these
+// types keeps working unchanged — @thinktwice/shared-types is now the
+// single source of truth for the shapes themselves.
+export type BackendUserProfile = UserProfile;
+export type BackendVehicle = Vehicle;
+export type CreateBackendVehicleInput = CreateVehicleInput;
+export type UpdateBackendVehicleInput = UpdateVehicleInput;
+export type BackendBudgetEntry = BudgetEntry;
+export type CreateBackendBudgetEntryInput = CreateBudgetEntryInput;
+export type { BudgetPrediction, PredictionResult };
 
 function getApiBaseUrl() {
   if (!apiBaseUrl) {
@@ -247,17 +197,7 @@ export async function fetchPredictions(user: User): Promise<PredictionResult> {
   });
 }
 
-export interface BackendFinanceInputs {
-  incomeInput: string;
-  expenseInput: string;
-  monthlyFixedCostsInput: string;
-  fuelGallonsInput: string;
-  fuelPriceInput: string;
-  milesPerWeekInput: string;
-  combinedMpgInput: string;
-  tankCapacityInput: string;
-  currentTankPercentInput: string;
-}
+export type BackendFinanceInputs = FinanceInputs;
 
 export async function fetchFinanceInputs(
   user: User,
@@ -286,14 +226,7 @@ export async function upsertFinanceInputs(
   return response.inputs;
 }
 
-export interface FillUpHistoryEntry {
-  milesDriven: number;
-  fuelPrice: number;
-  combinedMpg: number;
-  tankCapacity: number;
-  gallons: number;
-  observedCost: number;
-}
+export type FillUpHistoryEntry = SharedFillUpHistoryEntry;
 
 export async function saveFillUpHistory(
   user: User,

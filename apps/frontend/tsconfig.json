@@ -6,6 +6,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@thinktwice/shared-types": [
+        "../../packages/shared-types/index.ts"
       ]
     }
   },

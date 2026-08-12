@@ -1,0 +1,25 @@
+# Applies to the backend's Docker build context (repo root — see
+# infra/docker/backend/Dockerfile and compose.yaml). The frontend and ML
+# services still build from their own directories and use their own
+# .dockerignore files; this one is broader since it sees the whole repo.
+
+node_modules/
+dist/
+build/
+coverage/
+.expo/
+.firebase/
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+*.py[cod]
+.env*
+*.log
+.git/
+.cache/
+application_default_credentials.json
+*service-account*.json
+*.pem
+*.p12
+*.pfx
