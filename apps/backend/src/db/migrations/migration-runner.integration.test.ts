@@ -50,6 +50,37 @@ test("runMigrations is idempotent", async (t) => {
   assert.equal(Number(result.rows[0]?.count), migrations.length);
 });
 
+test("runMigrations marks an existing table as applied when migration history is incomplete", async (t) => {
+  if (!dbAvailable) {
+    t.skip("DATABASE_URL is not reachable; skipping integration test.");
+    return;
+  }
+
+  await database.query("DROP TABLE IF EXISTS finance_inputs CASCADE");
+  await database.query(
+    "DELETE FROM schema_migrations WHERE id = '004_create_finance_inputs'",
+  );
+
+  await database.query(`
+    CREATE TABLE finance_inputs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL UNIQUE,
+      income_input TEXT NOT NULL DEFAULT '',
+      expense_input TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await runMigrations(migrations);
+
+  const result = await database.query<{ id: string }>(
+    "SELECT id FROM schema_migrations WHERE id = '004_create_finance_inputs'",
+  );
+
+  assert.equal(result.rows.length, 1);
+  assert.equal(result.rows[0]?.id, "004_create_finance_inputs");
+});
+
 test("runMigrations rejects duplicate migration IDs", async (t) => {
   if (!dbAvailable) {
     t.skip("DATABASE_URL is not reachable; skipping integration test.");

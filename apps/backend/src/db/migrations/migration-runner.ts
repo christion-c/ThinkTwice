@@ -13,6 +13,19 @@ interface AppliedMigrationRow {
   id: string;
 }
 
+function isAlreadyExistsError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const candidate = error as {
+    code?: string;
+    message?: string;
+  };
+
+  return candidate.code === "42P07" || /already exists/i.test(candidate.message ?? "");
+}
+
 /**
  * Verifies that migration IDs are unique and arranged in ascending order.
  */
@@ -89,12 +102,37 @@ export async function runMigrations(
       await client.query("BEGIN");
 
       try {
-        await migration.up(client);
+        try {
+          await migration.up(client);
+        } catch (error) {
+          if (isAlreadyExistsError(error)) {
+            console.warn(
+              `Migration ${migration.id} already applied in the database; recording it as complete without re-running it.`,
+            );
+
+            await client.query("ROLLBACK");
+
+            await client.query(
+              `
+                INSERT INTO schema_migrations (id, description)
+                VALUES ($1, $2)
+                ON CONFLICT (id) DO UPDATE SET description = EXCLUDED.description
+              `,
+              [migration.id, migration.description],
+            );
+
+            console.log(`Migration ${migration.id} completed.`);
+            continue;
+          }
+
+          throw error;
+        }
 
         await client.query(
           `
             INSERT INTO schema_migrations (id, description)
             VALUES ($1, $2)
+            ON CONFLICT (id) DO UPDATE SET description = EXCLUDED.description
           `,
           [migration.id, migration.description],
         );
@@ -103,7 +141,12 @@ export async function runMigrations(
 
         console.log(`Migration ${migration.id} completed.`);
       } catch (error) {
-        await client.query("ROLLBACK");
+        try {
+          await client.query("ROLLBACK");
+        } catch {
+          // A failed migration may already have left the transaction in an
+          // aborted state, so the rollback itself can fail silently.
+        }
 
         throw new Error(
           `Migration ${migration.id} failed and was rolled back.`,
