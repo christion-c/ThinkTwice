@@ -12,12 +12,9 @@ import {
 
 import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
-import { useBudget } from "../components/BudgetContext";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { radii, spacing, type ThemeColors } from "../components/theme";
-import { getBudgetRecommendations } from "../lib/budget-recommendations";
-import { categorizeSpending, discretionaryShare } from "../lib/spending-categories";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -43,19 +40,6 @@ export default function Finance() {
     projectedBudgetAfterEssentials,
     weeklySpendTarget,
   } = useFinance();
-  const { entries } = useBudget();
-
-  const spendingBreakdown = useMemo(() => categorizeSpending(entries), [entries]);
-  const discretionaryPercent = Math.round(discretionaryShare(spendingBreakdown) * 100);
-  const recommendations = useMemo(
-    () =>
-      getBudgetRecommendations({
-        breakdown: spendingBreakdown,
-        projectedBudgetAfterEssentials,
-        monthlyIncome,
-      }),
-    [spendingBreakdown, projectedBudgetAfterEssentials, monthlyIncome],
-  );
 
   const healthTone = projectedBudgetAfterEssentials < 0 ? colors.danger : colors.success;
   const startFinanceFlow = () => {
@@ -123,40 +107,6 @@ export default function Finance() {
       <View style={[styles.healthCard, { borderColor: healthTone }]}>
         <Text style={styles.healthTitle}>Budget Health</Text>
         <Text style={[styles.healthValue, { color: healthTone }]}>{projectedBudgetAfterEssentials < 0 ? "Needs attention" : "Healthy"}</Text>
-        {recommendations.map((recommendation) => (
-          <Text key={recommendation} style={styles.healthText}>{recommendation}</Text>
-        ))}
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Essential vs. Discretionary</Text>
-        <Text style={styles.cardText}>
-          Fuel is treated as essential; food check-ins as discretionary — based on your last {spendingBreakdown.entryCount} logged {spendingBreakdown.entryCount === 1 ? "day" : "days"}.
-        </Text>
-
-        <View style={styles.breakdownRow}>
-          <View style={styles.breakdownBlock}>
-            <Text style={styles.metricLabel}>Essential (fuel)</Text>
-            <Text style={styles.metricValue}>{moneyFormat.format(spendingBreakdown.essentialTotal)}</Text>
-          </View>
-          <View style={styles.breakdownBlock}>
-            <Text style={styles.metricLabel}>Discretionary (food)</Text>
-            <Text style={styles.metricValue}>{moneyFormat.format(spendingBreakdown.discretionaryTotal)}</Text>
-          </View>
-        </View>
-
-        {spendingBreakdown.entryCount > 0 ? (
-          <View style={styles.breakdownBar}>
-            <View style={[styles.breakdownBarSegment, { flex: Math.max(100 - discretionaryPercent, 1), backgroundColor: colors.accent }]} />
-            <View style={[styles.breakdownBarSegment, { flex: Math.max(discretionaryPercent, 1), backgroundColor: colors.danger }]} />
-          </View>
-        ) : null}
-
-        <Text style={styles.inputSubtitle}>
-          {spendingBreakdown.entryCount > 0
-            ? `Discretionary spending is ${discretionaryPercent}% of what you've logged.`
-            : "Daily check-ins that feed this breakdown are paused right now, so there's nothing to show yet."}
-        </Text>
       </View>
 
       <View style={styles.metricsRow}>
