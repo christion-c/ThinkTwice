@@ -13,6 +13,7 @@ import BottomNav from "../components/BottomNav";
 import { useBudget } from "../components/BudgetContext";
 import PageScaffold from "../components/PageScaffold";
 import { radii, shadows, spacing, type ThemeColors } from "../components/theme";
+import { parseOptionalInt, parseOptionalNumber } from "../lib/parse-numbers";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -354,25 +355,3 @@ const createStyles = (colors: ThemeColors) =>
       fontWeight: "700",
     },
   });
-
-function parseOptionalNumber(value: string) {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return null;
-  }
-
-  const parsedValue = Number.parseFloat(trimmedValue);
-  return Number.isFinite(parsedValue) ? parsedValue : null;
-}
-
-function parseOptionalInt(value: string) {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return null;
-  }
-
-  const parsedValue = Number.parseInt(trimmedValue, 10);
-  return Number.isFinite(parsedValue) ? parsedValue : null;
-}

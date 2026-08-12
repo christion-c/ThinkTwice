@@ -3,6 +3,7 @@ import { Router } from "express";
 import { env } from "../../config/env.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
+import { requireCurrentUser } from "../../lib/route-helpers.js";
 import { listBudgetEntriesForUser } from "../budget/budget.repository.js";
 
 export const predictionsRouter = Router();
@@ -31,12 +32,9 @@ predictionsRouter.use(requireAuth, syncCurrentUser);
  * logged budget entries by the ML service.
  */
 predictionsRouter.get("/", async (request, response, next) => {
-  const currentUser = request.currentUser;
+  const currentUser = requireCurrentUser(request, response);
 
   if (!currentUser) {
-    response.status(500).json({
-      error: "User profile unavailable",
-    });
     return;
   }
 

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { requireInternalService } from "../../middleware/require-internal-service.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
+import { requireCurrentUser } from "../../lib/route-helpers.js";
 import {
   insertFillUpHistory,
   listFillUpHistoryByFirebaseUid,
@@ -30,10 +31,9 @@ fillUpHistoryRouter.post(
   requireAuth,
   syncCurrentUser,
   async (request, response, next) => {
-    const currentUser = request.currentUser;
+    const currentUser = requireCurrentUser(request, response);
 
     if (!currentUser) {
-      response.status(500).json({ error: "User profile unavailable" });
       return;
     }
 

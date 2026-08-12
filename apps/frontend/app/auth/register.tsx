@@ -1,16 +1,17 @@
 import { router } from "expo-router";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 
 import { useThemeColors } from "../../components/AppPreferences";
+import { createAuthStyles } from "../../components/auth/auth.styles";
 import PageScaffold from "../../components/PageScaffold";
-import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
+import { getFirebaseErrorCode } from "../../lib/firebase-errors";
 
 export default function Register() {
   const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const styles = useMemo(() => createAuthStyles(colors), [colors]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -133,9 +134,7 @@ export default function Register() {
 }
 
 function getAuthErrorMessage(error: unknown) {
-  const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
-
-  switch (code) {
+  switch (getFirebaseErrorCode(error)) {
     case "auth/invalid-email":
       return "Please enter a valid email address.";
     case "auth/email-already-in-use":
@@ -146,77 +145,3 @@ function getAuthErrorMessage(error: unknown) {
       return "Unable to create account right now. Please try again.";
   }
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    card: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      padding: spacing.lg,
-      gap: spacing.md,
-    },
-    cardTitle: {
-      color: colors.text,
-      fontSize: 22,
-      fontWeight: "700",
-    },
-    formGroup: {
-      gap: 6,
-    },
-    label: {
-      color: colors.textMuted,
-      fontSize: 13,
-      fontWeight: "600",
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.sm,
-      backgroundColor: colors.surfaceSoft,
-      color: colors.text,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 12,
-      fontSize: 16,
-    },
-    errorText: {
-      color: colors.danger,
-      fontSize: 14,
-    },
-    previewText: {
-      color: colors.textMuted,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    primaryButton: {
-      borderRadius: radii.md,
-      backgroundColor: colors.accent,
-      paddingVertical: 12,
-      alignItems: "center",
-    },
-    primaryButtonLabel: {
-      color: colors.accentDeep,
-      fontSize: 16,
-      fontWeight: "700",
-    },
-    buttonPressed: {
-      opacity: 0.85,
-    },
-    signupRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      justifyContent: "center",
-    },
-    subtleText: {
-      color: colors.textMuted,
-      fontSize: 14,
-    },
-    linkText: {
-      color: colors.accent,
-      fontSize: 14,
-      fontWeight: "700",
-      textAlign: "center",
-    },
-  });

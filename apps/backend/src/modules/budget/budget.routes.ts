@@ -4,6 +4,10 @@ import { z } from "zod";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 import {
+  requireCurrentUser,
+  respondWithValidationError,
+} from "../../lib/route-helpers.js";
+import {
   createBudgetEntry,
   deleteBudgetEntryForUser,
   listBudgetEntriesForUser,
@@ -32,12 +36,9 @@ budgetRouter.use(requireAuth, syncCurrentUser);
  * Returns the authenticated user's most recent budget entries.
  */
 budgetRouter.get("/", async (request, response, next) => {
-  const currentUser = request.currentUser;
+  const currentUser = requireCurrentUser(request, response);
 
   if (!currentUser) {
-    response.status(500).json({
-      error: "User profile unavailable",
-    });
     return;
   }
 
@@ -59,25 +60,20 @@ budgetRouter.get("/", async (request, response, next) => {
  * Creates a budget entry owned by the authenticated user.
  */
 budgetRouter.post("/", async (request, response, next) => {
-  const currentUser = request.currentUser;
+  const currentUser = requireCurrentUser(request, response);
 
   if (!currentUser) {
-    response.status(500).json({
-      error: "User profile unavailable",
-    });
     return;
   }
 
   const validationResult = createBudgetEntrySchema.safeParse(request.body);
 
   if (!validationResult.success) {
-    response.status(400).json({
-      error: "Invalid budget entry data",
-      details: validationResult.error.issues.map((issue) => ({
-        field: issue.path.join("."),
-        message: issue.message,
-      })),
-    });
+    respondWithValidationError(
+      response,
+      validationResult.error,
+      "Invalid budget entry data",
+    );
     return;
   }
 
@@ -105,12 +101,9 @@ budgetRouter.post("/", async (request, response, next) => {
  * Deletes a budget entry only when it belongs to the authenticated user.
  */
 budgetRouter.delete("/:entryId", async (request, response, next) => {
-  const currentUser = request.currentUser;
+  const currentUser = requireCurrentUser(request, response);
 
   if (!currentUser) {
-    response.status(500).json({
-      error: "User profile unavailable",
-    });
     return;
   }
 

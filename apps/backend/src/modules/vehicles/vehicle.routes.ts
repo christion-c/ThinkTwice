@@ -4,6 +4,10 @@ import { z } from "zod";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 import {
+  requireCurrentUser,
+  respondWithValidationError,
+} from "../../lib/route-helpers.js";
+import {
   createVehicle,
   deleteVehicleForUser,
   listVehiclesForUser,
@@ -49,12 +53,9 @@ vehicleRouter.use(requireAuth, syncCurrentUser);
  * Returns the authenticated user's vehicles.
  */
 vehicleRouter.get("/", async (request, response, next) => {
-  const currentUser = request.currentUser;
+  const currentUser = requireCurrentUser(request, response);
 
   if (!currentUser) {
-    response.status(500).json({
-      error: "User profile unavailable",
-    });
     return;
   }
 
@@ -73,25 +74,20 @@ vehicleRouter.get("/", async (request, response, next) => {
  * Creates a vehicle owned by the authenticated user.
  */
 vehicleRouter.post("/", async (request, response, next) => {
-  const currentUser = request.currentUser;
+  const currentUser = requireCurrentUser(request, response);
 
   if (!currentUser) {
-    response.status(500).json({
-      error: "User profile unavailable",
-    });
     return;
   }
 
   const validationResult = createVehicleSchema.safeParse(request.body);
 
   if (!validationResult.success) {
-    response.status(400).json({
-      error: "Invalid vehicle data",
-      details: validationResult.error.issues.map((issue) => ({
-        field: issue.path.join("."),
-        message: issue.message,
-      })),
-    });
+    respondWithValidationError(
+      response,
+      validationResult.error,
+      "Invalid vehicle data",
+    );
     return;
   }
 
@@ -120,12 +116,9 @@ vehicleRouter.post("/", async (request, response, next) => {
  * Updates a vehicle only when it belongs to the authenticated user.
  */
 vehicleRouter.patch("/:vehicleId", async (request, response, next) => {
-  const currentUser = request.currentUser;
+  const currentUser = requireCurrentUser(request, response);
 
   if (!currentUser) {
-    response.status(500).json({
-      error: "User profile unavailable",
-    });
     return;
   }
 
@@ -143,13 +136,11 @@ vehicleRouter.patch("/:vehicleId", async (request, response, next) => {
   const validationResult = updateVehicleSchema.safeParse(request.body);
 
   if (!validationResult.success) {
-    response.status(400).json({
-      error: "Invalid vehicle data",
-      details: validationResult.error.issues.map((issue) => ({
-        field: issue.path.join("."),
-        message: issue.message,
-      })),
-    });
+    respondWithValidationError(
+      response,
+      validationResult.error,
+      "Invalid vehicle data",
+    );
     return;
   }
 
@@ -206,12 +197,9 @@ vehicleRouter.patch("/:vehicleId", async (request, response, next) => {
  * Deletes a vehicle only when it belongs to the authenticated user.
  */
 vehicleRouter.delete("/:vehicleId", async (request, response, next) => {
-  const currentUser = request.currentUser;
+  const currentUser = requireCurrentUser(request, response);
 
   if (!currentUser) {
-    response.status(500).json({
-      error: "User profile unavailable",
-    });
     return;
   }
 
