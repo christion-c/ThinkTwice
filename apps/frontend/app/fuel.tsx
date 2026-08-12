@@ -61,6 +61,7 @@ export default function Fuel() {
   const [makeInput, setMakeInput] = useState("");
   const [modelInput, setModelInput] = useState("");
   const [modelYearInput, setModelYearInput] = useState("");
+  const [fillUpDateInput, setFillUpDateInput] = useState(() => getTodayIsoDateString());
   const [saveMessage, setSaveMessage] = useState("");
   const [flowStep, setFlowStep] = useState<"gallons" | "price" | "miles" | "tankLevel" | null>(null);
   const [vehicleFlowStep, setVehicleFlowStep] = useState<"nickname" | "year" | "make" | "model" | "mpg" | "tank" | null>(null);
@@ -132,6 +133,8 @@ export default function Fuel() {
       return;
     }
 
+    const entryDate = normalizeDateInput(fillUpDateInput);
+
     try {
       await saveFillUpHistory(user, {
         milesDriven: parseOptionalNumber(milesPerWeekInput) || 0,
@@ -142,6 +145,7 @@ export default function Fuel() {
         observedCost:
           (parseOptionalNumber(fuelGallonsInput) ?? 0) *
           (parseOptionalNumber(fuelPriceInput) ?? 0),
+        recordedAt: entryDate.toISOString(),
       });
     } catch {
       // Ignore history save failures so the fuel flow remains uninterrupted.
@@ -342,6 +346,19 @@ export default function Fuel() {
         <Text style={styles.inputTitle}>Fuel Check-In</Text>
         <Text style={styles.inputSubtitle}>Check in after every fill-up.</Text>
 
+        <View style={styles.inlineFieldWrap}>
+          <Text style={styles.inlineFieldLabel}>Check-in date</Text>
+          <TextInput
+            value={fillUpDateInput}
+            onChangeText={setFillUpDateInput}
+            style={styles.input}
+            placeholder="YYYY-MM-DD"
+            keyboardType="default"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+
         <View style={styles.fieldList}>
           <Pressable onPress={startFuelFlow} style={styles.primaryButton}>
             <Text style={styles.primaryButtonLabel}>Start fuel check-in</Text>
@@ -424,6 +441,18 @@ export default function Fuel() {
       </Modal>
     </PageScaffold>
   );
+}
+
+function getTodayIsoDateString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function normalizeDateInput(dateInput: string) {
+  const candidate = dateInput && !Number.isNaN(Date.parse(dateInput))
+    ? new Date(`${dateInput}T12:00:00`)
+    : new Date();
+
+  return Number.isNaN(candidate.getTime()) ? new Date() : candidate;
 }
 
 const createStyles = (colors: ThemeColors) =>

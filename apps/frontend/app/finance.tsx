@@ -111,7 +111,7 @@ export default function Finance() {
 
       <View style={styles.metricsRow}>
         <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>Weekly target</Text>
+          <Text style={styles.metricLabel}>Weekly Budget</Text>
           <Text style={styles.metricValue}>{moneyFormat.format(weeklySpendTarget)}</Text>
         </View>
         <View style={styles.metricCard}>

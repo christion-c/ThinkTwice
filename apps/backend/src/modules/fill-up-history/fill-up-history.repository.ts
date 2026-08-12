@@ -10,6 +10,10 @@ export interface FillUpEntry {
   recordedAt: Date;
 }
 
+export type FillUpEntryInput = Omit<FillUpEntry, "recordedAt"> & {
+  recordedAt?: Date | string | null;
+};
+
 interface FillUpRow {
   miles_driven: string;
   fuel_price: string;
@@ -34,15 +38,17 @@ function mapRow(row: FillUpRow): FillUpEntry {
 
 export async function insertFillUpHistory(
   userId: string,
-  entry: Omit<FillUpEntry, "recordedAt">,
+  entry: FillUpEntryInput,
 ): Promise<void> {
+  const recordedAt = entry.recordedAt ? new Date(entry.recordedAt) : new Date();
+
   await database.query(
     `
       INSERT INTO fill_up_history (
         user_id, miles_driven, fuel_price, combined_mpg,
-        tank_capacity, gallons, observed_cost
+        tank_capacity, gallons, observed_cost, recorded_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `,
     [
       userId,
@@ -52,6 +58,7 @@ export async function insertFillUpHistory(
       entry.tankCapacity,
       entry.gallons,
       entry.observedCost,
+      recordedAt,
     ],
   );
 }
