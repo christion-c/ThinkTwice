@@ -13,7 +13,7 @@ import {
 
 export const fillUpHistoryRouter = Router();
 
-const entrySchema = z
+export const entrySchema = z
   .object({
     milesDriven: z.number().min(0).max(99999999),
     fuelPrice: z.number().min(0).max(99999999),
@@ -21,6 +21,12 @@ const entrySchema = z
     tankCapacity: z.number().min(0).max(99999999),
     gallons: z.number().min(0).max(99999999),
     observedCost: z.number().min(0).max(99999999),
+    recordedAt: z
+      .string()
+      .refine((value) => !Number.isNaN(Date.parse(value)), {
+        message: "recordedAt must be a valid ISO date string",
+      })
+      .optional(),
   })
   .strict();
 
@@ -46,7 +52,10 @@ fillUpHistoryRouter.post(
     }
 
     try {
-      await insertFillUpHistory(currentUser.id, result.data);
+      await insertFillUpHistory(currentUser.id, {
+        ...result.data,
+        recordedAt: result.data.recordedAt ? new Date(result.data.recordedAt) : undefined,
+      });
       response.status(204).end();
     } catch (error) {
       next(error);

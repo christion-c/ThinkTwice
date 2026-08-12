@@ -208,6 +208,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         ? stats.typicalFuelPrice
         : fuelPrice;
 
+  const sanitizedFuelPrice = clampNumber(effectiveFuelPrice, 0, 20);
+
   const effectiveMpg =
     stats.typicalMpg > 0 && combinedMpg > 0
       ? (stats.typicalMpg * 0.7) + (combinedMpg * 0.3)
@@ -215,11 +217,14 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         ? stats.typicalMpg
         : combinedMpg;
 
+  const sanitizedMpg = clampNumber(effectiveMpg, 5, 80);
+
   const effectiveTankCapacity = tankCapacity > 0 ? tankCapacity : stats.typicalTankCapacity;
 
   const fallbackCycleDays = stats.typicalCycleDays > 0 ? stats.typicalCycleDays : 7;
   const fallbackDailyMiles = milesSinceLastFillUp > 0 ? milesSinceLastFillUp / fallbackCycleDays : 0;
   const dailyMilesEstimate = stats.dailyMiles > 0 ? stats.dailyMiles : fallbackDailyMiles;
+  const sanitizedDailyMilesEstimate = clampNumber(dailyMilesEstimate, 0, 500);
 
   const needsFromTankLevel =
     effectiveTankCapacity > 0 && currentTankPercent >= 0 && currentTankPercent <= 100
@@ -235,18 +240,18 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           ? stats.typicalFillUpGallons
           : effectiveTankCapacity;
 
-  const projectedFillUpCost = projectedFillUpGallons * effectiveFuelPrice;
+  const projectedFillUpCost = clampNumber(projectedFillUpGallons * sanitizedFuelPrice, 0, 5000);
 
-  const monthlyMiles = dailyMilesEstimate * 30.4375;
-  const monthlyFuelGallons = effectiveMpg > 0 ? monthlyMiles / effectiveMpg : 0;
-  const monthlyFuelBudget = monthlyFuelGallons * effectiveFuelPrice;
+  const monthlyMiles = sanitizedDailyMilesEstimate * 30.4375;
+  const monthlyFuelGallons = sanitizedMpg > 0 ? monthlyMiles / sanitizedMpg : 0;
+  const monthlyFuelBudget = clampNumber(monthlyFuelGallons * sanitizedFuelPrice, 0, 5000);
 
   const availableRangeMiles =
-    effectiveMpg > 0 && effectiveTankCapacity > 0
-      ? (Math.max(Math.min(currentTankPercent, 100), 0) / 100) * effectiveTankCapacity * effectiveMpg
+    sanitizedMpg > 0 && effectiveTankCapacity > 0
+      ? (Math.max(Math.min(currentTankPercent, 100), 0) / 100) * effectiveTankCapacity * sanitizedMpg
       : 0;
 
-  const projectedDaysUntilFillUp = dailyMilesEstimate > 0 ? availableRangeMiles / dailyMilesEstimate : 0;
+  const projectedDaysUntilFillUp = sanitizedDailyMilesEstimate > 0 ? availableRangeMiles / sanitizedDailyMilesEstimate : 0;
 
   const projectedBudgetAfterEssentials =
     monthlyIncome - monthlyExpenses - monthlyFixedCosts - monthlyFuelBudget;
@@ -451,4 +456,12 @@ function robustRecencyAverage(values: Array<number | null>) {
 
 function positiveOrNull(value: number) {
   return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+
+  return Math.min(Math.max(value, min), max);
 }
