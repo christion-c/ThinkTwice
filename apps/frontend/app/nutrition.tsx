@@ -64,7 +64,7 @@ export default function Nutrition() {
     <PageScaffold
       title="Nutrition"
       subtitle="Log a quick daily check-in so ThinkTwice can separate essentials from discretionary spending."
-      footer={<BottomNav active="Nutrition" />}
+      footer={<BottomNav />}
     >
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Forecast</Text>

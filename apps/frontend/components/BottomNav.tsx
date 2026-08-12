@@ -17,7 +17,7 @@ const tabs = [
 
 ] as const;
 
-export default function BottomNav({ active }: { active: (typeof tabs)[number]["label"] }) {
+export default function BottomNav({ active }: { active?: (typeof tabs)[number]["label"] }) {
   const colors = useThemeColors();
   const { compactCards } = useAppPreferences();
   const styles = useMemo(() => createStyles(colors, compactCards), [colors, compactCards]);
