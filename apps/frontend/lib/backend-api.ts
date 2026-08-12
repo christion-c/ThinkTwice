@@ -226,7 +226,44 @@ export async function upsertFinanceInputs(
   return response.inputs;
 }
 
+<<<<<<< HEAD
 export type FillUpHistoryEntry = SharedFillUpHistoryEntry;
+=======
+export interface FillUpHistoryEntry {
+  milesDriven: number;
+  fuelPrice: number;
+  combinedMpg: number;
+  tankCapacity: number;
+  gallons: number;
+  observedCost: number;
+  recordedAt?: string;
+}
+
+export interface SavedFillUpHistoryEntry {
+  milesDriven: number;
+  fuelPrice: number;
+  combinedMpg: number;
+  tankCapacity: number;
+  gallons: number;
+  observedCost: number;
+  recordedAt: string;
+}
+
+export async function fetchFillUpHistory(
+  user: User,
+): Promise<SavedFillUpHistoryEntry[]> {
+  const headers = await getAuthHeader(user);
+  const response = await requestBackend<{ entries: SavedFillUpHistoryEntry[] }>(
+    "/fill-up-history",
+    {
+      method: "GET",
+      headers,
+    },
+  );
+
+  return response.entries;
+}
+>>>>>>> b479907 (made ml learning less dramatic off smaller inputs)
 
 export async function saveFillUpHistory(
   user: User,

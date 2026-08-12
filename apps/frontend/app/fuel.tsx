@@ -135,6 +135,7 @@ export default function Fuel() {
         </View>
       </View>
 
+<<<<<<< HEAD
       <FuelCheckInModal
         flowStep={fuelFlow.flowStep}
         fieldDraft={fuelFlow.fieldDraft}
@@ -158,6 +159,81 @@ export default function Fuel() {
         colors={colors}
         styles={styles}
       />
+=======
+      <Modal transparent visible={Boolean(flowStep)} animationType="fade" onRequestClose={closeFuelFlow}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+          style={styles.modalBackdrop}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>{flowStep === "gallons" ? "Gallons" : flowStep === "price" ? "Price per gallon" : flowStep === "miles" ? "Miles since last fill-up" : "Tank level"}</Text>
+              <Text style={styles.modalHint}>{flowStep === "gallons" ? "Enter the gallons you put in your tank this fill-up." : flowStep === "price" ? "Enter the price you paid per gallon." : flowStep === "miles" ? "Enter the miles you drove since your previous fill-up." : "Enter how full the tank is right now."}</Text>
+              <TextInput
+                value={fieldDraft}
+                onChangeText={setFieldDraft}
+                keyboardType={flowStep === "gallons" || flowStep === "price" || flowStep === "miles" || flowStep === "tankLevel" ? "decimal-pad" : "default"}
+                style={styles.modalInput}
+                placeholder={flowStep === "price" ? "0.00" : flowStep === "tankLevel" ? "0%" : "0"}
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+              />
+              <View style={styles.modalActions}>
+                <Pressable onPress={closeFuelFlow} style={styles.modalSecondaryButton}>
+                  <Text style={styles.modalSecondaryLabel}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={saveFuelFlow} style={styles.modalPrimaryButton}>
+                  <Text style={styles.modalPrimaryLabel}>{flowStep === "tankLevel" ? "Done" : "Next"}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal transparent visible={Boolean(vehicleFlowStep)} animationType="fade" onRequestClose={closeVehicleFlow}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+          style={styles.modalBackdrop}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>{vehicleFlowStep === "nickname" ? "Nickname" : vehicleFlowStep === "year" ? "Year" : vehicleFlowStep === "make" ? "Make" : vehicleFlowStep === "model" ? "Model" : vehicleFlowStep === "mpg" ? "MPG" : "Tank size"}</Text>
+              <Text style={styles.modalHint}>{vehicleFlowStep === "nickname" ? "Enter a nickname for this vehicle." : vehicleFlowStep === "year" ? "Enter the model year." : vehicleFlowStep === "make" ? "Enter the make." : vehicleFlowStep === "model" ? "Enter the model." : vehicleFlowStep === "mpg" ? "Enter the vehicle’s average MPG." : "Enter the tank size in gallons."}</Text>
+              <TextInput
+                value={fieldDraft}
+                onChangeText={setFieldDraft}
+                keyboardType={vehicleFlowStep === "year" ? "number-pad" : "decimal-pad"}
+                style={styles.modalInput}
+                placeholder={
+                  vehicleFlowStep === "nickname"
+                    ? "eg. My daily driver"
+                    : vehicleFlowStep === "year"
+                      ? "eg. 2016"
+                      : vehicleFlowStep === "make"
+                        ? "eg. Toyota, Ford, Nissan"
+                        : vehicleFlowStep === "model"
+                          ? "Model Name"
+                          : "0"
+                }
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+              />
+              <View style={styles.modalActions}>
+                <Pressable onPress={closeVehicleFlow} style={styles.modalSecondaryButton}>
+                  <Text style={styles.modalSecondaryLabel}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={() => { void saveVehicleFlow(); }} style={styles.modalPrimaryButton}>
+                  <Text style={styles.modalPrimaryLabel}>{vehicleFlowStep === "tank" ? "Done" : "Next"}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+>>>>>>> b479907 (made ml learning less dramatic off smaller inputs)
     </PageScaffold>
   );
 }

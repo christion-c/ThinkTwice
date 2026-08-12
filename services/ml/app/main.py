@@ -202,6 +202,7 @@ def build_prediction(
     history_count = len(history)
     fuel_prediction = math_fuel_pred
     blended = False
+    blend_weight = 0.0
 
     if history_count > 0:
         history_rows = []
@@ -219,10 +220,24 @@ def build_prediction(
 
         history_frame = pd.DataFrame(history_rows)
         if len(history_frame) > 0 and "observed_cost" in history_frame.columns:
-            recent_average = float(history_frame["observed_cost"].mean())
-            fuel_prediction = round(
-                (math_fuel_pred * 0.7) + (recent_average * 0.3), 2)
-            blended = True
+            observed_costs = [
+                float(value)
+                for value in history_frame["observed_cost"].tolist()
+                if isinstance(value, (int, float))
+            ]
+            robust_history_cost = robust_recent_average(observed_costs)
+
+            if robust_history_cost is not None:
+                # Increase personalization as history grows, but never let
+                # history dominate the model completely.
+                blend_weight = min(
+                    0.55, 0.15 + (0.04 * min(history_count, 10)))
+                fuel_prediction = round(
+                    (math_fuel_pred * (1 - blend_weight))
+                    + (robust_history_cost * blend_weight),
+                    2,
+                )
+                blended = True
 
     total_prediction = round(fuel_prediction, 2)
     explanation_parts = [
@@ -232,10 +247,10 @@ def build_prediction(
 
     if blended:
         explanation_parts.append(
-            f"Because this account already has {history_count} saved fill-up entry{'y' if history_count == 1 else 'ies'} in history, the preview blends the math estimate with the recent observed cost.",
+            f"Because this account already has {history_count} saved fill-up entry{'y' if history_count == 1 else 'ies'} in history, the preview blends the math estimate with a robust recency-weighted history trend.",
         )
         explanation_parts.append(
-            "The blend uses 70% of the math estimate and 30% of the recent history average, so the result becomes more personalized over time.",
+            f"The blend currently uses {round((1 - blend_weight) * 100)}% math baseline and {round(blend_weight * 100)}% history, while down-weighting outliers so one unusual stop does not swing the forecast.",
         )
     else:
         explanation_parts.append(
@@ -260,6 +275,37 @@ def build_prediction(
         "feedback": feedback,
         "explanation": " ".join(explanation_parts),
     }
+
+
+def robust_recent_average(values: list[float]) -> float | None:
+    finite_values = [value for value in values if value > 0]
+    if len(finite_values) == 0:
+        return None
+
+    recent_values = finite_values[:30]
+    sorted_values = sorted(recent_values)
+    median = sorted_values[len(sorted_values) // 2]
+
+    deviations = [abs(value - median) for value in sorted_values]
+    mad = sorted(deviations)[len(deviations) // 2] if deviations else 0.0
+
+    if mad > 0:
+        stable_values = [
+            value for value in recent_values if abs(value - median) <= (3 * mad)
+        ]
+        if len(stable_values) == 0:
+            stable_values = recent_values
+    else:
+        stable_values = recent_values
+
+    weighted_sum = 0.0
+    total_weight = 0.0
+    for index, value in enumerate(stable_values):
+        weight = pow(2.718281828, -(index / 6))
+        weighted_sum += value * weight
+        total_weight += weight
+
+    return (weighted_sum / total_weight) if total_weight > 0 else None
 
 
 def save_user_history(payload: dict[str, Any]) -> dict[str, Any]:
