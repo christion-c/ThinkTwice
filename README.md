@@ -19,8 +19,8 @@ The whole stack runs in Docker, so every team member works with the same version
 | Area | Owner(s) | Folder |
 | --- | --- | --- |
 | Back end | Christion Callahan | `apps/backend/` |
-| Front end | Parker and James Lewis | `apps/frontend/` |
-| Machine learning | Gabriel Phipps | `services/ml/` |
+| Front end and Machine Learning | Parker and James Lewis | `apps/frontend/` `services/ml` |
+| Gabriel Phipps |
 
 Shared files that need coordination before changing: `compose.yaml`, `.env.example`, `infra/`, `packages/`, database schemas, and API request/response formats.
 

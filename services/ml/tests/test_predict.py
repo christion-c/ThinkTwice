@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import app, recency_weighted_average
 
 client = TestClient(app)
 
@@ -47,8 +47,8 @@ def test_predict_falls_back_to_average_below_the_regression_threshold():
     assert body["method"] == "average"
     assert body["sampleSize"] == 2
     assert body["predictedFuelCost"] == 65.0
-    assert body["predictedFoodCost"] == 25.0
-    assert body["predictedTotal"] == 90.0
+    assert body["predictedFoodCost"] == 0.0
+    assert body["predictedTotal"] == 65.0
 
 
 def test_predict_uses_regression_at_the_threshold_and_beyond():
@@ -73,10 +73,55 @@ def test_predict_uses_regression_at_the_threshold_and_beyond():
     assert body["method"] == "linear_regression"
     assert body["sampleSize"] == 4
     assert body["predictedFuelCost"] > 0
-    assert body["predictedFoodCost"] > 0
-    assert body["predictedTotal"] == round(
-        body["predictedFuelCost"] + body["predictedFoodCost"], 2
+    assert body["predictedFoodCost"] == 0.0
+    assert body["predictedTotal"] == round(body["predictedFuelCost"], 2)
+
+
+def test_predict_ignores_food_and_meals_for_fuel_only_forecasts():
+    response = client.post(
+        "/predict",
+        json={
+            "entries": [
+                {
+                    "date": "2026-08-01",
+                    "fuelCost": 50,
+                    "foodCost": 20,
+                    "milesDriven": 100,
+                    "meals": 10,
+                },
+                {
+                    "date": "2026-08-08",
+                    "fuelCost": 60,
+                    "foodCost": 25,
+                    "milesDriven": 140,
+                    "meals": 12,
+                },
+                {
+                    "date": "2026-08-15",
+                    "fuelCost": 70,
+                    "foodCost": 30,
+                    "milesDriven": 180,
+                    "meals": 14,
+                },
+            ]
+        },
     )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["method"] == "linear_regression"
+    assert body["predictedFoodCost"] == 0.0
+    assert body["predictedTotal"] == body["predictedFuelCost"]
+
+
+def test_recency_weighted_average_prioritizes_the_second_most_recent_entry():
+    values = [53.0, 80.0, 65.0, 60.0, 55.0]
+
+    result = recency_weighted_average(values)
+
+    assert result is not None
+    assert 70.0 < result < 80.0
+    assert result > recency_weighted_average([80.0, 53.0, 65.0, 60.0, 55.0])
 
 
 def test_predict_rejects_a_negative_cost():

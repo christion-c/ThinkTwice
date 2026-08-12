@@ -225,13 +225,15 @@ def build_prediction(
                 for value in history_frame["observed_cost"].tolist()
                 if isinstance(value, (int, float))
             ]
-            robust_history_cost = robust_recent_average(observed_costs)
+            robust_history_cost = recency_weighted_average(observed_costs)
 
             if robust_history_cost is not None:
                 # Increase personalization as history grows, but never let
-                # history dominate the model completely.
+                # history dominate the model completely. The second most recent
+                # entry fromt the user carries the most influence, with the rest of the user's
+                # history smoothing out noise and personalizing the forecast.
                 blend_weight = min(
-                    0.55, 0.15 + (0.04 * min(history_count, 10)))
+                    0.65, 0.20 + (0.05 * min(history_count, 10)))
                 fuel_prediction = round(
                     (math_fuel_pred * (1 - blend_weight))
                     + (robust_history_cost * blend_weight),
@@ -277,35 +279,32 @@ def build_prediction(
     }
 
 
-def robust_recent_average(values: list[float]) -> float | None:
+def recency_weighted_average(values: list[float]) -> float | None:
     finite_values = [value for value in values if value > 0]
     if len(finite_values) == 0:
         return None
 
-    recent_values = finite_values[:30]
-    sorted_values = sorted(recent_values)
-    median = sorted_values[len(sorted_values) // 2]
+    if len(finite_values) == 1:
+        return finite_values[0]
 
-    deviations = [abs(value - median) for value in sorted_values]
-    mad = sorted(deviations)[len(deviations) // 2] if deviations else 0.0
+    # Use the full user history, but let the second most recent fill-up carry
+    # the strongest weight. That keeps the forecast grounded in the user's
+    # historical pattern without letting the most recent one-off spike dominate.
+    weights: list[float] = []
+    for index in range(len(finite_values)):
+        if index == 1:
+            weight = 6.0
+        elif index == 0:
+            weight = 1.0
+        else:
+            weight = max(0.25, 1.0 / (1 + index))
+        weights.append(weight)
 
-    if mad > 0:
-        stable_values = [
-            value for value in recent_values if abs(value - median) <= (3 * mad)
-        ]
-        if len(stable_values) == 0:
-            stable_values = recent_values
-    else:
-        stable_values = recent_values
-
-    weighted_sum = 0.0
-    total_weight = 0.0
-    for index, value in enumerate(stable_values):
-        weight = pow(2.718281828, -(index / 6))
-        weighted_sum += value * weight
-        total_weight += weight
-
-    return (weighted_sum / total_weight) if total_weight > 0 else None
+    weighted_sum = sum(
+        value * weight for value, weight in zip(finite_values, weights)
+    )
+    total_weight = sum(weights)
+    return weighted_sum / total_weight if total_weight > 0 else None
 
 
 def save_user_history(payload: dict[str, Any]) -> dict[str, Any]:
@@ -357,19 +356,18 @@ def _average(values: list[Optional[float]]) -> float:
 
 def _predict_by_average(entries: list[BudgetEntry]) -> PredictResponse:
     average_fuel = _average([entry.fuel_cost for entry in entries])
-    average_food = _average([entry.food_cost for entry in entries])
 
     return PredictResponse(
         predicted_fuel_cost=round(average_fuel, 2),
-        predicted_food_cost=round(average_food, 2),
-        predicted_total=round(average_fuel + average_food, 2),
+        predicted_food_cost=0.0,
+        predicted_total=round(average_fuel, 2),
         method="average",
         sample_size=len(entries),
     )
 
 
 def _predict_by_regression(entries: list[BudgetEntry]) -> PredictResponse:
-    # Imported lazily: pandas/scikit-learn are only needed on this path, so
+    # Imported lazily pandas/scikit-learn are only needed on this path, so
     # a request with too little data to regress never pays their import cost.
     import pandas as pd
     from sklearn.linear_model import LinearRegression
@@ -378,37 +376,32 @@ def _predict_by_regression(entries: list[BudgetEntry]) -> PredictResponse:
         [
             {
                 "miles_driven": entry.miles_driven or 0,
-                "meals": entry.meals or 0,
                 "fuel_cost": entry.fuel_cost or 0,
-                "food_cost": entry.food_cost or 0,
             }
             for entry in entries
         ]
     )
 
-    features = frame[["miles_driven", "meals"]]
+    if frame.empty or "miles_driven" not in frame.columns:
+        return PredictResponse(
+            predicted_fuel_cost=0.0,
+            predicted_food_cost=0.0,
+            predicted_total=0.0,
+            method="average",
+            sample_size=len(entries),
+        )
 
+    features = frame[["miles_driven"]]
     fuel_model = LinearRegression().fit(features, frame["fuel_cost"])
-    food_model = LinearRegression().fit(features, frame["food_cost"])
 
-    # There's no known "next period" input, so the recent average driving
-    # and eating pattern stands in for it.
     next_period = pd.DataFrame(
-        [
-            {
-                "miles_driven": features["miles_driven"].mean(),
-                "meals": features["meals"].mean(),
-            }
-        ]
-    )
-
+        [{"miles_driven": features["miles_driven"].mean()}])
     predicted_fuel = max(float(fuel_model.predict(next_period)[0]), 0)
-    predicted_food = max(float(food_model.predict(next_period)[0]), 0)
 
     return PredictResponse(
         predicted_fuel_cost=round(predicted_fuel, 2),
-        predicted_food_cost=round(predicted_food, 2),
-        predicted_total=round(predicted_fuel + predicted_food, 2),
+        predicted_food_cost=0.0,
+        predicted_total=round(predicted_fuel, 2),
         method="linear_regression",
         sample_size=len(entries),
     )

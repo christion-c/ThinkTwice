@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import BottomNav from "../components/BottomNav";
@@ -17,11 +17,11 @@ interface MlPreviewResponse {
   total_prediction: number;
   feedback: string;
   explanation: string;
-  sample_rows: Array<{
+  sample_rows: {
     date: string;
     fuel_cost: number;
     miles_driven: number;
-  }>;
+  }[];
 }
 
 export default function MlPreviewPage() {
@@ -36,7 +36,7 @@ export default function MlPreviewPage() {
   const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorDelayMs = 30000;
 
-  const loadPreview = async (miles: string) => {
+  const loadPreview = useCallback(async (miles: string) => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
     if (errorTimeoutRef.current) {
@@ -123,7 +123,7 @@ export default function MlPreviewPage() {
 
     setError(lastError || "Preview service is unavailable right now.");
     setLoading(false);
-  };
+  }, [data, user?.uid]);
 
   useEffect(() => {
     void loadPreview(milesInput);
@@ -133,13 +133,12 @@ export default function MlPreviewPage() {
         clearTimeout(errorTimeoutRef.current);
       }
     };
-  }, []);
+  }, [loadPreview, milesInput]);
 
   return (
-    <PageScaffold title="ML Preview" subtitle="Basic prediction prototype beside the existing math-based budget flow." footer={<BottomNav active="Home" />}>
+    <PageScaffold title="Fuel forecast" subtitle="Fuel cost forecast" footer={<BottomNav active="Home" />}>
       <View style={styles.card}>
-        <Text style={styles.title}>Basic ML preview</Text>
-        <Text style={styles.text}>This page is only for observing the prototype. The current budget math still remains active.</Text>
+        <Text style={styles.title}>Fuel forecast</Text>
 
         <View style={styles.formRow}>
           <View style={styles.inputGroup}>
@@ -156,9 +155,9 @@ export default function MlPreviewPage() {
         </View>
 
         <View style={styles.userInfoBox}>
-          <Text style={styles.userInfoLabel}>Active account</Text>
+          <Text style={styles.userInfoLabel}>Account</Text>
           <Text style={styles.userInfoValue}>{user?.uid ?? "guest"}</Text>
-          <Text style={styles.userInfoHint}>History count: {data?.history_count ?? 0}</Text>
+          <Text style={styles.userInfoHint}>History: {data?.history_count ?? 0} entries</Text>
         </View>
 
         <Pressable
@@ -181,40 +180,39 @@ export default function MlPreviewPage() {
 
         {data ? (
           <>
-            <View style={styles.feedbackBox}>
-              <Text style={styles.feedbackLabel}>Model feedback</Text>
-              <Text style={styles.feedbackText}>{data.feedback}</Text>
-            </View>
-
-            <View style={styles.explanationBox}>
-              <Text style={styles.feedbackLabel}>How the estimate is built</Text>
-              <Text style={styles.feedbackText}>{data.explanation}</Text>
-            </View>
-
             <View style={styles.metricRow}>
               <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Rows</Text>
-                <Text style={styles.metricValue}>{data.rows}</Text>
-              </View>
-              <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Fuel prediction</Text>
+                <Text style={styles.metricLabel}>Projected fuel cost</Text>
                 <Text style={styles.metricValue}>${data.fuel_prediction.toFixed(2)}</Text>
               </View>
-            </View>
-
-            <View style={styles.metricRow}>
               <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Total prediction</Text>
+                <Text style={styles.metricLabel}>Budget total</Text>
                 <Text style={styles.metricValue}>${data.total_prediction.toFixed(2)}</Text>
               </View>
             </View>
 
-            <Text style={styles.smallTitle}>Sample rows</Text>
+            <View style={styles.metricRow}>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricLabel}>History entries</Text>
+                <Text style={styles.metricValue}>{data.history_count}</Text>
+              </View>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricLabel}>Rows used</Text>
+                <Text style={styles.metricValue}>{data.rows}</Text>
+              </View>
+            </View>
+
+            <View style={styles.feedbackBox}>
+              <Text style={styles.feedbackLabel}>Forecast</Text>
+              <Text style={styles.feedbackText}>{data.feedback}</Text>
+            </View>
+
+            <Text style={styles.smallTitle}>Recent fill-ups</Text>
             {data.sample_rows.map((row) => (
               <View key={row.date} style={styles.rowBox}>
                 <Text style={styles.rowText}>{row.date}</Text>
-                <Text style={styles.rowText}>miles: {row.miles_driven}</Text>
-                <Text style={styles.rowText}>fuel: ${row.fuel_cost.toFixed(2)}</Text>
+                <Text style={styles.rowText}>Miles: {row.miles_driven}</Text>
+                <Text style={styles.rowText}>Fuel: ${row.fuel_cost.toFixed(2)}</Text>
               </View>
             ))}
           </>
