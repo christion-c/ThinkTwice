@@ -19,7 +19,7 @@ const moneyFormat = new Intl.NumberFormat("en-US", {
 
 export default function Profile() {
   const colors = useThemeColors();
-  const { colorMode, highContrast, remindersEnabled, budgetAlertsEnabled } = useAppPreferences();
+  const { colorMode, highContrast, remindersEnabled } = useAppPreferences();
   const { user } = useAuth();
   const { monthlyFuelBudget } = useFinance();
   const { backendUser, selectedVehicle, loading } = useVehicle();
@@ -51,7 +51,6 @@ export default function Profile() {
         <Text style={styles.cardText}>Active vehicle: {selectedVehicle?.nickname ?? "None selected"}</Text>
         <Text style={styles.cardText}>High contrast: {highContrast ? "On" : "Off"}</Text>
         <Text style={styles.cardText}>Reminders: {remindersEnabled ? "On" : "Off"}</Text>
-        <Text style={styles.cardText}>Budget alerts: {budgetAlertsEnabled ? "On" : "Off"}</Text>
       </View>
 
     </PageScaffold>

@@ -14,13 +14,11 @@ export default function DailyRhythmSettings() {
     setCompactCards,
     remindersEnabled,
     setRemindersEnabled,
-    budgetAlertsEnabled,
-    setBudgetAlertsEnabled,
   } = useAppPreferences();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const activeCount = [remindersEnabled, budgetAlertsEnabled, compactCards].filter(Boolean).length;
-  const modeLabel = activeCount >= 3 ? "Balanced" : activeCount >= 2 ? "Focused" : "Quiet";
+  const activeCount = [remindersEnabled, compactCards].filter(Boolean).length;
+  const modeLabel = activeCount >= 2 ? "Focused" : "Quiet";
 
   return (
     <PageScaffold
@@ -46,7 +44,7 @@ export default function DailyRhythmSettings() {
 
         <View style={styles.heroMetrics}>
           <View style={styles.metricBox}>
-            <Text style={styles.metricValue}>{activeCount}/4</Text>
+            <Text style={styles.metricValue}>{activeCount}/3</Text>
             <Text style={styles.metricLabel}>active habits</Text>
           </View>
           <View style={styles.metricBox}>
@@ -63,13 +61,6 @@ export default function DailyRhythmSettings() {
           caption="Keep light follow-up prompts visible so your routine stays on track."
           value={remindersEnabled}
           onValueChange={setRemindersEnabled}
-          colors={colors}
-        />
-        <SettingRow
-          title="Budget alerts"
-          caption="Surface budget risk prompts before a small miss turns into a bigger problem."
-          value={budgetAlertsEnabled}
-          onValueChange={setBudgetAlertsEnabled}
           colors={colors}
         />
       </View>

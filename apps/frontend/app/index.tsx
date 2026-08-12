@@ -165,9 +165,6 @@ export default function Home() {
       <View style={[styles.alertCard, { borderColor: budgetStatus.color }]}>
         <Text style={styles.alertTitle}>{budgetStatus.title}</Text>
         <Text style={styles.alertText}>{budgetStatus.description}</Text>
-        {budgetAlertsEnabled ? (
-          <Text style={styles.alertMeta}>Budget alerts are enabled in your preferences.</Text>
-        ) : null}
       </View>
 
       <View style={[styles.fillUpCard, shadows.soft]}>
