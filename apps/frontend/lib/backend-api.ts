@@ -6,7 +6,6 @@ import type {
   CreateBudgetEntryInput,
   CreateVehicleInput,
   FinanceInputs,
-  FillUpHistoryEntry as SharedFillUpHistoryEntry,
   PredictionResult,
   UpdateVehicleInput,
   UserProfile,
@@ -226,7 +225,15 @@ export async function upsertFinanceInputs(
   return response.inputs;
 }
 
-export type FillUpHistoryEntry = SharedFillUpHistoryEntry;
+export interface FillUpHistoryEntry {
+  milesDriven: number;
+  fuelPrice: number;
+  combinedMpg: number;
+  tankCapacity: number;
+  gallons: number;
+  observedCost: number;
+  recordedAt?: string;
+}
 
 export interface SavedFillUpHistoryEntry {
   milesDriven: number;
