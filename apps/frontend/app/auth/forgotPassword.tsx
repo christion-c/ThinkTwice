@@ -1,16 +1,16 @@
 import { router } from "expo-router";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { useMemo, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useThemeColors } from "../../components/AppPreferences";
-import { createAuthStyles } from "../../components/auth/auth.styles";
 import PageScaffold from "../../components/PageScaffold";
+import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function ForgotPassword() {
   const colors = useThemeColors();
-  const styles = useMemo(() => createAuthStyles(colors), [colors]);
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -89,3 +89,71 @@ export default function ForgotPassword() {
     </PageScaffold>
   );
 }
+
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: "700",
+    },
+    formGroup: {
+      gap: 6,
+    },
+    label: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceSoft,
+      color: colors.text,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 12,
+      fontSize: 16,
+    },
+    errorText: {
+      color: colors.danger,
+      fontSize: 14,
+    },
+    previewText: {
+      color: colors.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    successText: {
+      color: colors.success,
+      fontSize: 14,
+    },
+    primaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: colors.accent,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    primaryButtonLabel: {
+      color: colors.accentDeep,
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+    linkText: {
+      color: colors.accent,
+      fontSize: 14,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+  });

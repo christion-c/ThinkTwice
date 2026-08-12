@@ -1,29 +1,87 @@
 import { router } from "expo-router";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { useMemo, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
+import {
+  GoogleAuthProvider,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from "firebase/auth";
+import { useEffect, useMemo, useState } from "react";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
 
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
-import GoogleMark from "../../components/auth/GoogleMark";
-import { createAuthStyles } from "../../components/auth/auth.styles";
 import PageScaffold from "../../components/PageScaffold";
+import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
-import { getFirebaseErrorCode } from "../../lib/firebase-errors";
-import { useGoogleSignIn } from "../../hooks/useGoogleSignIn";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
   const colors = useThemeColors();
   const { colorMode } = useAppPreferences();
-  const styles = useMemo(() => createAuthStyles(colors), [colors]);
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const isGoogleConfigured = Boolean(
+    Platform.select({
+      web: googleWebClientId,
+      ios: googleIosClientId,
+      android: googleAndroidClientId,
+      default: undefined,
+    }),
+  );
   const useBlackGoogleButton = colorMode === "light";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
-  const { isGoogleConfigured, isGoogleSubmitting, handleGoogleSignIn } =
-    useGoogleSignIn(setErrorMessage);
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    // Placeholders prevent runtime crashes in preview mode when env vars are missing.
+    webClientId: googleWebClientId ?? "preview-web-client-id",
+    iosClientId: googleIosClientId ?? "preview-ios-client-id",
+    androidClientId: googleAndroidClientId ?? "preview-android-client-id",
+  });
+
+  useEffect(() => {
+    const signInFromGoogleResponse = async () => {
+      if (response?.type !== "success") {
+        return;
+      }
+
+      const idToken = response.params?.id_token;
+
+      if (!idToken) {
+        setErrorMessage("Google sign-in did not return an ID token.");
+        setIsGoogleSubmitting(false);
+        return;
+      }
+
+      if (!auth) {
+        setErrorMessage("Firebase is not configured yet. Add env values to enable Google sign-in.");
+        setIsGoogleSubmitting(false);
+        return;
+      }
+
+      try {
+        const credential = GoogleAuthProvider.credential(idToken);
+        await signInWithCredential(auth, credential);
+        router.replace("/");
+      } catch {
+        setErrorMessage("Unable to sign in with Google. Please try again.");
+      } finally {
+        setIsGoogleSubmitting(false);
+      }
+    };
+
+    void signInFromGoogleResponse();
+  }, [response]);
 
   const handleLogin = async () => {
     setErrorMessage("");
@@ -43,9 +101,51 @@ export default function Login() {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       router.replace("/");
     } catch (error) {
-      setErrorMessage(getLoginErrorMessage(error));
+      setErrorMessage(getAuthErrorMessage(error));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage("");
+
+    if (!isFirebaseConfigured || !auth) {
+      setErrorMessage("Firebase is not configured yet. Add env values to enable Google sign-in.");
+      return;
+    }
+
+    if (!isGoogleConfigured) {
+      setErrorMessage("Google OAuth client ID is missing. Add Google client IDs to env first.");
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      try {
+        setIsGoogleSubmitting(true);
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+        router.replace("/");
+      } catch {
+        setErrorMessage("Unable to sign in with Google. Please try again.");
+      } finally {
+        setIsGoogleSubmitting(false);
+      }
+
+      return;
+    }
+
+    if (!request) {
+      setErrorMessage("Google sign-in is still loading. Please try again.");
+      return;
+    }
+
+    try {
+      setIsGoogleSubmitting(true);
+      await promptAsync();
+    } catch {
+      setIsGoogleSubmitting(false);
+      setErrorMessage("Unable to open Google sign-in. Please try again.");
     }
   };
 
@@ -110,9 +210,7 @@ export default function Login() {
         </Pressable>
 
         <Pressable
-          onPress={() => {
-            void handleGoogleSignIn();
-          }}
+          onPress={handleGoogleSignIn}
           disabled={isGoogleSubmitting || !isGoogleConfigured || !isFirebaseConfigured}
           style={({ pressed }) => [
             styles.googleButton,
@@ -143,8 +241,10 @@ export default function Login() {
   );
 }
 
-function getLoginErrorMessage(error: unknown) {
-  switch (getFirebaseErrorCode(error)) {
+function getAuthErrorMessage(error: unknown) {
+  const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
+
+  switch (code) {
     case "auth/invalid-email":
       return "Please enter a valid email address.";
     case "auth/user-not-found":
@@ -156,4 +256,130 @@ function getLoginErrorMessage(error: unknown) {
     default:
       return "Unable to sign in right now. Please try again.";
   }
+}
+
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: "700",
+    },
+    formGroup: {
+      gap: 6,
+    },
+    label: {
+      color: colors.textMuted,
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceSoft,
+      color: colors.text,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 12,
+      fontSize: 16,
+    },
+    errorText: {
+      color: colors.danger,
+      fontSize: 14,
+    },
+    previewText: {
+      color: colors.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    primaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: colors.accent,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    primaryButtonLabel: {
+      color: colors.accentDeep,
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    googleButton: {
+      borderRadius: radii.md,
+      borderWidth: 1,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    googleButtonWhite: {
+      backgroundColor: "#FFFFFF",
+      borderColor: "#DADCE0",
+    },
+    googleButtonBlack: {
+      backgroundColor: "#131314",
+      borderColor: "#5F6368",
+    },
+    googleButtonContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    googleButtonLabel: {
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    googleButtonLabelWhite: {
+      color: "#3C4043",
+    },
+    googleButtonLabelBlack: {
+      color: "#FFFFFF",
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+    signupRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      justifyContent: "center",
+    },
+    subtleText: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    linkText: {
+      color: colors.accent,
+      fontSize: 14,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+  });
+
+function GoogleMark({ size = 18 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M23.49 12.27C23.49 11.48 23.42 10.72 23.29 10H12V14.3H18.47C18.19 15.8 17.35 17.07 16.08 17.92L19.75 20.76C21.9 18.78 23.49 15.86 23.49 12.27Z"
+        fill="#4285F4"
+      />
+      <Path
+        d="M12 24C15.24 24 17.96 22.93 19.75 20.76L16.08 17.92C15.06 18.6 13.76 19 12 19C8.88 19 6.23 16.89 5.34 14.04L1.55 16.96C3.33 21.01 7.37 24 12 24Z"
+        fill="#34A853"
+      />
+      <Path
+        d="M5.34 14.04C5.11 13.36 4.98 12.64 4.98 11.9C4.98 11.16 5.11 10.44 5.34 9.76L1.55 6.84C0.57 8.8 0 10.99 0 12.3C0 13.61 0.57 15.8 1.55 17.76L5.34 14.04Z"
+        fill="#FBBC05"
+      />
+      <Path
+        d="M12 4.6C13.93 4.6 15.66 5.26 17.02 6.56L19.84 3.74C17.95 1.98 15.24 0.6 12 0.6C7.37 0.6 3.33 3.59 1.55 7.64L5.34 10.56C6.23 7.71 8.88 4.6 12 4.6Z"
+        fill="#EA4335"
+      />
+    </Svg>
+  );
 }
