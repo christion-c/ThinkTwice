@@ -19,6 +19,7 @@ import PageScaffold from "../components/PageScaffold";
 import { useVehicle } from "../components/VehicleContext";
 import { saveFillUpHistory } from "../lib/backend-api";
 import { radii, shadows, spacing, type ThemeColors } from "../components/theme";
+import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -67,6 +68,7 @@ export default function Fuel() {
   const [vehicleFlowStep, setVehicleFlowStep] = useState<"nickname" | "year" | "make" | "model" | "mpg" | "tank" | null>(null);
   const [fieldDraft, setFieldDraft] = useState("");
   const hasExistingVehicle = Boolean(vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0]);
+  const webKeyboardInset = useWebKeyboardInset();
 
   useEffect(() => {
     setNicknameInput(selectedVehicle?.nickname ?? "");
@@ -372,7 +374,7 @@ export default function Fuel() {
           keyboardVerticalOffset={Platform.OS === "ios" ? 24 : 0}
           style={styles.modalBackdrop}
         >
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { marginBottom: webKeyboardInset }]}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>{flowStep === "gallons" ? "Gallons" : flowStep === "price" ? "Price per gallon" : flowStep === "miles" ? "Miles since last fill-up" : "Tank level"}</Text>
               <Text style={styles.modalHint}>{flowStep === "gallons" ? "Enter the gallons you put in your tank this fill-up." : flowStep === "price" ? "Enter the price you paid per gallon." : flowStep === "miles" ? "Enter the miles you drove since your previous fill-up." : "Enter how full the tank is right now."}</Text>
@@ -404,7 +406,7 @@ export default function Fuel() {
           keyboardVerticalOffset={Platform.OS === "ios" ? 24 : 0}
           style={styles.modalBackdrop}
         >
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { marginBottom: webKeyboardInset }]}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>{vehicleFlowStep === "nickname" ? "Nickname" : vehicleFlowStep === "year" ? "Year" : vehicleFlowStep === "make" ? "Make" : vehicleFlowStep === "model" ? "Model" : vehicleFlowStep === "mpg" ? "MPG" : "Tank size"}</Text>
               <Text style={styles.modalHint}>{vehicleFlowStep === "nickname" ? "Enter a nickname for this vehicle." : vehicleFlowStep === "year" ? "Enter the model year." : vehicleFlowStep === "make" ? "Enter the make." : vehicleFlowStep === "model" ? "Enter the model." : vehicleFlowStep === "mpg" ? "Enter the vehicle’s average MPG." : "Enter the tank size in gallons."}</Text>

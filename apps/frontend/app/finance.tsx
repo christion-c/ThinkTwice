@@ -15,6 +15,7 @@ import BottomNav from "../components/BottomNav";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { radii, spacing, type ThemeColors } from "../components/theme";
+import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -26,6 +27,7 @@ export default function Finance() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [financeFlowStep, setFinanceFlowStep] = useState<"income" | "expense" | "bills" | null>(null);
   const [fieldDraft, setFieldDraft] = useState("");
+  const webKeyboardInset = useWebKeyboardInset();
   const {
     incomeInput,
     setIncomeInput,
@@ -143,7 +145,7 @@ export default function Finance() {
           keyboardVerticalOffset={0}
           style={styles.modalBackdrop}
         >
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { marginBottom: webKeyboardInset }]}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>{financeFlowStep === "income" ? "Monthly income" : financeFlowStep === "expense" ? "Monthly spending" : "Static bills"}</Text>
               <Text style={styles.modalHint}>{financeFlowStep === "income" ? "Enter your normal monthly income." : financeFlowStep === "expense" ? "Enter your typical monthly spending." : "Enter your recurring monthly bills like rent, insurance, or loan payments."}</Text>
