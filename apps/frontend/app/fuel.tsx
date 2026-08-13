@@ -368,8 +368,8 @@ export default function Fuel() {
 
       <Modal transparent visible={Boolean(flowStep)} animationType="fade" onRequestClose={closeFuelFlow}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
+          behavior={Platform.OS === "ios" ? "position" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 24 : 0}
           style={styles.modalBackdrop}
         >
           <View style={styles.modalContainer}>
@@ -400,8 +400,8 @@ export default function Fuel() {
 
       <Modal transparent visible={Boolean(vehicleFlowStep)} animationType="fade" onRequestClose={closeVehicleFlow}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
+          behavior={Platform.OS === "ios" ? "position" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 24 : 0}
           style={styles.modalBackdrop}
         >
           <View style={styles.modalContainer}>
@@ -411,7 +411,15 @@ export default function Fuel() {
               <TextInput
                 value={fieldDraft}
                 onChangeText={setFieldDraft}
-                keyboardType={vehicleFlowStep === "year" ? "number-pad" : "decimal-pad"}
+                keyboardType={
+                  vehicleFlowStep === "year"
+                    ? "number-pad"
+                    : vehicleFlowStep === "mpg" || vehicleFlowStep === "tank"
+                      ? "decimal-pad"
+                      : "default"
+                }
+                autoCapitalize={vehicleFlowStep === "year" || vehicleFlowStep === "mpg" || vehicleFlowStep === "tank" ? "none" : "words"}
+                autoCorrect={vehicleFlowStep !== "year" && vehicleFlowStep !== "mpg" && vehicleFlowStep !== "tank"}
                 style={styles.modalInput}
                 placeholder={
                   vehicleFlowStep === "nickname"
