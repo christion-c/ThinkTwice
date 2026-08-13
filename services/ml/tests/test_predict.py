@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.main import app, recency_weighted_average
+from app.main import app, build_prediction, recency_weighted_average
 
 client = TestClient(app)
 
@@ -122,6 +122,60 @@ def test_recency_weighted_average_prioritizes_the_second_most_recent_entry():
     assert result is not None
     assert 70.0 < result < 80.0
     assert result > recency_weighted_average([80.0, 53.0, 65.0, 60.0, 55.0])
+
+
+def test_predict_scales_realistically_with_miles_driven():
+    response = client.post(
+        "/predict",
+        json={
+            "entries": [
+                {
+                    "date": "2026-08-01",
+                    "fuelCost": 52.5,
+                    "foodCost": 0,
+                    "milesDriven": 180,
+                    "meals": 0,
+                },
+                {
+                    "date": "2026-08-08",
+                    "fuelCost": 63.0,
+                    "foodCost": 0,
+                    "milesDriven": 210,
+                    "meals": 0,
+                },
+                {
+                    "date": "2026-08-15",
+                    "fuelCost": 75.0,
+                    "foodCost": 0,
+                    "milesDriven": 250,
+                    "meals": 0,
+                },
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["predictedFuelCost"] > 20.0
+    assert body["predictedFuelCost"] < 100.0
+    assert body["predictedFuelCost"] > 1.5 * 20.0
+
+
+def test_build_prediction_scales_realistically_with_miles_driven():
+    history = [
+        {"miles_driven": 180, "observed_cost": 52.5},
+        {"miles_driven": 210, "observed_cost": 63.0},
+        {"miles_driven": 250, "observed_cost": 75.0},
+    ]
+
+    prediction_120 = build_prediction(
+        miles_driven=120, user_id="realistic-user")
+    prediction_200 = build_prediction(
+        miles_driven=200, user_id="realistic-user")
+
+    assert prediction_120["fuel_prediction"] > 10.0
+    assert prediction_200["fuel_prediction"] > prediction_120["fuel_prediction"] * 1.5
+    assert prediction_200["fuel_prediction"] > 20.0
 
 
 def test_predict_rejects_a_negative_cost():

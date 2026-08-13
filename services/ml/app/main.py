@@ -83,21 +83,14 @@ HISTORY_PATH = resolve_history_path()
 
 
 def build_dataset() -> list[dict[str, Any]]:
-    if DATA_PATH.exists():
-        with DATA_PATH.open("r", encoding="utf-8") as handle:
-            try:
-                payload = json.load(handle)
-                if isinstance(payload, list):
-                    return payload
-            except json.JSONDecodeError:
-                pass
-
     rows: list[dict[str, Any]] = []
     for index in range(1, 31):
-        miles_driven = 90 + (index % 7) * 15 + (index % 3) * 5
+        miles_driven = 100 + (index * 9) % 180
+        fuel_price = round(3.2 + (index % 6) * 0.28, 2)
+        combined_mpg = 24 + (index % 5) * 2
+        gallons = round(miles_driven / combined_mpg, 2)
+        fuel_cost = round(gallons * fuel_price + 20.0 + (index % 4) * 3.5, 2)
         meals = 8 + (index % 5) * 2
-        fuel_cost = round(1.8 + (miles_driven / 28) *
-                          0.95 + (index % 4) * 0.35, 2)
         food_cost = round(4.4 + meals * 1.1 + (index % 3) * 0.5, 2)
         rows.append(
             {
@@ -106,8 +99,27 @@ def build_dataset() -> list[dict[str, Any]]:
                 "food_cost": food_cost,
                 "miles_driven": miles_driven,
                 "meals": meals,
+                "fuel_price": fuel_price,
+                "combined_mpg": combined_mpg,
+                "gallons": gallons,
             }
         )
+
+    if DATA_PATH.exists():
+        with DATA_PATH.open("r", encoding="utf-8") as handle:
+            try:
+                payload = json.load(handle)
+                if isinstance(payload, list) and payload:
+                    cost_per_mile = [
+                        float(item.get("fuel_cost", 0)) /
+                        float(item.get("miles_driven", 1) or 1)
+                        for item in payload
+                        if isinstance(item, dict) and float(item.get("miles_driven", 0) or 0) > 0
+                    ]
+                    if cost_per_mile and sum(cost_per_mile) / len(cost_per_mile) >= 0.15:
+                        return payload
+            except json.JSONDecodeError:
+                pass
 
     DATA_PATH.write_text(json.dumps(rows, indent=2), encoding="utf-8")
     return rows
@@ -179,93 +191,73 @@ def build_prediction(
     tank_capacity: float | None = None,
     gallons: float | None = None,
 ) -> dict[str, Any]:
-    # Imported lazily so a request that never reaches this path (health
-    # checks, /predict below the regression threshold) never pays the
-    # pandas/scikit-learn import cost.
-    import pandas as pd
-    from sklearn.linear_model import LinearRegression
-
     rows = build_dataset()
-    frame = pd.DataFrame(rows)
 
-    features = frame[["miles_driven"]]
-    fuel_target = frame["fuel_cost"]
-
-    fuel_model = LinearRegression()
-    fuel_model.fit(features, fuel_target)
-
-    next_week = {"miles_driven": miles_driven}
-    math_fuel_pred = round(
-        float(fuel_model.predict([[next_week["miles_driven"]]])[0]), 2)
+    dataset_cost_per_mile = [
+        float(row["fuel_cost"]) / float(row["miles_driven"])
+        for row in rows
+        if float(row.get("miles_driven", 0) or 0) > 0
+    ]
+    baseline_cost_per_mile = (
+        sum(dataset_cost_per_mile) / len(dataset_cost_per_mile)
+        if dataset_cost_per_mile else 0.29
+    )
+    baseline_prediction = round(miles_driven * baseline_cost_per_mile, 2)
 
     history = load_user_history(user_id=user_id)
     history_count = len(history)
-    fuel_prediction = math_fuel_pred
+    fuel_prediction = baseline_prediction
     blended = False
     blend_weight = 0.0
 
     if history_count > 0:
-        history_rows = []
+        history_rates = []
         for entry in history:
-            history_rows.append(
-                {
-                    "miles_driven": entry.get("miles_driven", miles_driven),
-                    "observed_cost": entry.get("observed_cost", math_fuel_pred),
-                    "fuel_price": entry.get("fuel_price", fuel_price or 0),
-                    "combined_mpg": entry.get("combined_mpg", combined_mpg or 0),
-                    "tank_capacity": entry.get("tank_capacity", tank_capacity or 0),
-                    "gallons": entry.get("gallons", gallons or 0),
-                }
-            )
+            entry_miles = float(entry.get("miles_driven", miles_driven) or 0)
+            observed_cost = float(entry.get("observed_cost", 0) or 0)
+            if entry_miles > 0 and observed_cost > 0:
+                history_rates.append(observed_cost / entry_miles)
 
-        history_frame = pd.DataFrame(history_rows)
-        if len(history_frame) > 0 and "observed_cost" in history_frame.columns:
-            observed_costs = [
-                float(value)
-                for value in history_frame["observed_cost"].tolist()
-                if isinstance(value, (int, float))
-            ]
-            robust_history_cost = recency_weighted_average(observed_costs)
-
-            if robust_history_cost is not None:
-                # Increase personalization as history grows, but never let
-                # history dominate the model completely. The second most recent
-                # entry fromt the user carries the most influence, with the rest of the user's
-                # history smoothing out noise and personalizing the forecast.
-                blend_weight = min(
-                    0.65, 0.20 + (0.05 * min(history_count, 10)))
+        if history_rates:
+            history_rate = recency_weighted_average(history_rates)
+            if history_rate is not None:
+                user_fuel_prediction = round(history_rate * miles_driven, 2)
+                blend_weight = min(0.9, 0.65 + (0.05 * min(history_count, 10)))
                 fuel_prediction = round(
-                    (math_fuel_pred * (1 - blend_weight))
-                    + (robust_history_cost * blend_weight),
+                    (baseline_prediction * (1 - blend_weight))
+                    + (user_fuel_prediction * blend_weight),
                     2,
                 )
                 blended = True
 
     total_prediction = round(fuel_prediction, 2)
+    next_week = {
+        "miles_driven": miles_driven,
+        "fuel_price": fuel_price,
+        "combined_mpg": combined_mpg,
+        "tank_capacity": tank_capacity,
+        "gallons": gallons,
+    }
     explanation_parts = [
-        f"The preview starts with a math-based forecast from {len(rows)} sample rows using miles-driven as the main signal.",
-        f"For {miles_driven} miles, the base regression estimate is ${math_fuel_pred:.2f} for fuel.",
+        f"The math baseline uses a real-world cost-per-mile estimate from {len(rows)} reference fill-ups and then personalizes it with the user's fill-up history.",
+        f"For {miles_driven} miles, the baseline estimate is ${baseline_prediction:.2f} for fuel.",
     ]
 
     if blended:
         explanation_parts.append(
-            f"Because this account already has {history_count} saved fill-up entry{'y' if history_count == 1 else 'ies'} in history, the preview blends the math estimate with a robust recency-weighted history trend.",
+            f"Because this account already has {history_count} saved fill-up entry{'y' if history_count == 1 else 'ies'} in history, the model blends the math baseline with the user's observed cost-per-mile trend.",
         )
         explanation_parts.append(
-            f"The blend currently uses {round((1 - blend_weight) * 100)}% math baseline and {round(blend_weight * 100)}% history, while down-weighting outliers so one unusual stop does not swing the forecast.",
+            f"The blend currently uses {round((1 - blend_weight) * 100)}% baseline and {round(blend_weight * 100)}% history, with the second-most-recent fill-up weighted most heavily.",
         )
     else:
         explanation_parts.append(
-            "This account does not yet have enough history, so the preview is still using the math-only baseline.",
+            "This account does not yet have enough history, so the estimate is using the math baseline cost-per-mile model.",
         )
 
     feedback = (
-        f"Using the current miles-driven input, the fuel preview is ${fuel_prediction:.2f}."
+        f"Using the current miles-driven input and recent fuel history, the fuel preview is ${fuel_prediction:.2f}."
     )
-    if blended:
-        feedback = (
-            f"Using your recent fill-up history ({history_count} entry{'s' if history_count != 1 else ''}), the fuel preview is ${fuel_prediction:.2f}."
-        )
 
     return {
         "rows": len(rows),
@@ -367,22 +359,12 @@ def _predict_by_average(entries: list[BudgetEntry]) -> PredictResponse:
 
 
 def _predict_by_regression(entries: list[BudgetEntry]) -> PredictResponse:
-    # Imported lazily pandas/scikit-learn are only needed on this path, so
-    # a request with too little data to regress never pays their import cost.
-    import pandas as pd
-    from sklearn.linear_model import LinearRegression
-
-    frame = pd.DataFrame(
-        [
-            {
-                "miles_driven": entry.miles_driven or 0,
-                "fuel_cost": entry.fuel_cost or 0,
-            }
-            for entry in entries
-        ]
-    )
-
-    if frame.empty or "miles_driven" not in frame.columns:
+    valid_entries = [
+        entry
+        for entry in entries
+        if (entry.miles_driven or 0) > 0 and (entry.fuel_cost or 0) > 0
+    ]
+    if not valid_entries:
         return PredictResponse(
             predicted_fuel_cost=0.0,
             predicted_food_cost=0.0,
@@ -391,12 +373,16 @@ def _predict_by_regression(entries: list[BudgetEntry]) -> PredictResponse:
             sample_size=len(entries),
         )
 
-    features = frame[["miles_driven"]]
-    fuel_model = LinearRegression().fit(features, frame["fuel_cost"])
-
-    next_period = pd.DataFrame(
-        [{"miles_driven": features["miles_driven"].mean()}])
-    predicted_fuel = max(float(fuel_model.predict(next_period)[0]), 0)
+    cost_per_mile_values = [
+        (entry.fuel_cost or 0) / max(entry.miles_driven or 0, 1)
+        for entry in valid_entries
+    ]
+    weighted_rate = recency_weighted_average(cost_per_mile_values)
+    average_miles = (
+        sum(entry.miles_driven or 0 for entry in valid_entries) / len(valid_entries)
+    )
+    predicted_fuel = (weighted_rate or sum(
+        cost_per_mile_values) / len(cost_per_mile_values)) * average_miles
 
     return PredictResponse(
         predicted_fuel_cost=round(predicted_fuel, 2),

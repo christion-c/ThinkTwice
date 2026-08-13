@@ -6,6 +6,7 @@ import PageScaffold from "../components/PageScaffold";
 import { useThemeColors } from "../components/AppPreferences";
 import { useAuth } from "../components/AuthProvider";
 import { radii, spacing, type ThemeColors } from "../components/theme";
+import { fetchFillUpHistory, type SavedFillUpHistoryEntry } from "../lib/backend-api";
 
 interface MlPreviewResponse {
   rows: number;
@@ -32,9 +33,28 @@ export default function MlPreviewPage() {
   const [data, setData] = useState<MlPreviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [historyEntries, setHistoryEntries] = useState<SavedFillUpHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const requestIdRef = useRef(0);
   const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorDelayMs = 30000;
+
+  const loadUserHistory = useCallback(async () => {
+    if (!user) {
+      setHistoryEntries([]);
+      return;
+    }
+
+    setHistoryLoading(true);
+    try {
+      const entries = await fetchFillUpHistory(user);
+      setHistoryEntries(entries);
+    } catch {
+      setHistoryEntries([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [user]);
 
   const loadPreview = useCallback(async (miles: string) => {
     const requestId = requestIdRef.current + 1;
@@ -123,9 +143,10 @@ export default function MlPreviewPage() {
 
     setError(lastError || "Preview service is unavailable right now.");
     setLoading(false);
-  }, [data, user?.uid]);
+  }, [user?.uid]);
 
   useEffect(() => {
+    void loadUserHistory();
     void loadPreview(milesInput);
 
     return () => {
@@ -133,7 +154,7 @@ export default function MlPreviewPage() {
         clearTimeout(errorTimeoutRef.current);
       }
     };
-  }, [loadPreview, milesInput]);
+  }, []);
 
   return (
     <PageScaffold title="Fuel forecast" subtitle="Fuel cost forecast" footer={<BottomNav active="Home" />}>
@@ -207,14 +228,34 @@ export default function MlPreviewPage() {
               <Text style={styles.feedbackText}>{data.feedback}</Text>
             </View>
 
-            <Text style={styles.smallTitle}>Recent fill-ups</Text>
-            {data.sample_rows.map((row) => (
-              <View key={row.date} style={styles.rowBox}>
-                <Text style={styles.rowText}>{row.date}</Text>
-                <Text style={styles.rowText}>Miles: {row.miles_driven}</Text>
-                <Text style={styles.rowText}>Fuel: ${row.fuel_cost.toFixed(2)}</Text>
-              </View>
-            ))}
+            <View style={styles.historyPanel}>
+              <Text style={styles.smallTitle}>Recent fill-ups</Text>
+              {historyLoading ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator color={colors.accent} />
+                  <Text style={styles.text}>Loading history...</Text>
+                </View>
+              ) : historyEntries.length === 0 ? (
+                <Text style={styles.text}>No saved fill-up history yet.</Text>
+              ) : (
+                [...historyEntries]
+                  .sort((a, b) => {
+                    const aTime = a.recordedAt ? new Date(a.recordedAt).getTime() : 0;
+                    const bTime = b.recordedAt ? new Date(b.recordedAt).getTime() : 0;
+                    return bTime - aTime;
+                  })
+                  .slice(0, 10)
+                  .map((entry, index) => (
+                    <View key={`${entry.recordedAt ?? entry.observedCost}-${index}`} style={styles.rowBox}>
+                      <Text style={styles.rowText}>{entry.recordedAt ? new Date(entry.recordedAt).toLocaleDateString() : "Recorded date unavailable"}</Text>
+                      <Text style={styles.rowText}>Miles: {entry.milesDriven}</Text>
+                      <Text style={styles.rowText}>Fuel price: ${entry.fuelPrice.toFixed(2)}</Text>
+                      <Text style={styles.rowText}>Gallons: {entry.gallons.toFixed(2)}</Text>
+                      <Text style={styles.rowText}>Observed cost: ${entry.observedCost.toFixed(2)}</Text>
+                    </View>
+                  ))
+              )}
+            </View>
           </>
         ) : null}
       </View>
@@ -327,6 +368,14 @@ const createStyles = (colors: ThemeColors) =>
     userInfoHint: {
       color: colors.textMuted,
       fontSize: 13,
+    },
+    historyPanel: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing.sm,
+      backgroundColor: colors.background,
+      gap: spacing.sm,
     },
     feedbackBox: {
       borderWidth: 1,
