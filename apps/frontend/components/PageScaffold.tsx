@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -26,6 +26,17 @@ export default function PageScaffold({
   const colors = useThemeColors();
   const { compactCards } = useAppPreferences();
   const styles = useMemo(() => createStyles(colors, compactCards), [colors, compactCards]);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const handleScroll = ({ nativeEvent }: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
+    const maxOffset = Math.max(nativeEvent.contentSize.height - nativeEvent.layoutMeasurement.height, 0);
+    if (nativeEvent.contentOffset.y > maxOffset) {
+      scrollRef.current?.scrollTo({
+        y: maxOffset,
+        animated: false,
+      });
+    }
+  };
 
   const body = (
     <View style={styles.content}>
@@ -48,9 +59,15 @@ export default function PageScaffold({
       <View style={styles.heroGlow} pointerEvents="none" />
       {scrollable ? (
         <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          ref={scrollRef}
+          style={[styles.scroll, { overscrollBehavior: "none" } as any]}
+          contentContainerStyle={[styles.scrollContent, { overscrollBehavior: "none" } as any]}
           showsVerticalScrollIndicator={false}
+          bounces={false}
+          alwaysBounceVertical={false}
+          overScrollMode="never"
+          scrollEventThrottle={16}
+          onScroll={handleScroll}
         >
           {body}
         </ScrollView>
@@ -81,11 +98,9 @@ const createStyles = (colors: ThemeColors, compactCards: boolean) =>
       flex: 1,
     },
     scrollContent: {
-      flexGrow: 1,
       paddingBottom: compactCards ? spacing.lg : spacing.xl,
     },
     content: {
-      flexGrow: 1,
       paddingHorizontal: compactCards ? spacing.md : spacing.lg,
       paddingTop: compactCards ? spacing.md : spacing.lg,
       gap: compactCards ? spacing.md : spacing.lg,
