@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -16,6 +16,7 @@ import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { radii, spacing, type ThemeColors } from "../components/theme";
 import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -41,7 +42,10 @@ export default function Finance() {
     monthlyFuelBudget,
     projectedBudgetAfterEssentials,
     weeklySpendTarget,
+    refresh: refreshFinance,
   } = useFinance();
+
+  useRefetchOnFocus(useCallback(() => refreshFinance(), [refreshFinance]));
 
   const healthTone = projectedBudgetAfterEssentials < 0 ? colors.danger : colors.success;
   const startFinanceFlow = () => {

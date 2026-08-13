@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   fetchFinanceInputs,
@@ -40,6 +40,7 @@ type FinanceContextValue = {
   projectedDaysUntilFillUp: number;
   projectedBudgetAfterEssentials: number;
   weeklySpendTarget: number;
+  refresh: () => Promise<void>;
 };
 
 const FinanceContext = createContext<FinanceContextValue | undefined>(undefined);
@@ -71,6 +72,44 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setTankCapacityInput("");
     setCurrentTankPercentInput("");
   }, [user?.uid]);
+
+  const loadCloudFinanceInputs = useCallback(async () => {
+    if (!user) {
+      return;
+    }
+
+    try {
+      const cloud = await fetchFinanceInputs(user);
+      setIncomeInput(cloud.incomeInput);
+      setExpenseInput(cloud.expenseInput);
+      setMonthlyFixedCostsInput(cloud.monthlyFixedCostsInput);
+      setFuelGallonsInput(cloud.fuelGallonsInput);
+      setFuelPriceInput(cloud.fuelPriceInput);
+      setMilesPerWeekInput(cloud.milesPerWeekInput);
+      setCombinedMpgInput(cloud.combinedMpgInput);
+      setTankCapacityInput(cloud.tankCapacityInput);
+      setCurrentTankPercentInput(cloud.currentTankPercentInput);
+
+      await AsyncStorage.setItem(storageKey, JSON.stringify(cloud));
+    } catch {
+      // Keep the locally cached values if the backend is unavailable.
+    }
+  }, [user, storageKey]);
+
+  const loadFillUpHistory = useCallback(async () => {
+    if (!user) {
+      setFillUpHistory([]);
+      return;
+    }
+
+    try {
+      const entries = await fetchFillUpHistory(user);
+      setFillUpHistory(entries);
+    } catch {
+      // Keep forecasting with manual inputs when history is unavailable.
+      setFillUpHistory([]);
+    }
+  }, [user]);
 
   useEffect(() => {
     const loadPersistedInputs = async () => {
@@ -132,49 +171,22 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       }
 
       // Cloud data is the source of truth — fetch it after the local cache.
-      if (!user) {
-        return;
-      }
-
-      try {
-        const cloud = await fetchFinanceInputs(user);
-        setIncomeInput(cloud.incomeInput);
-        setExpenseInput(cloud.expenseInput);
-        setMonthlyFixedCostsInput(cloud.monthlyFixedCostsInput);
-        setFuelGallonsInput(cloud.fuelGallonsInput);
-        setFuelPriceInput(cloud.fuelPriceInput);
-        setMilesPerWeekInput(cloud.milesPerWeekInput);
-        setCombinedMpgInput(cloud.combinedMpgInput);
-        setTankCapacityInput(cloud.tankCapacityInput);
-        setCurrentTankPercentInput(cloud.currentTankPercentInput);
-
-        await AsyncStorage.setItem(storageKey, JSON.stringify(cloud));
-      } catch {
-        // Keep the locally cached values if the backend is unavailable.
-      }
+      await loadCloudFinanceInputs();
     };
 
     void loadPersistedInputs();
+    // Only meant to run when the signed-in user (and therefore storage key)
+    // changes — loadCloudFinanceInputs is also called directly by refresh().
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey, user]);
 
   useEffect(() => {
-    if (!user) {
-      setFillUpHistory([]);
-      return;
-    }
-
-    const loadFillUpHistory = async () => {
-      try {
-        const entries = await fetchFillUpHistory(user);
-        setFillUpHistory(entries);
-      } catch {
-        // Keep forecasting with manual inputs when history is unavailable.
-        setFillUpHistory([]);
-      }
-    };
-
     void loadFillUpHistory();
-  }, [user]);
+  }, [loadFillUpHistory]);
+
+  const refresh = useCallback(async () => {
+    await Promise.all([loadCloudFinanceInputs(), loadFillUpHistory()]);
+  }, [loadCloudFinanceInputs, loadFillUpHistory]);
 
   useEffect(() => {
     if (selectedVehicle?.combinedMpg !== null && selectedVehicle?.combinedMpg !== undefined) {
@@ -332,6 +344,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       projectedDaysUntilFillUp,
       projectedBudgetAfterEssentials,
       weeklySpendTarget,
+      refresh,
     }),
     [
       incomeInput,
@@ -351,6 +364,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       projectedDaysUntilFillUp,
       projectedBudgetAfterEssentials,
       weeklySpendTarget,
+      refresh,
     ],
   );
 

@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useThemeColors } from "../components/AppPreferences";
@@ -11,6 +11,7 @@ import PageScaffold from "../components/PageScaffold";
 import { radii, shadows, spacing, type ThemeColors } from "../components/theme";
 import { useAuth } from "../components/AuthProvider";
 import { useVehicle } from "../components/VehicleContext";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -31,8 +32,15 @@ export default function Home() {
     projectedFillUpCost,
     projectedDaysUntilFillUp,
     projectedBudgetAfterEssentials,
+    refresh: refreshFinance,
   } = useFinance();
-  const { vehicles } = useVehicle();
+  const { vehicles, refreshVehicles } = useVehicle();
+
+  useRefetchOnFocus(
+    useCallback(async () => {
+      await Promise.all([refreshFinance(), refreshVehicles()]);
+    }, [refreshFinance, refreshVehicles]),
+  );
 
   const budgetStatus =
     projectedBudgetAfterEssentials < 0

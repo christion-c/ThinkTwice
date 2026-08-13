@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
@@ -10,6 +10,7 @@ import { useFinance } from "../../components/FinanceContext";
 import PageScaffold from "../../components/PageScaffold";
 import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { useVehicle } from "../../components/VehicleContext";
+import { useRefetchOnFocus } from "../../hooks/useRefetchOnFocus";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -21,9 +22,15 @@ export default function Profile() {
   const colors = useThemeColors();
   const { colorMode, highContrast, remindersEnabled } = useAppPreferences();
   const { user } = useAuth();
-  const { monthlyFuelBudget } = useFinance();
-  const { backendUser, selectedVehicle, loading } = useVehicle();
+  const { monthlyFuelBudget, refresh: refreshFinance } = useFinance();
+  const { backendUser, selectedVehicle, loading, refreshVehicles } = useVehicle();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  useRefetchOnFocus(
+    useCallback(async () => {
+      await Promise.all([refreshFinance(), refreshVehicles()]);
+    }, [refreshFinance, refreshVehicles]),
+  );
 
   const accountLabel = user?.displayName || user?.email || "Account owner";
 

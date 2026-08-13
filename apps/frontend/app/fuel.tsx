@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -20,6 +20,7 @@ import { useVehicle } from "../components/VehicleContext";
 import { saveFillUpHistory } from "../lib/backend-api";
 import { radii, shadows, spacing, type ThemeColors } from "../components/theme";
 import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
+import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -56,7 +57,14 @@ export default function Fuel() {
     projectedFillUpCost,
     projectedDaysUntilFillUp,
     monthlyFuelBudget,
+    refresh: refreshFinance,
   } = useFinance();
+
+  useRefetchOnFocus(
+    useCallback(async () => {
+      await Promise.all([refreshFinance(), refreshVehicles()]);
+    }, [refreshFinance, refreshVehicles]),
+  );
 
   const [nicknameInput, setNicknameInput] = useState("");
   const [makeInput, setMakeInput] = useState("");
