@@ -1,3 +1,4 @@
+from app import history as ml_history
 from app import main as ml_main
 import json
 import sys
@@ -26,7 +27,7 @@ class PredictionTests(unittest.TestCase):
                            "tank_capacity": 14, "gallons": 4, "observed_cost": 16.8}]}),
                 encoding="utf-8",
             )
-            ml_main.HISTORY_PATH = history_path
+            ml_history.HISTORY_PATH = history_path
 
             result = ml_main.build_prediction(
                 miles_driven=130,

@@ -1,15 +1,30 @@
-import json
-import os
-from datetime import date
-from pathlib import Path
-from typing import Any, Literal, Optional
-import urllib.request
-import urllib.parse
-import urllib.error
+"""ThinkTwice ML service: FastAPI app setup and route registration.
+
+The actual logic lives in sibling modules so this file stays a short,
+readable index of "what endpoints exist and what they call":
+
+- models.py     Pydantic request/response shapes
+- dataset.py    synthetic reference dataset for /ml-preview's baseline
+- history.py    per-user fill-up history storage (backend-durable, with
+                 a local-file fallback)
+- prediction.py the actual prediction math for both /predict and
+                 /ml-preview
+"""
+
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict, Field
+
+from .history import load_user_history, save_user_history
+from .models import PredictRequest, PredictResponse
+from .prediction import (
+    MIN_ENTRIES_FOR_REGRESSION,
+    build_prediction,
+    predict_by_average,
+    predict_by_regression,
+    recency_weighted_average,
+)
 
 app = FastAPI(title="ThinkTwice ML Service")
 
@@ -21,380 +36,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Below this many logged days, a fitted regression is unreliable (it can
-# even be a perfect but meaningless fit through 2 points), so /predict
-# falls back to a plain average instead of pretending to be precise.
-MIN_ENTRIES_FOR_REGRESSION = 3
-
-
-class BudgetEntry(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    date: date
-    fuel_cost: Optional[float] = Field(default=None, alias="fuelCost", ge=0)
-    food_cost: Optional[float] = Field(default=None, alias="foodCost", ge=0)
-    miles_driven: Optional[float] = Field(
-        default=None, alias="milesDriven", ge=0
-    )
-    meals: Optional[int] = Field(default=None, ge=0)
-
-
-class PredictRequest(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    entries: list[BudgetEntry]
-
-
-class PredictResponse(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    predicted_fuel_cost: float = Field(alias="predictedFuelCost")
-    predicted_food_cost: float = Field(alias="predictedFoodCost")
-    predicted_total: float = Field(alias="predictedTotal")
-    method: Literal["average", "linear_regression"]
-    sample_size: int = Field(alias="sampleSize")
-
-
-APP_DIR = Path(__file__).resolve().parent
-ROOT = APP_DIR.parent
-DATA_PATH = ROOT / "budget_data.json"
-DEFAULT_HISTORY_PATH = Path(
-    os.getenv("ML_HISTORY_PATH",
-              "/home/appuser/.cache/thinktwice/user_history.json")
-)
-
-
-def resolve_history_path() -> Path:
-    history_path = DEFAULT_HISTORY_PATH
-    try:
-        history_path.parent.mkdir(parents=True, exist_ok=True)
-        history_path.touch(exist_ok=True)
-        history_path.write_text(
-            "{}", encoding="utf-8") if not history_path.exists() else None
-        return history_path
-    except OSError:
-        fallback_path = Path("/tmp/user_history.json")
-        fallback_path.parent.mkdir(parents=True, exist_ok=True)
-        fallback_path.touch(exist_ok=True)
-        return fallback_path
-
-
-HISTORY_PATH = resolve_history_path()
-
-
-def build_dataset() -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for index in range(1, 31):
-        miles_driven = 100 + (index * 9) % 180
-        fuel_price = round(3.2 + (index % 6) * 0.28, 2)
-        combined_mpg = 24 + (index % 5) * 2
-        gallons = round(miles_driven / combined_mpg, 2)
-        fuel_cost = round(gallons * fuel_price + 20.0 + (index % 4) * 3.5, 2)
-        meals = 8 + (index % 5) * 2
-        food_cost = round(4.4 + meals * 1.1 + (index % 3) * 0.5, 2)
-        rows.append(
-            {
-                "date": f"2026-01-{index:02d}",
-                "fuel_cost": fuel_cost,
-                "food_cost": food_cost,
-                "miles_driven": miles_driven,
-                "meals": meals,
-                "fuel_price": fuel_price,
-                "combined_mpg": combined_mpg,
-                "gallons": gallons,
-            }
-        )
-
-    if DATA_PATH.exists():
-        with DATA_PATH.open("r", encoding="utf-8") as handle:
-            try:
-                payload = json.load(handle)
-                if isinstance(payload, list) and payload:
-                    cost_per_mile = [
-                        float(item.get("fuel_cost", 0)) /
-                        float(item.get("miles_driven", 1) or 1)
-                        for item in payload
-                        if isinstance(item, dict) and float(item.get("miles_driven", 0) or 0) > 0
-                    ]
-                    if cost_per_mile and sum(cost_per_mile) / len(cost_per_mile) >= 0.15:
-                        return payload
-            except json.JSONDecodeError:
-                pass
-
-    DATA_PATH.write_text(json.dumps(rows, indent=2), encoding="utf-8")
-    return rows
-
-
-BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:3000").rstrip("/")
-INTERNAL_SERVICE_TOKEN = os.getenv("INTERNAL_SERVICE_TOKEN", "")
-
-
-def load_user_history(user_id: str | None = None) -> list[dict[str, Any]]:
-    # Try the backend first so history is durable across container restarts.
-    if user_id:
-        try:
-            encoded = urllib.parse.quote(user_id, safe="")
-            url = f"{BACKEND_URL}/fill-up-history/internal?firebase_uid={encoded}"
-            request = urllib.request.Request(
-                url, headers={"X-Internal-Token": INTERNAL_SERVICE_TOKEN}
-            )
-            with urllib.request.urlopen(request, timeout=3) as resp:  # noqa: S310
-                payload = json.loads(resp.read().decode("utf-8"))
-            entries = payload.get("entries", [])
-            if isinstance(entries, list):
-                return [
-                    {
-                        "miles_driven": e.get("milesDriven", 0),
-                        "fuel_price": e.get("fuelPrice", 0),
-                        "combined_mpg": e.get("combinedMpg", 0),
-                        "tank_capacity": e.get("tankCapacity", 0),
-                        "gallons": e.get("gallons", 0),
-                        "observed_cost": e.get("observedCost", 0),
-                    }
-                    for e in entries
-                    if isinstance(e, dict)
-                ]
-        except Exception:  # noqa: BLE001
-            pass  # Fall through to the local file cache below.
-
-    if not HISTORY_PATH.exists():
-        return []
-
-    try:
-        payload = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return []
-
-    if not isinstance(payload, dict):
-        return []
-
-    if user_id is None:
-        entries: list[dict[str, Any]] = []
-        for value in payload.values():
-            if isinstance(value, list):
-                entries.extend(
-                    [item for item in value if isinstance(item, dict)])
-        return entries
-
-    value = payload.get(user_id)
-    if isinstance(value, list):
-        return [item for item in value if isinstance(item, dict)]
-
-    return []
-
-
-def build_prediction(
-    miles_driven: int = 120,
-    user_id: str | None = None,
-    fuel_price: float | None = None,
-    combined_mpg: float | None = None,
-    tank_capacity: float | None = None,
-    gallons: float | None = None,
-) -> dict[str, Any]:
-    rows = build_dataset()
-
-    dataset_cost_per_mile = [
-        float(row["fuel_cost"]) / float(row["miles_driven"])
-        for row in rows
-        if float(row.get("miles_driven", 0) or 0) > 0
-    ]
-    baseline_cost_per_mile = (
-        sum(dataset_cost_per_mile) / len(dataset_cost_per_mile)
-        if dataset_cost_per_mile else 0.29
-    )
-    baseline_prediction = round(miles_driven * baseline_cost_per_mile, 2)
-
-    history = load_user_history(user_id=user_id)
-    history_count = len(history)
-    fuel_prediction = baseline_prediction
-    blended = False
-    blend_weight = 0.0
-
-    if history_count > 0:
-        history_rates = []
-        for entry in history:
-            entry_miles = float(entry.get("miles_driven", miles_driven) or 0)
-            observed_cost = float(entry.get("observed_cost", 0) or 0)
-            if entry_miles > 0 and observed_cost > 0:
-                history_rates.append(observed_cost / entry_miles)
-
-        if history_rates:
-            history_rate = recency_weighted_average(history_rates)
-            if history_rate is not None:
-                user_fuel_prediction = round(history_rate * miles_driven, 2)
-                blend_weight = min(0.9, 0.65 + (0.05 * min(history_count, 10)))
-                fuel_prediction = round(
-                    (baseline_prediction * (1 - blend_weight))
-                    + (user_fuel_prediction * blend_weight),
-                    2,
-                )
-                blended = True
-
-    total_prediction = round(fuel_prediction, 2)
-    next_week = {
-        "miles_driven": miles_driven,
-        "fuel_price": fuel_price,
-        "combined_mpg": combined_mpg,
-        "tank_capacity": tank_capacity,
-        "gallons": gallons,
-    }
-    explanation_parts = [
-        f"The math baseline uses a real-world cost-per-mile estimate from {len(rows)} reference fill-ups and then personalizes it with the user's fill-up history.",
-        f"For {miles_driven} miles, the baseline estimate is ${baseline_prediction:.2f} for fuel.",
-    ]
-
-    if blended:
-        explanation_parts.append(
-            f"Because this account already has {history_count} saved fill-up entry{'y' if history_count == 1 else 'ies'} in history, the model blends the math baseline with the user's observed cost-per-mile trend.",
-        )
-        explanation_parts.append(
-            f"The blend currently uses {round((1 - blend_weight) * 100)}% baseline and {round(blend_weight * 100)}% history, with the second-most-recent fill-up weighted most heavily.",
-        )
-    else:
-        explanation_parts.append(
-            "This account does not yet have enough history, so the estimate is using the math baseline cost-per-mile model.",
-        )
-
-    feedback = (
-        f"Using the current miles-driven input and recent fuel history, the fuel preview is ${fuel_prediction:.2f}."
-    )
-
-    return {
-        "rows": len(rows),
-        "history_count": history_count,
-        "next_week": next_week,
-        "fuel_prediction": fuel_prediction,
-        "total_prediction": total_prediction,
-        "sample_rows": rows[:5],
-        "feedback": feedback,
-        "explanation": " ".join(explanation_parts),
-    }
-
-
-def recency_weighted_average(values: list[float]) -> float | None:
-    finite_values = [value for value in values if value > 0]
-    if len(finite_values) == 0:
-        return None
-
-    if len(finite_values) == 1:
-        return finite_values[0]
-
-    # Use the full user history, but let the second most recent fill-up carry
-    # the strongest weight. That keeps the forecast grounded in the user's
-    # historical pattern without letting the most recent one-off spike dominate.
-    weights: list[float] = []
-    for index in range(len(finite_values)):
-        if index == 1:
-            weight = 6.0
-        elif index == 0:
-            weight = 1.0
-        else:
-            weight = max(0.25, 1.0 / (1 + index))
-        weights.append(weight)
-
-    weighted_sum = sum(
-        value * weight for value, weight in zip(finite_values, weights)
-    )
-    total_weight = sum(weights)
-    return weighted_sum / total_weight if total_weight > 0 else None
-
-
-def save_user_history(payload: dict[str, Any]) -> dict[str, Any]:
-    user_id = payload.get("user_id")
-    if not isinstance(user_id, str) or not user_id.strip():
-        return {"ok": False, "error": "missing user_id"}
-
-    existing_payload: dict[str, Any] = {}
-    if HISTORY_PATH.exists():
-        try:
-            parsed = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
-            if isinstance(parsed, dict):
-                existing_payload = parsed
-        except json.JSONDecodeError:
-            existing_payload = {}
-
-    try:
-        HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
-        HISTORY_PATH.touch(exist_ok=True)
-    except OSError:
-        pass
-
-    entries = existing_payload.get(user_id, [])
-    if not isinstance(entries, list):
-        entries = []
-
-    entry = {key: value for key, value in payload.items() if key != "user_id"}
-    entries.append(entry)
-    existing_payload[user_id] = entries
-    try:
-        HISTORY_PATH.write_text(json.dumps(
-            existing_payload, indent=2), encoding="utf-8")
-    except OSError as exc:
-        return {"ok": False, "error": f"history_write_failed: {exc}"}
-    return {"ok": True, "saved": len(entries)}
-
 
 @app.get("/health")
 def health() -> dict[str, Any]:
     return {"status": "ok"}
 
 
-def _average(values: list[Optional[float]]) -> float:
-    if not values:
-        return 0.0
-
-    return sum(value or 0 for value in values) / len(values)
-
-
-def _predict_by_average(entries: list[BudgetEntry]) -> PredictResponse:
-    average_fuel = _average([entry.fuel_cost for entry in entries])
-
-    return PredictResponse(
-        predicted_fuel_cost=round(average_fuel, 2),
-        predicted_food_cost=0.0,
-        predicted_total=round(average_fuel, 2),
-        method="average",
-        sample_size=len(entries),
-    )
-
-
-def _predict_by_regression(entries: list[BudgetEntry]) -> PredictResponse:
-    valid_entries = [
-        entry
-        for entry in entries
-        if (entry.miles_driven or 0) > 0 and (entry.fuel_cost or 0) > 0
-    ]
-    if not valid_entries:
-        return PredictResponse(
-            predicted_fuel_cost=0.0,
-            predicted_food_cost=0.0,
-            predicted_total=0.0,
-            method="average",
-            sample_size=len(entries),
-        )
-
-    cost_per_mile_values = [
-        (entry.fuel_cost or 0) / max(entry.miles_driven or 0, 1)
-        for entry in valid_entries
-    ]
-    weighted_rate = recency_weighted_average(cost_per_mile_values)
-    average_miles = (
-        sum(entry.miles_driven or 0 for entry in valid_entries) / len(valid_entries)
-    )
-    predicted_fuel = (weighted_rate or sum(
-        cost_per_mile_values) / len(cost_per_mile_values)) * average_miles
-
-    return PredictResponse(
-        predicted_fuel_cost=round(predicted_fuel, 2),
-        predicted_food_cost=0.0,
-        predicted_total=round(predicted_fuel, 2),
-        method="linear_regression",
-        sample_size=len(entries),
-    )
-
-
 @app.post("/predict", response_model=PredictResponse, response_model_by_alias=True)
 def predict(request: PredictRequest) -> PredictResponse:
+    """Forecasts fuel/food cost from the user's own recently logged entries.
+
+    This is the endpoint the real app uses (called server-to-server by
+    the backend's /predictions route) — not to be confused with
+    /ml-preview below, which is a separate debug-only flow.
+    """
     if not request.entries:
         raise HTTPException(
             status_code=422,
@@ -402,13 +57,14 @@ def predict(request: PredictRequest) -> PredictResponse:
         )
 
     if len(request.entries) < MIN_ENTRIES_FOR_REGRESSION:
-        return _predict_by_average(request.entries)
+        return predict_by_average(request.entries)
 
-    return _predict_by_regression(request.entries)
+    return predict_by_regression(request.entries)
 
 
 @app.post("/fill-up-history")
 def fill_up_history(payload: dict[str, Any]) -> dict[str, Any]:
+    """Backs the /ml-preview debug flow's own history writes (see history.py)."""
     return save_user_history(payload)
 
 
@@ -421,6 +77,12 @@ def ml_preview(
     tank_capacity: float | None = None,
     gallons: float | None = None,
 ) -> dict[str, Any]:
+    """Debug-only preview endpoint — not called by the main app.
+
+    Backs the frontend's /ml-preview and /debug/ml-account screens, which
+    call this directly from the browser (via EXPO_PUBLIC_ML_API_URL)
+    rather than going through the backend.
+    """
     return build_prediction(
         miles_driven=miles_driven,
         user_id=user_id,
@@ -429,3 +91,18 @@ def ml_preview(
         tank_capacity=tank_capacity,
         gallons=gallons,
     )
+
+
+# Re-exported so existing imports (`from app.main import build_prediction,
+# recency_weighted_average`, used by services/ml/tests/test_predict.py)
+# keep working after this module split — these are read-only re-exports,
+# not mutated anywhere, so a plain import binding is safe here. Contrast
+# with HISTORY_PATH, which tests mutate directly and therefore import
+# from app.history instead of via this re-export (see history.py's
+# docstring and tests/test_main.py).
+__all__ = [
+    "app",
+    "build_prediction",
+    "load_user_history",
+    "recency_weighted_average",
+]
