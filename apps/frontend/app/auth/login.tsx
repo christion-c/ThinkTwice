@@ -8,12 +8,16 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
 import PageScaffold from "../../components/PageScaffold";
-import { radii, spacing, type ThemeColors } from "../../components/theme";
+import AuthSubmitButton from "../../components/auth/AuthSubmitButton";
+import AuthTextField from "../../components/auth/AuthTextField";
+import PreviewModeNotice from "../../components/auth/PreviewModeNotice";
+import { createAuthFormStyles } from "../../components/auth/auth-form-styles";
+import { radii } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -157,60 +161,52 @@ export default function Login() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Account Login</Text>
 
-        {!isFirebaseConfigured ? (
-          <Text style={styles.previewText}>
-            Preview mode is active. Firebase env variables are missing, so auth is temporarily disabled.
-          </Text>
-        ) : null}
+        <PreviewModeNotice
+          visible={!isFirebaseConfigured}
+          message="Preview mode is active. Firebase env variables are missing, so auth is temporarily disabled."
+          styles={styles}
+        />
 
-        {isFirebaseConfigured && !isGoogleConfigured ? (
-          <Text style={styles.previewText}>
-            Google sign-in is unavailable until Google OAuth client IDs are added to env.
-          </Text>
-        ) : null}
+        <PreviewModeNotice
+          visible={isFirebaseConfigured && !isGoogleConfigured}
+          message="Google sign-in is unavailable until Google OAuth client IDs are added to env."
+          styles={styles}
+        />
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="emailAddress"
-            style={styles.input}
-            placeholder="you@example.com"
-            placeholderTextColor={colors.textMuted}
-          />
-        </View>
+        <AuthTextField
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          textContentType="emailAddress"
+          placeholder="you@example.com"
+          colors={colors}
+          styles={styles}
+        />
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-            textContentType="password"
-            style={styles.input}
-            placeholder="Enter password"
-            placeholderTextColor={colors.textMuted}
-          />
-        </View>
+        <AuthTextField
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          textContentType="password"
+          placeholder="Enter password"
+          colors={colors}
+          styles={styles}
+        />
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
-        <Pressable
-          onPress={handleLogin}
-          disabled={isSubmitting}
-          style={({ pressed }) => [styles.primaryButton, (pressed || isSubmitting) && styles.buttonPressed]}
-        >
-          <Text style={styles.primaryButtonLabel}>{isSubmitting ? "Signing in..." : "Sign In"}</Text>
-        </Pressable>
+        <AuthSubmitButton
+          onPress={() => void handleLogin()}
+          isSubmitting={isSubmitting}
+          idleLabel="Sign In"
+          submittingLabel="Signing in..."
+          styles={styles}
+        />
 
         <Pressable
-          onPress={handleGoogleSignIn}
+          onPress={() => void handleGoogleSignIn()}
           disabled={isGoogleSubmitting || !isGoogleConfigured || !isFirebaseConfigured}
           style={({ pressed }) => [
             styles.googleButton,
@@ -258,59 +254,10 @@ function getAuthErrorMessage(error: unknown) {
   }
 }
 
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    card: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      padding: spacing.lg,
-      gap: spacing.md,
-    },
-    cardTitle: {
-      color: colors.text,
-      fontSize: 22,
-      fontWeight: "700",
-    },
-    formGroup: {
-      gap: 6,
-    },
-    label: {
-      color: colors.textMuted,
-      fontSize: 13,
-      fontWeight: "600",
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.sm,
-      backgroundColor: colors.surfaceSoft,
-      color: colors.text,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 12,
-      fontSize: 16,
-    },
-    errorText: {
-      color: colors.danger,
-      fontSize: 14,
-    },
-    previewText: {
-      color: colors.textMuted,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    primaryButton: {
-      borderRadius: radii.md,
-      backgroundColor: colors.accent,
-      paddingVertical: 12,
-      alignItems: "center",
-    },
-    primaryButtonLabel: {
-      color: colors.accentDeep,
-      fontSize: 16,
-      fontWeight: "700",
-    },
+const createStyles = (colors: Parameters<typeof createAuthFormStyles>[0]) => {
+  const shared = createAuthFormStyles(colors);
+
+  const extras = StyleSheet.create({
     googleButton: {
       borderRadius: radii.md,
       borderWidth: 1,
@@ -340,26 +287,10 @@ const createStyles = (colors: ThemeColors) =>
     googleButtonLabelBlack: {
       color: "#FFFFFF",
     },
-    buttonPressed: {
-      opacity: 0.85,
-    },
-    signupRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      justifyContent: "center",
-    },
-    subtleText: {
-      color: colors.textMuted,
-      fontSize: 14,
-    },
-    linkText: {
-      color: colors.accent,
-      fontSize: 14,
-      fontWeight: "700",
-      textAlign: "center",
-    },
   });
+
+  return { ...shared, ...extras };
+};
 
 function GoogleMark({ size = 18 }: { size?: number }) {
   return (
