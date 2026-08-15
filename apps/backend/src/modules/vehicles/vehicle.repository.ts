@@ -13,12 +13,17 @@ export interface CreateVehicleInput {
 export interface UpdateVehicleInput {
   vehicleId: string;
   userId: string;
-  nickname?: string;
-  make?: string | null;
-  model?: string | null;
-  modelYear?: number | null;
-  tankCapacityGallons?: number | null;
-  combinedMpg?: number | null;
+  // `| undefined` (not just optional) on every field below because this
+  // gets built from zod's .partial() output, which types omitted fields
+  // as `T | undefined` rather than as truly absent — even though zod
+  // never actually assigns undefined at runtime, only omits the key.
+  // hasOwnProperty() in updateVehicleForUser is what actually matters.
+  nickname?: string | undefined;
+  make?: string | null | undefined;
+  model?: string | null | undefined;
+  modelYear?: number | null | undefined;
+  tankCapacityGallons?: number | null | undefined;
+  combinedMpg?: number | null | undefined;
 }
 
 export interface Vehicle {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 import {
+  parseRouteParam,
   requireCurrentUser,
   respondWithValidationError,
 } from "../../lib/route-helpers.js";
@@ -107,18 +108,15 @@ budgetRouter.delete("/:entryId", async (request, response, next) => {
     return;
   }
 
-  const entryIdResult = entryIdSchema.safeParse(request.params.entryId);
+  const entryId = parseRouteParam(response, entryIdSchema, request.params.entryId, "budget entry ID");
 
-  if (!entryIdResult.success) {
-    response.status(400).json({
-      error: "Invalid budget entry ID",
-    });
+  if (!entryId) {
     return;
   }
 
   try {
     const deleted = await deleteBudgetEntryForUser(
-      entryIdResult.data,
+      entryId,
       currentUser.id,
     );
 

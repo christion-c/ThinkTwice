@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 import {
+  parseRouteParam,
   requireCurrentUser,
   respondWithValidationError,
 } from "../../lib/route-helpers.js";
@@ -122,14 +123,9 @@ vehicleRouter.patch("/:vehicleId", async (request, response, next) => {
     return;
   }
 
-  const vehicleIdResult = vehicleIdSchema.safeParse(
-    request.params.vehicleId,
-  );
+  const vehicleId = parseRouteParam(response, vehicleIdSchema, request.params.vehicleId, "vehicle ID");
 
-  if (!vehicleIdResult.success) {
-    response.status(400).json({
-      error: "Invalid vehicle ID",
-    });
+  if (!vehicleId) {
     return;
   }
 
@@ -144,36 +140,15 @@ vehicleRouter.patch("/:vehicleId", async (request, response, next) => {
     return;
   }
 
-  const updates = validationResult.data;
-
+  // The repository distinguishes "field omitted" from "field explicitly
+  // set" via hasOwnProperty, and zod's partial schema already omits keys
+  // that weren't in the request body — so spreading `updates` preserves
+  // exactly the fields the client actually sent, nothing more.
   const updateInput: UpdateVehicleInput = {
-    vehicleId: vehicleIdResult.data,
+    vehicleId,
     userId: currentUser.id,
+    ...validationResult.data,
   };
-
-  if (updates.nickname !== undefined) {
-    updateInput.nickname = updates.nickname;
-  }
-
-  if (updates.make !== undefined) {
-    updateInput.make = updates.make;
-  }
-
-  if (updates.model !== undefined) {
-    updateInput.model = updates.model;
-  }
-
-  if (updates.modelYear !== undefined) {
-    updateInput.modelYear = updates.modelYear;
-  }
-
-  if (updates.tankCapacityGallons !== undefined) {
-    updateInput.tankCapacityGallons = updates.tankCapacityGallons;
-  }
-
-  if (updates.combinedMpg !== undefined) {
-    updateInput.combinedMpg = updates.combinedMpg;
-  }
 
   try {
     const vehicle = await updateVehicleForUser(updateInput);
@@ -203,20 +178,15 @@ vehicleRouter.delete("/:vehicleId", async (request, response, next) => {
     return;
   }
 
-  const vehicleIdResult = vehicleIdSchema.safeParse(
-    request.params.vehicleId,
-  );
+  const vehicleId = parseRouteParam(response, vehicleIdSchema, request.params.vehicleId, "vehicle ID");
 
-  if (!vehicleIdResult.success) {
-    response.status(400).json({
-      error: "Invalid vehicle ID",
-    });
+  if (!vehicleId) {
     return;
   }
 
   try {
     const deleted = await deleteVehicleForUser(
-      vehicleIdResult.data,
+      vehicleId,
       currentUser.id,
     );
 

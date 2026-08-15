@@ -26,6 +26,9 @@ export function createApp() {
 
   app.use(
     cors({
+      // CORS_ORIGIN supports a comma-separated list (e.g. the production
+      // Firebase Hosting URL plus a custom domain) so the API can serve
+      // more than one deployed frontend origin at once.
       origin:
         env.CORS_ORIGIN === "*"
           ? true

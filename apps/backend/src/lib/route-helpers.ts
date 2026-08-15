@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { ZodError } from "zod";
+import type { ZodError, ZodType } from "zod";
 
 import type { UserProfile } from "../modules/users/user.repository.js";
 
@@ -38,4 +38,27 @@ export function respondWithValidationError(
       message: issue.message,
     })),
   });
+}
+
+/**
+ * Parses a single route param (e.g. request.params.vehicleId) against a
+ * zod schema, or responds with 400 and returns null. Route params are
+ * usually just an ID, so this skips the field-level detail
+ * respondWithValidationError gives for a whole request body — a plain
+ * "Invalid <label>" is all there is to say about one malformed value.
+ */
+export function parseRouteParam<T>(
+  response: Response,
+  schema: ZodType<T>,
+  value: unknown,
+  label: string,
+): T | null {
+  const result = schema.safeParse(value);
+
+  if (!result.success) {
+    response.status(400).json({ error: `Invalid ${label}` });
+    return null;
+  }
+
+  return result.data;
 }
