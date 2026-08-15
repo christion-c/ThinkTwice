@@ -1,33 +1,32 @@
-import { useCallback, useMemo, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { useCallback, useMemo } from "react";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
+import StepFlowModal from "../components/StepFlowModal";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { radii, spacing, type ThemeColors } from "../components/theme";
 import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
+import { useStepFlow, type StepFlowStepConfig } from "../hooks/useStepFlow";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
 
+type FinanceCheckinStepKey = "income" | "expense" | "bills";
+
+const FINANCE_CHECKIN_STEPS: StepFlowStepConfig<FinanceCheckinStepKey>[] = [
+  { key: "income", title: "Monthly income", hint: "Enter your normal monthly income.", placeholder: "0.00", keyboardType: "decimal-pad" },
+  { key: "expense", title: "Monthly spending", hint: "Enter your typical monthly spending.", placeholder: "0.00", keyboardType: "decimal-pad" },
+  { key: "bills", title: "Static bills", hint: "Enter your recurring monthly bills like rent, insurance, or loan payments.", placeholder: "0.00", keyboardType: "decimal-pad" },
+];
+
 export default function Finance() {
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [financeFlowStep, setFinanceFlowStep] = useState<"income" | "expense" | "bills" | null>(null);
-  const [fieldDraft, setFieldDraft] = useState("");
   const webKeyboardInset = useWebKeyboardInset();
   const {
     incomeInput,
@@ -47,51 +46,31 @@ export default function Finance() {
 
   useRefetchOnFocus(useCallback(() => refreshFinance(), [refreshFinance]));
 
+  const financeFlow = useStepFlow<FinanceCheckinStepKey>({
+    steps: FINANCE_CHECKIN_STEPS,
+    onStepConfirmed: (key, value) => {
+      if (key === "income") {
+        setIncomeInput(value);
+      } else if (key === "expense") {
+        setExpenseInput(value);
+      } else {
+        setMonthlyFixedCostsInput(value);
+      }
+    },
+    onComplete: () => {
+      // Each step's value was already mirrored into FinanceContext as it
+      // was confirmed; nothing left to do once the last step lands.
+    },
+  });
+
+  const startFinanceFlow = () =>
+    financeFlow.start({
+      income: incomeInput,
+      expense: expenseInput,
+      bills: monthlyFixedCostsInput,
+    });
+
   const healthTone = projectedBudgetAfterEssentials < 0 ? colors.danger : colors.success;
-  const startFinanceFlow = () => {
-    setFinanceFlowStep("income");
-    setFieldDraft(incomeInput);
-  };
-
-  const closeFinanceFlow = () => {
-    setFinanceFlowStep(null);
-    setFieldDraft("");
-  };
-
-  const saveFinanceFlow = () => {
-    if (!financeFlowStep) {
-      return;
-    }
-
-    const trimmedDraft = fieldDraft.trim();
-
-    if (financeFlowStep === "income") {
-      setIncomeInput(trimmedDraft);
-    } else if (financeFlowStep === "expense") {
-      setExpenseInput(trimmedDraft);
-    } else {
-      setMonthlyFixedCostsInput(trimmedDraft);
-    }
-
-    const nextStepMap: Record<NonNullable<typeof financeFlowStep>, NonNullable<typeof financeFlowStep> | null> = {
-      income: "expense",
-      expense: "bills",
-      bills: null,
-    };
-
-    const nextStep = financeFlowStep ? nextStepMap[financeFlowStep] : null;
-
-    if (!nextStep) {
-      closeFinanceFlow();
-      return;
-    }
-
-    const nextValue = nextStep === "expense" ? expenseInput : monthlyFixedCostsInput;
-
-    setFinanceFlowStep(nextStep);
-    setFieldDraft(nextValue);
-  };
-
   const spendingHabitRatio =
     monthlyIncome > 0 ? (monthlyExpenses + monthlyFixedCosts + monthlyFuelBudget) / monthlyIncome : 0;
 
@@ -143,37 +122,18 @@ export default function Finance() {
         </View>
       </View>
 
-      <Modal transparent visible={Boolean(financeFlowStep)} animationType="fade" onRequestClose={closeFinanceFlow}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
-          style={styles.modalBackdrop}
-        >
-          <View style={[styles.modalContainer, { marginBottom: webKeyboardInset }]}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>{financeFlowStep === "income" ? "Monthly income" : financeFlowStep === "expense" ? "Monthly spending" : "Static bills"}</Text>
-              <Text style={styles.modalHint}>{financeFlowStep === "income" ? "Enter your normal monthly income." : financeFlowStep === "expense" ? "Enter your typical monthly spending." : "Enter your recurring monthly bills like rent, insurance, or loan payments."}</Text>
-              <TextInput
-                value={fieldDraft}
-                onChangeText={setFieldDraft}
-                keyboardType="decimal-pad"
-                style={styles.modalInput}
-                placeholder="0.00"
-                placeholderTextColor={colors.textMuted}
-                autoFocus
-              />
-              <View style={styles.modalActions}>
-                <Pressable onPress={closeFinanceFlow} style={styles.modalSecondaryButton}>
-                  <Text style={styles.modalSecondaryLabel}>Cancel</Text>
-                </Pressable>
-                <Pressable onPress={saveFinanceFlow} style={styles.modalPrimaryButton}>
-                  <Text style={styles.modalPrimaryLabel}>{financeFlowStep === "bills" ? "Done" : "Next"}</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <StepFlowModal
+        step={financeFlow.activeStep}
+        isLastStep={financeFlow.isLastStep}
+        draft={financeFlow.draft}
+        onChangeDraft={financeFlow.setDraft}
+        onCancel={financeFlow.close}
+        onConfirm={() => void financeFlow.confirmStep()}
+        webKeyboardInset={webKeyboardInset}
+        colors={colors}
+        keyboardBehavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
+      />
     </PageScaffold>
   );
 }
@@ -302,72 +262,6 @@ const createStyles = (colors: ThemeColors) =>
     primaryButtonLabel: {
       color: colors.accentDeep,
       fontSize: 15,
-      fontWeight: "700",
-    },
-    modalBackdrop: {
-      flex: 1,
-      justifyContent: "flex-end",
-      backgroundColor: "rgba(4, 8, 12, 0.68)",
-    },
-    modalContainer: {
-      paddingHorizontal: spacing.md,
-      paddingBottom: spacing.lg,
-    },
-    modalCard: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      padding: spacing.lg,
-      gap: spacing.sm,
-    },
-    modalTitle: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: "700",
-    },
-    modalHint: {
-      color: colors.textMuted,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    modalInput: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      backgroundColor: colors.surfaceSoft,
-      color: colors.text,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 12,
-      fontSize: 16,
-    },
-    modalActions: {
-      flexDirection: "row",
-      justifyContent: "flex-end",
-      gap: spacing.sm,
-      marginTop: spacing.xs,
-    },
-    modalSecondaryButton: {
-      borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 10,
-    },
-    modalSecondaryLabel: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    modalPrimaryButton: {
-      borderRadius: radii.md,
-      backgroundColor: colors.accent,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 10,
-    },
-    modalPrimaryLabel: {
-      color: colors.accentDeep,
-      fontSize: 14,
       fontWeight: "700",
     },
   });

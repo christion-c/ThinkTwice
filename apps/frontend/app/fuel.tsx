@@ -1,18 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
+import StepFlowModal from "../components/StepFlowModal";
 import { useAuth } from "../components/AuthProvider";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
@@ -21,11 +12,31 @@ import { saveFillUpHistory } from "../lib/backend-api";
 import { radii, shadows, spacing, type ThemeColors } from "../components/theme";
 import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
+import { useStepFlow, type StepFlowStepConfig } from "../hooks/useStepFlow";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
+
+type FuelCheckinStepKey = "gallons" | "price" | "miles" | "tankLevel";
+type VehicleDetailsStepKey = "nickname" | "year" | "make" | "model" | "mpg" | "tank";
+
+const FUEL_CHECKIN_STEPS: StepFlowStepConfig<FuelCheckinStepKey>[] = [
+  { key: "gallons", title: "Gallons", hint: "Enter the gallons you put in your tank this fill-up.", placeholder: "0", keyboardType: "decimal-pad" },
+  { key: "price", title: "Price per gallon", hint: "Enter the price you paid per gallon.", placeholder: "0.00", keyboardType: "decimal-pad" },
+  { key: "miles", title: "Miles since last fill-up", hint: "Enter the miles you drove since your previous fill-up.", placeholder: "0", keyboardType: "decimal-pad" },
+  { key: "tankLevel", title: "Tank level", hint: "Enter how full the tank is right now.", placeholder: "0%", keyboardType: "decimal-pad" },
+];
+
+const VEHICLE_DETAILS_STEPS: StepFlowStepConfig<VehicleDetailsStepKey>[] = [
+  { key: "nickname", title: "Nickname", hint: "Enter a nickname for this vehicle.", placeholder: "eg. My daily driver", keyboardType: "default", autoCapitalize: "words", autoCorrect: true },
+  { key: "year", title: "Year", hint: "Enter the model year.", placeholder: "eg. 2016", keyboardType: "number-pad", autoCapitalize: "none", autoCorrect: false },
+  { key: "make", title: "Make", hint: "Enter the make.", placeholder: "eg. Toyota, Ford, Nissan", keyboardType: "default", autoCapitalize: "words", autoCorrect: true },
+  { key: "model", title: "Model", hint: "Enter the model.", placeholder: "Model Name", keyboardType: "default", autoCapitalize: "words", autoCorrect: true },
+  { key: "mpg", title: "MPG", hint: "Enter the vehicle’s average MPG.", placeholder: "0", keyboardType: "decimal-pad", autoCapitalize: "none", autoCorrect: false },
+  { key: "tank", title: "Tank size", hint: "Enter the tank size in gallons.", placeholder: "0", keyboardType: "decimal-pad", autoCapitalize: "none", autoCorrect: false },
+];
 
 export default function Fuel() {
   const colors = useThemeColors();
@@ -72,9 +83,6 @@ export default function Fuel() {
   const [modelYearInput, setModelYearInput] = useState("");
   const [fillUpDateInput, setFillUpDateInput] = useState(() => getTodayIsoDateString());
   const [saveMessage, setSaveMessage] = useState("");
-  const [flowStep, setFlowStep] = useState<"gallons" | "price" | "miles" | "tankLevel" | null>(null);
-  const [vehicleFlowStep, setVehicleFlowStep] = useState<"nickname" | "year" | "make" | "model" | "mpg" | "tank" | null>(null);
-  const [fieldDraft, setFieldDraft] = useState("");
   const hasExistingVehicle = Boolean(vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0]);
   const webKeyboardInset = useWebKeyboardInset();
 
@@ -90,7 +98,7 @@ export default function Fuel() {
     setSaveMessage("");
   }, [selectedVehicle]);
 
-  const handleSaveVehicle = async (values?: {
+  const handleSaveVehicle = async (values: {
     nickname: string;
     make: string;
     model: string;
@@ -101,41 +109,11 @@ export default function Fuel() {
     setSaveMessage("");
 
     try {
-      await syncVehicle(
-        values ?? {
-          nickname: nicknameInput,
-          make: makeInput,
-          model: modelInput,
-          modelYear: parseOptionalInt(modelYearInput),
-          tankCapacityGallons: parseOptionalNumber(tankCapacityInput),
-          combinedMpg: parseOptionalNumber(combinedMpgInput),
-        },
-      );
-
+      await syncVehicle(values);
       setSaveMessage("Vehicle Saved.");
     } catch {
       // Vehicle context provides the error message.
     }
-  };
-
-  const startFuelFlow = () => {
-    setFlowStep("gallons");
-    setFieldDraft(fuelGallonsInput);
-  };
-
-  const closeFuelFlow = () => {
-    setFlowStep(null);
-    setFieldDraft("");
-  };
-
-  const startVehicleFlow = () => {
-    setVehicleFlowStep("nickname");
-    setFieldDraft(nicknameInput);
-  };
-
-  const closeVehicleFlow = () => {
-    setVehicleFlowStep(null);
-    setFieldDraft("");
   };
 
   const persistFillUpHistory = async () => {
@@ -162,107 +140,67 @@ export default function Fuel() {
     }
   };
 
-  const saveFuelFlow = async () => {
-    if (!flowStep) {
-      return;
-    }
+  const fuelFlow = useStepFlow<FuelCheckinStepKey>({
+    steps: FUEL_CHECKIN_STEPS,
+    onStepConfirmed: (key, value) => {
+      if (key === "gallons") {
+        setFuelGallonsInput(value);
+      } else if (key === "price") {
+        setFuelPriceInput(value);
+      } else if (key === "miles") {
+        setMilesPerWeekInput(value);
+      } else {
+        setCurrentTankPercentInput(value);
+      }
+    },
+    onComplete: () => persistFillUpHistory(),
+  });
 
-    const trimmedDraft = fieldDraft.trim();
+  const vehicleFlow = useStepFlow<VehicleDetailsStepKey>({
+    steps: VEHICLE_DETAILS_STEPS,
+    onStepConfirmed: (key, value) => {
+      if (key === "nickname") {
+        setNicknameInput(value);
+      } else if (key === "year") {
+        setModelYearInput(value);
+      } else if (key === "make") {
+        setMakeInput(value);
+      } else if (key === "model") {
+        setModelInput(value);
+      } else if (key === "mpg") {
+        setCombinedMpgInput(value);
+      } else {
+        setTankCapacityInput(value);
+      }
+    },
+    onComplete: (values) =>
+      handleSaveVehicle({
+        nickname: values.nickname,
+        make: values.make,
+        model: values.model,
+        modelYear: parseOptionalInt(values.year),
+        tankCapacityGallons: parseOptionalNumber(values.tank),
+        combinedMpg: parseOptionalNumber(values.mpg),
+      }),
+  });
 
-    if (flowStep === "gallons") {
-      setFuelGallonsInput(trimmedDraft);
-    } else if (flowStep === "price") {
-      setFuelPriceInput(trimmedDraft);
-    } else if (flowStep === "miles") {
-      setMilesPerWeekInput(trimmedDraft);
-    } else {
-      setCurrentTankPercentInput(trimmedDraft);
-    }
+  const startFuelFlow = () =>
+    fuelFlow.start({
+      gallons: fuelGallonsInput,
+      price: fuelPriceInput,
+      miles: milesPerWeekInput,
+      tankLevel: currentTankPercentInput,
+    });
 
-    const nextStepMap: Record<NonNullable<typeof flowStep>, NonNullable<typeof flowStep> | null> = {
-      gallons: "price",
-      price: "miles",
-      miles: "tankLevel",
-      tankLevel: null,
-    };
-
-    const nextStep = flowStep ? nextStepMap[flowStep] : null;
-
-    if (!nextStep) {
-      closeFuelFlow();
-      await persistFillUpHistory();
-      return;
-    }
-
-    const nextValue =
-      nextStep === "price"
-        ? fuelPriceInput
-        : nextStep === "miles"
-          ? milesPerWeekInput
-          : currentTankPercentInput;
-
-    setFlowStep(nextStep);
-    setFieldDraft(nextValue);
-  };
-
-  const saveVehicleFlow = async () => {
-    if (!vehicleFlowStep) {
-      return;
-    }
-
-    const trimmedDraft = fieldDraft.trim();
-    const nextNicknameInput = vehicleFlowStep === "nickname" ? trimmedDraft : nicknameInput;
-    const nextModelYearInput = vehicleFlowStep === "year" ? trimmedDraft : modelYearInput;
-    const nextMakeInput = vehicleFlowStep === "make" ? trimmedDraft : makeInput;
-    const nextModelInput = vehicleFlowStep === "model" ? trimmedDraft : modelInput;
-    const nextCombinedMpgInput = vehicleFlowStep === "mpg" ? trimmedDraft : combinedMpgInput;
-    const nextTankCapacityInput = vehicleFlowStep === "tank" ? trimmedDraft : tankCapacityInput;
-
-    setNicknameInput(nextNicknameInput);
-    setModelYearInput(nextModelYearInput);
-    setMakeInput(nextMakeInput);
-    setModelInput(nextModelInput);
-    setCombinedMpgInput(nextCombinedMpgInput);
-    setTankCapacityInput(nextTankCapacityInput);
-
-    const nextStepMap: Record<NonNullable<typeof vehicleFlowStep>, NonNullable<typeof vehicleFlowStep> | null> = {
-      nickname: "year",
-      year: "make",
-      make: "model",
-      model: "mpg",
-      mpg: "tank",
-      tank: null,
-    };
-
-    const nextStep = vehicleFlowStep ? nextStepMap[vehicleFlowStep] : null;
-
-    if (!nextStep) {
-      closeVehicleFlow();
-      await handleSaveVehicle({
-        nickname: nextNicknameInput,
-        make: nextMakeInput,
-        model: nextModelInput,
-        modelYear: parseOptionalInt(nextModelYearInput),
-        tankCapacityGallons: parseOptionalNumber(nextTankCapacityInput),
-        combinedMpg: parseOptionalNumber(nextCombinedMpgInput),
-      });
-      return;
-    }
-
-    const nextValue =
-      nextStep === "year"
-        ? nextModelYearInput
-        : nextStep === "make"
-          ? nextMakeInput
-          : nextStep === "model"
-            ? nextModelInput
-            : nextStep === "mpg"
-              ? nextCombinedMpgInput
-              : nextTankCapacityInput;
-
-    setVehicleFlowStep(nextStep);
-    setFieldDraft(nextValue);
-  };
+  const startVehicleFlow = () =>
+    vehicleFlow.start({
+      nickname: nicknameInput,
+      year: modelYearInput,
+      make: makeInput,
+      model: modelInput,
+      mpg: combinedMpgInput,
+      tank: tankCapacityInput,
+    });
 
   return (
     <PageScaffold
@@ -376,87 +314,27 @@ export default function Fuel() {
         </View>
       </View>
 
-      <Modal transparent visible={Boolean(flowStep)} animationType="fade" onRequestClose={closeFuelFlow}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "position" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 24 : 0}
-          style={styles.modalBackdrop}
-        >
-          <View style={[styles.modalContainer, { marginBottom: webKeyboardInset }]}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>{flowStep === "gallons" ? "Gallons" : flowStep === "price" ? "Price per gallon" : flowStep === "miles" ? "Miles since last fill-up" : "Tank level"}</Text>
-              <Text style={styles.modalHint}>{flowStep === "gallons" ? "Enter the gallons you put in your tank this fill-up." : flowStep === "price" ? "Enter the price you paid per gallon." : flowStep === "miles" ? "Enter the miles you drove since your previous fill-up." : "Enter how full the tank is right now."}</Text>
-              <TextInput
-                value={fieldDraft}
-                onChangeText={setFieldDraft}
-                keyboardType={flowStep === "gallons" || flowStep === "price" || flowStep === "miles" || flowStep === "tankLevel" ? "decimal-pad" : "default"}
-                style={styles.modalInput}
-                placeholder={flowStep === "price" ? "0.00" : flowStep === "tankLevel" ? "0%" : "0"}
-                placeholderTextColor={colors.textMuted}
-                autoFocus
-              />
-              <View style={styles.modalActions}>
-                <Pressable onPress={closeFuelFlow} style={styles.modalSecondaryButton}>
-                  <Text style={styles.modalSecondaryLabel}>Cancel</Text>
-                </Pressable>
-                <Pressable onPress={saveFuelFlow} style={styles.modalPrimaryButton}>
-                  <Text style={styles.modalPrimaryLabel}>{flowStep === "tankLevel" ? "Done" : "Next"}</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <StepFlowModal
+        step={fuelFlow.activeStep}
+        isLastStep={fuelFlow.isLastStep}
+        draft={fuelFlow.draft}
+        onChangeDraft={fuelFlow.setDraft}
+        onCancel={fuelFlow.close}
+        onConfirm={() => void fuelFlow.confirmStep()}
+        webKeyboardInset={webKeyboardInset}
+        colors={colors}
+      />
 
-      <Modal transparent visible={Boolean(vehicleFlowStep)} animationType="fade" onRequestClose={closeVehicleFlow}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "position" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 24 : 0}
-          style={styles.modalBackdrop}
-        >
-          <View style={[styles.modalContainer, { marginBottom: webKeyboardInset }]}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>{vehicleFlowStep === "nickname" ? "Nickname" : vehicleFlowStep === "year" ? "Year" : vehicleFlowStep === "make" ? "Make" : vehicleFlowStep === "model" ? "Model" : vehicleFlowStep === "mpg" ? "MPG" : "Tank size"}</Text>
-              <Text style={styles.modalHint}>{vehicleFlowStep === "nickname" ? "Enter a nickname for this vehicle." : vehicleFlowStep === "year" ? "Enter the model year." : vehicleFlowStep === "make" ? "Enter the make." : vehicleFlowStep === "model" ? "Enter the model." : vehicleFlowStep === "mpg" ? "Enter the vehicle’s average MPG." : "Enter the tank size in gallons."}</Text>
-              <TextInput
-                value={fieldDraft}
-                onChangeText={setFieldDraft}
-                keyboardType={
-                  vehicleFlowStep === "year"
-                    ? "number-pad"
-                    : vehicleFlowStep === "mpg" || vehicleFlowStep === "tank"
-                      ? "decimal-pad"
-                      : "default"
-                }
-                autoCapitalize={vehicleFlowStep === "year" || vehicleFlowStep === "mpg" || vehicleFlowStep === "tank" ? "none" : "words"}
-                autoCorrect={vehicleFlowStep !== "year" && vehicleFlowStep !== "mpg" && vehicleFlowStep !== "tank"}
-                style={styles.modalInput}
-                placeholder={
-                  vehicleFlowStep === "nickname"
-                    ? "eg. My daily driver"
-                    : vehicleFlowStep === "year"
-                      ? "eg. 2016"
-                      : vehicleFlowStep === "make"
-                        ? "eg. Toyota, Ford, Nissan"
-                        : vehicleFlowStep === "model"
-                          ? "Model Name"
-                          : "0"
-                }
-                placeholderTextColor={colors.textMuted}
-                autoFocus
-              />
-              <View style={styles.modalActions}>
-                <Pressable onPress={closeVehicleFlow} style={styles.modalSecondaryButton}>
-                  <Text style={styles.modalSecondaryLabel}>Cancel</Text>
-                </Pressable>
-                <Pressable onPress={() => { void saveVehicleFlow(); }} style={styles.modalPrimaryButton}>
-                  <Text style={styles.modalPrimaryLabel}>{vehicleFlowStep === "tank" ? "Done" : "Next"}</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <StepFlowModal
+        step={vehicleFlow.activeStep}
+        isLastStep={vehicleFlow.isLastStep}
+        draft={vehicleFlow.draft}
+        onChangeDraft={vehicleFlow.setDraft}
+        onCancel={vehicleFlow.close}
+        onConfirm={() => void vehicleFlow.confirmStep()}
+        webKeyboardInset={webKeyboardInset}
+        colors={colors}
+      />
     </PageScaffold>
   );
 }
@@ -595,72 +473,6 @@ const createStyles = (colors: ThemeColors) =>
       paddingHorizontal: spacing.sm,
       paddingVertical: 10,
       fontSize: 16,
-    },
-    modalBackdrop: {
-      flex: 1,
-      justifyContent: "flex-end",
-      backgroundColor: "rgba(4, 8, 12, 0.68)",
-    },
-    modalContainer: {
-      paddingHorizontal: spacing.md,
-      paddingBottom: spacing.lg,
-    },
-    modalCard: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      padding: spacing.lg,
-      gap: spacing.sm,
-    },
-    modalTitle: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: "700",
-    },
-    modalHint: {
-      color: colors.textMuted,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    modalInput: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      backgroundColor: colors.surfaceSoft,
-      color: colors.text,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 12,
-      fontSize: 16,
-    },
-    modalActions: {
-      flexDirection: "row",
-      justifyContent: "flex-end",
-      gap: spacing.sm,
-      marginTop: spacing.xs,
-    },
-    modalSecondaryButton: {
-      borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 10,
-    },
-    modalSecondaryLabel: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    modalPrimaryButton: {
-      borderRadius: radii.md,
-      backgroundColor: colors.accent,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 10,
-    },
-    modalPrimaryLabel: {
-      color: colors.accentDeep,
-      fontSize: 14,
-      fontWeight: "700",
     },
     secondaryButton: {
       borderRadius: radii.sm,
