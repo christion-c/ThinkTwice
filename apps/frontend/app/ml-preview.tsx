@@ -1,43 +1,25 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import BottomNav from "../components/BottomNav";
 import PageScaffold from "../components/PageScaffold";
 import { useThemeColors } from "../components/AppPreferences";
 import { useAuth } from "../components/AuthProvider";
-import { radii, spacing, type ThemeColors } from "../components/theme";
+import { radii, spacing } from "../components/theme";
+import MlAccountInfoBox from "../components/ml/MlAccountInfoBox";
+import MlMetricBox from "../components/ml/MlMetricBox";
+import MlPreviewControls from "../components/ml/MlPreviewControls";
+import { createMlPreviewStyles } from "../components/ml/ml-preview-styles";
+import { useMlPreview } from "../hooks/useMlPreview";
 import { fetchFillUpHistory, type SavedFillUpHistoryEntry } from "../lib/backend-api";
-
-interface MlPreviewResponse {
-  rows: number;
-  history_count: number;
-  next_week: {
-    miles_driven: number;
-  };
-  fuel_prediction: number;
-  total_prediction: number;
-  feedback: string;
-  explanation: string;
-  sample_rows: {
-    date: string;
-    fuel_cost: number;
-    miles_driven: number;
-  }[];
-}
 
 export default function MlPreviewPage() {
   const colors = useThemeColors();
   const { user } = useAuth();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [milesInput, setMilesInput] = useState("120");
-  const [data, setData] = useState<MlPreviewResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { milesInput, setMilesInput, data, loading, error, reload } = useMlPreview(user?.uid ?? "guest");
   const [historyEntries, setHistoryEntries] = useState<SavedFillUpHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const requestIdRef = useRef(0);
-  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const errorDelayMs = 30000;
 
   const loadUserHistory = useCallback(async () => {
     if (!user) {
@@ -56,104 +38,9 @@ export default function MlPreviewPage() {
     }
   }, [user]);
 
-  const loadPreview = useCallback(async (miles: string) => {
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
-    if (errorTimeoutRef.current) {
-      clearTimeout(errorTimeoutRef.current);
-      errorTimeoutRef.current = null;
-    }
-
-    setLoading(true);
-    setError("");
-
-    errorTimeoutRef.current = setTimeout(() => {
-      if (requestIdRef.current !== requestId) {
-        return;
-      }
-
-      if (data) {
-        return;
-      }
-
-      setError("Preview service is still warming up. Please wait a moment.");
-      setLoading(false);
-    }, errorDelayMs);
-
-    const configuredBaseUrl = process.env.EXPO_PUBLIC_ML_API_URL?.trim();
-    const userId = user?.uid ?? "guest";
-    const candidates = [
-      configuredBaseUrl ? `${configuredBaseUrl.replace(/\/+$/, "")}/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}` : null,
-      `http://ml:8000/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}`,
-      `http://127.0.0.1:8000/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}`,
-      `http://localhost:8000/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}`,
-      `http://10.0.2.2:8000/ml-preview?miles_driven=${encodeURIComponent(miles)}&user_id=${encodeURIComponent(userId)}`,
-    ].filter((value): value is string => Boolean(value));
-
-    let lastError = "";
-
-    for (const [index, url] of candidates.entries()) {
-      try {
-        const response = await fetch(url, { headers: { Accept: "application/json" } });
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
-        const payload = (await response.json()) as MlPreviewResponse;
-        if (requestIdRef.current !== requestId) {
-          return;
-        }
-
-        if (errorTimeoutRef.current) {
-          clearTimeout(errorTimeoutRef.current);
-          errorTimeoutRef.current = null;
-        }
-
-        setData(payload);
-        setLoading(false);
-        setError("");
-        return;
-      } catch (fetchError) {
-        if (requestIdRef.current !== requestId) {
-          return;
-        }
-
-        const message = fetchError instanceof Error ? fetchError.message : "Unknown error";
-        lastError = `Preview service is unavailable right now. (${message})`;
-
-        if (index < candidates.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 250));
-        }
-      }
-    }
-
-    if (requestIdRef.current !== requestId) {
-      return;
-    }
-
-    if (data) {
-      setLoading(false);
-      setError("");
-      return;
-    }
-
-    if (errorTimeoutRef.current) {
-      clearTimeout(errorTimeoutRef.current);
-      errorTimeoutRef.current = null;
-    }
-
-    setError(lastError || "Preview service is unavailable right now.");
-    setLoading(false);
-  }, [user?.uid]);
-
   useEffect(() => {
     void loadUserHistory();
-    void loadPreview(milesInput);
-
-    return () => {
-      if (errorTimeoutRef.current) {
-        clearTimeout(errorTimeoutRef.current);
-      }
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -161,66 +48,35 @@ export default function MlPreviewPage() {
       <View style={styles.card}>
         <Text style={styles.title}>Fuel forecast</Text>
 
-        <View style={styles.formRow}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Miles driven</Text>
-            <TextInput
-              value={milesInput}
-              onChangeText={setMilesInput}
-              keyboardType="numeric"
-              style={styles.input}
-              placeholder="120"
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-        </View>
+        <MlPreviewControls
+          milesInput={milesInput}
+          onMilesChange={setMilesInput}
+          onSubmit={() => void reload(milesInput)}
+          loading={loading}
+          error={error}
+          idleLabel="Run prediction"
+          loadingLabel="Predicting..."
+          colors={colors}
+          styles={styles}
+        />
 
-        <View style={styles.userInfoBox}>
-          <Text style={styles.userInfoLabel}>Account</Text>
-          <Text style={styles.userInfoValue}>{user?.uid ?? "guest"}</Text>
-          <Text style={styles.userInfoHint}>History: {data?.history_count ?? 0} entries</Text>
-        </View>
-
-        <Pressable
-          onPress={() => {
-            void loadPreview(milesInput);
-          }}
-          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
-        >
-          <Text style={styles.primaryButtonLabel}>{loading ? "Predicting..." : "Run prediction"}</Text>
-        </Pressable>
-
-        {loading ? (
-          <View style={styles.loadingRow}>
-            <ActivityIndicator color={colors.accent} />
-            <Text style={styles.text}>Loading preview data...</Text>
-          </View>
-        ) : null}
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <MlAccountInfoBox
+          label="Account"
+          userId={user?.uid ?? "guest"}
+          historyCount={data?.history_count ?? 0}
+          styles={styles}
+        />
 
         {data ? (
           <>
             <View style={styles.metricRow}>
-              <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Projected fuel cost</Text>
-                <Text style={styles.metricValue}>${data.fuel_prediction.toFixed(2)}</Text>
-              </View>
-              <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Budget total</Text>
-                <Text style={styles.metricValue}>${data.total_prediction.toFixed(2)}</Text>
-              </View>
+              <MlMetricBox label="Projected fuel cost" value={`$${data.fuel_prediction.toFixed(2)}`} styles={styles} />
+              <MlMetricBox label="Budget total" value={`$${data.total_prediction.toFixed(2)}`} styles={styles} />
             </View>
 
             <View style={styles.metricRow}>
-              <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>History entries</Text>
-                <Text style={styles.metricValue}>{data.history_count}</Text>
-              </View>
-              <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Rows used</Text>
-                <Text style={styles.metricValue}>{data.rows}</Text>
-              </View>
+              <MlMetricBox label="History entries" value={String(data.history_count)} styles={styles} />
+              <MlMetricBox label="Rows used" value={String(data.rows)} styles={styles} />
             </View>
 
             <View style={styles.feedbackBox}>
@@ -263,112 +119,11 @@ export default function MlPreviewPage() {
   );
 }
 
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    card: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      padding: spacing.lg,
-      gap: spacing.md,
-    },
-    title: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: "700",
-    },
-    smallTitle: {
-      color: colors.text,
-      fontSize: 16,
-      fontWeight: "600",
-    },
-    text: {
-      color: colors.textMuted,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    formRow: {
-      gap: spacing.sm,
-    },
-    inputGroup: {
-      gap: 4,
-    },
-    label: {
-      color: colors.text,
-      fontSize: 12,
-      fontWeight: "600",
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.sm,
-      color: colors.text,
-      backgroundColor: colors.background,
-    },
-    primaryButton: {
-      alignSelf: "flex-start",
-      backgroundColor: colors.accent,
-      borderRadius: radii.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-    },
-    buttonPressed: {
-      opacity: 0.8,
-    },
-    primaryButtonLabel: {
-      color: colors.surface,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    loadingRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.sm,
-    },
-    error: {
-      color: colors.danger,
-      fontSize: 14,
-    },
-    metricRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
-    metricBox: {
-      flex: 1,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      padding: spacing.sm,
-      gap: 4,
-    },
-    userInfoBox: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      padding: spacing.sm,
-      backgroundColor: colors.background,
-      gap: 4,
-    },
-    userInfoLabel: {
-      color: colors.textMuted,
-      fontSize: 12,
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
-    userInfoValue: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    userInfoHint: {
-      color: colors.textMuted,
-      fontSize: 13,
-    },
+const createStyles = (colors: Parameters<typeof createMlPreviewStyles>[0]) => {
+  const shared = createMlPreviewStyles(colors);
+
+  // Page-specific extras beyond the shared card/form/metric styles.
+  const extras = StyleSheet.create({
     historyPanel: {
       borderWidth: 1,
       borderColor: colors.border,
@@ -376,43 +131,6 @@ const createStyles = (colors: ThemeColors) =>
       padding: spacing.sm,
       backgroundColor: colors.background,
       gap: spacing.sm,
-    },
-    feedbackBox: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      padding: spacing.sm,
-      backgroundColor: colors.background,
-    },
-    explanationBox: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      padding: spacing.sm,
-      backgroundColor: colors.background,
-    },
-    feedbackLabel: {
-      color: colors.textMuted,
-      fontSize: 12,
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-      marginBottom: 4,
-    },
-    feedbackText: {
-      color: colors.text,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    metricLabel: {
-      color: colors.textMuted,
-      fontSize: 12,
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
-    metricValue: {
-      color: colors.text,
-      fontSize: 16,
-      fontWeight: "700",
     },
     rowBox: {
       borderWidth: 1,
@@ -426,3 +144,6 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 13,
     },
   });
+
+  return { ...shared, ...extras };
+};
