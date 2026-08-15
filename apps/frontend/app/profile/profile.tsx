@@ -95,17 +95,4 @@ const createStyles = (colors: ThemeColors) =>
       fontWeight: "600",
       marginTop: 2,
     },
-    linkRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: 12,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    linkLabel: {
-      color: colors.text,
-      fontSize: 15,
-      fontWeight: "600",
-    },
   });

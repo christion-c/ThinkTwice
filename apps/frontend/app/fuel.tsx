@@ -451,10 +451,6 @@ const createStyles = (colors: ThemeColors) =>
     fieldList: {
       gap: spacing.sm,
     },
-    inlineFieldRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
     inlineFieldWrap: {
       flex: 1,
       gap: 6,

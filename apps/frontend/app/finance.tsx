@@ -174,28 +174,6 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 22,
       fontWeight: "700",
     },
-    healthText: {
-      color: colors.textMuted,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    breakdownRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
-    breakdownBlock: {
-      flex: 1,
-      gap: 4,
-    },
-    breakdownBar: {
-      flexDirection: "row",
-      height: 8,
-      borderRadius: radii.round,
-      overflow: "hidden",
-    },
-    breakdownBarSegment: {
-      height: "100%",
-    },
     metricsRow: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -244,11 +222,6 @@ const createStyles = (colors: ThemeColors) =>
     inputSubtitle: {
       color: colors.textMuted,
       fontSize: 14,
-    },
-    helperText: {
-      color: colors.accent,
-      fontSize: 13,
-      lineHeight: 19,
     },
     fieldList: {
       gap: spacing.sm,

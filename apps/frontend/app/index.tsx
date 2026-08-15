@@ -75,7 +75,6 @@ export default function Home() {
 
   const completionCount = setupSteps.filter((step) => step.complete).length;
   const accountChecklistKey = user?.uid ? `thinktwice.setup-checklist.${user.uid}` : "thinktwice.setup-checklist.guest";
-  const shouldShowSetupStatus = !setupChecklistHidden && completionCount < setupSteps.length;
   const shouldShowSetupChecklist = !setupChecklistHidden && completionCount < setupSteps.length;
 
   useEffect(() => {
@@ -142,7 +141,7 @@ export default function Home() {
       footer={<BottomNav active="Home" />}
     >
       <View style={[styles.balanceCard, shadows.soft]}>
-        {shouldShowSetupStatus ? (
+        {shouldShowSetupChecklist ? (
           <View style={styles.statusPill}>
             <Text style={styles.statusPillLabel}>{completionCount}/{setupSteps.length} setup steps complete</Text>
           </View>
@@ -400,11 +399,6 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 14,
       lineHeight: 21,
     },
-    alertMeta: {
-      color: colors.text,
-      fontSize: 13,
-      fontWeight: "600",
-    },
     sectionCard: {
       borderRadius: radii.lg,
       borderWidth: 1,
@@ -439,29 +433,5 @@ const createStyles = (colors: ThemeColors) =>
     quickActionsRow: {
       flexDirection: "row",
       gap: spacing.sm,
-    },
-    summaryCard: {
-      borderRadius: radii.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-      padding: spacing.md,
-      gap: spacing.xs,
-    },
-    summaryTitle: {
-      color: colors.text,
-      fontSize: 17,
-      fontWeight: "700",
-    },
-    summaryText: {
-      color: colors.textMuted,
-      lineHeight: 21,
-      fontSize: 14,
-    },
-    summaryHint: {
-      color: colors.accent,
-      lineHeight: 21,
-      fontSize: 14,
-      fontWeight: "600",
     },
   });

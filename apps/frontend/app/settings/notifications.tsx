@@ -219,9 +219,4 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 20,
       fontWeight: "700",
     },
-    cardText: {
-      color: colors.textMuted,
-      fontSize: 15,
-      lineHeight: 22,
-    },
   });

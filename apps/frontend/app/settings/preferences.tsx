@@ -196,24 +196,6 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textMuted,
       fontSize: 14,
     },
-    linkRow: {
-      borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceSoft,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 14,
-      gap: 4,
-    },
-    linkLabel: {
-      color: colors.text,
-      fontSize: 15,
-      fontWeight: "700",
-    },
-    linkHint: {
-      color: colors.textMuted,
-      fontSize: 13,
-    },
     logoutButton: {
       borderRadius: radii.md,
       borderWidth: 1,
