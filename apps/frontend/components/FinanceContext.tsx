@@ -8,6 +8,7 @@ import {
   type SavedFillUpHistoryEntry,
   upsertFinanceInputs,
 } from "../lib/backend-api";
+import { computeFillUpStats, computeFinanceProjections } from "../lib/finance-projections";
 import { useAuth } from "./AuthProvider";
 import { useVehicle } from "./VehicleContext";
 
@@ -201,75 +202,30 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   }, [selectedVehicle]);
 
-  const monthlyIncome = parseMoney(incomeInput);
-  const monthlyExpenses = parseMoney(expenseInput);
-  const monthlyFixedCosts = parseMoney(monthlyFixedCostsInput);
-  const fuelGallons = parseMoney(fuelGallonsInput);
-  const fuelPrice = parseMoney(fuelPriceInput);
-  const milesSinceLastFillUp = parseMoney(milesPerWeekInput);
-  const combinedMpg = parseMoney(combinedMpgInput);
-  const tankCapacity = parseMoney(tankCapacityInput);
-  const currentTankPercent = parseMoney(currentTankPercentInput);
-
   const stats = useMemo(() => computeFillUpStats(fillUpHistory), [fillUpHistory]);
 
-  const effectiveFuelPrice =
-    stats.typicalFuelPrice > 0 && fuelPrice > 0
-      ? (stats.typicalFuelPrice * 0.75) + (fuelPrice * 0.25)
-      : stats.typicalFuelPrice > 0
-        ? stats.typicalFuelPrice
-        : fuelPrice;
-
-  const sanitizedFuelPrice = clampNumber(effectiveFuelPrice, 0, 20);
-
-  const effectiveMpg =
-    stats.typicalMpg > 0 && combinedMpg > 0
-      ? (stats.typicalMpg * 0.7) + (combinedMpg * 0.3)
-      : stats.typicalMpg > 0
-        ? stats.typicalMpg
-        : combinedMpg;
-
-  const sanitizedMpg = clampNumber(effectiveMpg, 5, 80);
-
-  const effectiveTankCapacity = tankCapacity > 0 ? tankCapacity : stats.typicalTankCapacity;
-
-  const fallbackCycleDays = stats.typicalCycleDays > 0 ? stats.typicalCycleDays : 7;
-  const fallbackDailyMiles = milesSinceLastFillUp > 0 ? milesSinceLastFillUp / fallbackCycleDays : 0;
-  const dailyMilesEstimate = stats.dailyMiles > 0 ? stats.dailyMiles : fallbackDailyMiles;
-  const sanitizedDailyMilesEstimate = clampNumber(dailyMilesEstimate, 0, 500);
-
-  const needsFromTankLevel =
-    effectiveTankCapacity > 0 && currentTankPercent >= 0 && currentTankPercent <= 100
-      ? effectiveTankCapacity * Math.max(1 - (currentTankPercent / 100), 0)
-      : 0;
-
-  const projectedFillUpGallons =
-    needsFromTankLevel > 0
-      ? needsFromTankLevel
-      : fuelGallons > 0
-        ? fuelGallons
-        : stats.typicalFillUpGallons > 0
-          ? stats.typicalFillUpGallons
-          : effectiveTankCapacity;
-
-  const projectedFillUpCost = clampNumber(projectedFillUpGallons * sanitizedFuelPrice, 0, 5000);
-
-  const monthlyMiles = sanitizedDailyMilesEstimate * 30.4375;
-  const monthlyFuelGallons = sanitizedMpg > 0 ? monthlyMiles / sanitizedMpg : 0;
-  const monthlyFuelBudget = clampNumber(monthlyFuelGallons * sanitizedFuelPrice, 0, 5000);
-
-  const availableRangeMiles =
-    sanitizedMpg > 0 && effectiveTankCapacity > 0
-      ? (Math.max(Math.min(currentTankPercent, 100), 0) / 100) * effectiveTankCapacity * sanitizedMpg
-      : 0;
-
-  const projectedDaysUntilFillUp = sanitizedDailyMilesEstimate > 0 ? availableRangeMiles / sanitizedDailyMilesEstimate : 0;
-
-  const projectedBudgetAfterEssentials =
-    monthlyIncome - monthlyExpenses - monthlyFixedCosts - monthlyFuelBudget;
-  const weeklySpendTarget = Math.max(
-    (monthlyExpenses + monthlyFixedCosts + monthlyFuelBudget) / 4.345,
-    0,
+  const {
+    monthlyIncome,
+    monthlyExpenses,
+    monthlyFixedCosts,
+    monthlyFuelBudget,
+    projectedFillUpCost,
+    projectedDaysUntilFillUp,
+    projectedBudgetAfterEssentials,
+    weeklySpendTarget,
+  } = computeFinanceProjections(
+    {
+      incomeInput,
+      expenseInput,
+      monthlyFixedCostsInput,
+      fuelGallonsInput,
+      fuelPriceInput,
+      milesPerWeekInput,
+      combinedMpgInput,
+      tankCapacityInput,
+      currentTankPercentInput,
+    },
+    stats,
   );
 
   const cloudSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -381,101 +337,3 @@ export function useFinance() {
   return context;
 }
 
-function parseMoney(value: string) {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function computeFillUpStats(entries: SavedFillUpHistoryEntry[]) {
-  const sorted = [...entries]
-    .filter((entry) => Number.isFinite(Date.parse(entry.recordedAt)))
-    .sort((a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt));
-
-  const prices = sorted.map((entry) => positiveOrNull(entry.fuelPrice));
-  const gallons = sorted.map((entry) => positiveOrNull(entry.gallons));
-  const tankCapacities = sorted.map((entry) => positiveOrNull(entry.tankCapacity));
-
-  const mpgSamples = sorted.map((entry) => {
-    if (entry.milesDriven > 0 && entry.gallons > 0) {
-      return entry.milesDriven / entry.gallons;
-    }
-
-    return positiveOrNull(entry.combinedMpg);
-  });
-
-  const dailyMilesSamples: number[] = [];
-  const cycleDaysSamples: number[] = [];
-
-  for (let index = 0; index < sorted.length - 1; index += 1) {
-    const current = sorted[index];
-    const previous = sorted[index + 1];
-    const elapsedDays =
-      (Date.parse(current.recordedAt) - Date.parse(previous.recordedAt)) /
-      (1000 * 60 * 60 * 24);
-
-    if (!Number.isFinite(elapsedDays) || elapsedDays <= 0 || elapsedDays > 45) {
-      continue;
-    }
-
-    cycleDaysSamples.push(elapsedDays);
-
-    if (current.milesDriven > 0) {
-      dailyMilesSamples.push(current.milesDriven / elapsedDays);
-    }
-  }
-
-  return {
-    typicalFuelPrice: robustRecencyAverage(prices),
-    typicalFillUpGallons: robustRecencyAverage(gallons),
-    typicalTankCapacity: robustRecencyAverage(tankCapacities),
-    typicalMpg: robustRecencyAverage(mpgSamples),
-    dailyMiles: robustRecencyAverage(dailyMilesSamples),
-    typicalCycleDays: robustRecencyAverage(cycleDaysSamples),
-  };
-}
-
-function robustRecencyAverage(values: Array<number | null>) {
-  const finiteValues = values.filter((value): value is number =>
-    typeof value === "number" && Number.isFinite(value) && value > 0,
-  );
-
-  if (finiteValues.length === 0) {
-    return 0;
-  }
-
-  const recentValues = finiteValues.slice(0, 20);
-  const sorted = [...recentValues].sort((a, b) => a - b);
-  const median = sorted[Math.floor(sorted.length / 2)] ?? recentValues[0] ?? 0;
-  const absDeviations = sorted.map((value) => Math.abs(value - median));
-  const sortedDeviations = [...absDeviations].sort((a, b) => a - b);
-  const mad = sortedDeviations[Math.floor(sortedDeviations.length / 2)] ?? 0;
-
-  const filteredValues =
-    mad > 0
-      ? recentValues.filter((value) => Math.abs(value - median) <= (3 * mad))
-      : recentValues;
-
-  const stableValues = filteredValues.length > 0 ? filteredValues : recentValues;
-  let weightedSum = 0;
-  let totalWeight = 0;
-
-  stableValues.forEach((value, index) => {
-    const weight = Math.exp(-index / 5);
-    weightedSum += value * weight;
-    totalWeight += weight;
-  });
-
-  return totalWeight > 0 ? weightedSum / totalWeight : 0;
-}
-
-function positiveOrNull(value: number) {
-  return Number.isFinite(value) && value > 0 ? value : null;
-}
-
-function clampNumber(value: number, min: number, max: number) {
-  if (!Number.isFinite(value)) {
-    return min;
-  }
-
-  return Math.min(Math.max(value, min), max);
-}
