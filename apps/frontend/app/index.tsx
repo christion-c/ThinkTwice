@@ -1,14 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Image, Pressable, Text, View } from "react-native";
 
 import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
-import { radii, shadows, spacing, type ThemeColors } from "../components/theme";
+import { shadows, type ThemeColors } from "../components/theme";
 import { useAuth } from "../components/AuthProvider";
 import { useVehicle } from "../components/VehicleContext";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
@@ -22,7 +22,6 @@ const moneyFormat = new Intl.NumberFormat("en-US", {
 export default function Home() {
   const colors = useThemeColors();
   const { user } = useAuth();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const [setupChecklistHidden, setSetupChecklistHidden] = useState(false);
   const {
     monthlyIncome,
@@ -42,18 +41,16 @@ export default function Home() {
     }, [refreshFinance, refreshVehicles]),
   );
 
-  const budgetStatus =
-    projectedBudgetAfterEssentials < 0
-      ? {
-          title: "Budget risk detected",
-          description: "Your current monthly plan runs negative after fuel and fixed costs.",
-          color: colors.danger,
-        }
-      : {
-          title: "Plan looks stable",
-          description: "You still have room after your core monthly costs and fuel reserve.",
-          color: colors.success,
-        };
+  const isBudgetHealthy = projectedBudgetAfterEssentials >= 0;
+  const budgetStatus = isBudgetHealthy
+    ? {
+        title: "Plan looks stable",
+        description: "You still have room after your core monthly costs and fuel reserve.",
+      }
+    : {
+        title: "Budget risk detected",
+        description: "Your current monthly plan runs negative after fuel and fixed costs.",
+      };
 
   const setupSteps: { label: string; complete: boolean; path: "/finance" | "/fuel" }[] = [
     {
@@ -134,64 +131,64 @@ export default function Home() {
       headerRight={
         <Image
           source={require("../assets/images/ThinkTwice-Logo.png")}
-          style={styles.brandLogo}
+          className="h-16 w-16"
           resizeMode="contain"
         />
       }
       footer={<BottomNav active="Home" />}
     >
-      <View style={[styles.balanceCard, shadows.soft]}>
+      <View style={shadows.soft} className="gap-sm rounded-xl border border-border bg-surface p-lg">
         {shouldShowSetupChecklist ? (
-          <View style={styles.statusPill}>
-            <Text style={styles.statusPillLabel}>{completionCount}/{setupSteps.length} setup steps complete</Text>
+          <View className="self-start rounded-round bg-[rgba(45,212,191,0.18)] px-3 py-1.5">
+            <Text className="text-xs font-bold uppercase tracking-[0.4px] text-accent">{completionCount}/{setupSteps.length} setup steps complete</Text>
           </View>
         ) : null}
-        <Text style={styles.balanceLabel}>Projected Free Cash This Month</Text>
-        <Text style={styles.balance}>{moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
-        <Text style={[styles.budgetStatusText, { color: budgetStatus.color }]}>{budgetStatus.title}</Text>
+        <Text className="text-[15px] text-textMuted">Projected Free Cash This Month</Text>
+        <Text className="mt-xs text-[38px] font-bold text-text">{moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
+        <Text className={`text-sm font-bold ${isBudgetHealthy ? "text-success" : "text-danger"}`}>{budgetStatus.title}</Text>
 
-        <View style={styles.balanceRow}>
-          <View style={styles.metricBlock}>
-            <Text style={styles.smallLabel}>Income</Text>
-            <Text style={styles.income}>{moneyFormat.format(monthlyIncome)}</Text>
+        <View className="mt-sm flex-row flex-wrap gap-sm">
+          <View className="min-w-[30%] grow rounded-md border border-border bg-surfaceSoft p-md">
+            <Text className="mb-1 text-textMuted">Income</Text>
+            <Text className="text-lg font-semibold text-success">{moneyFormat.format(monthlyIncome)}</Text>
           </View>
 
-          <View style={styles.metricBlock}>
-            <Text style={styles.smallLabel}>Spending</Text>
-            <Text style={styles.expense}>{moneyFormat.format(monthlyExpenses + monthlyFixedCosts)}</Text>
+          <View className="min-w-[30%] grow rounded-md border border-border bg-surfaceSoft p-md">
+            <Text className="mb-1 text-textMuted">Spending</Text>
+            <Text className="text-base font-semibold text-danger">{moneyFormat.format(monthlyExpenses + monthlyFixedCosts)}</Text>
           </View>
 
-          <View style={styles.metricBlock}>
-            <Text style={styles.smallLabel}>Fuel Budget</Text>
-            <Text style={styles.neutral}>{moneyFormat.format(monthlyFuelBudget)}</Text>
+          <View className="min-w-[30%] grow rounded-md border border-border bg-surfaceSoft p-md">
+            <Text className="mb-1 text-textMuted">Fuel Budget</Text>
+            <Text className="text-base font-semibold text-text">{moneyFormat.format(monthlyFuelBudget)}</Text>
           </View>
         </View>
       </View>
 
-      <View style={[styles.alertCard, { borderColor: budgetStatus.color }]}>
-        <Text style={styles.alertTitle}>{budgetStatus.title}</Text>
-        <Text style={styles.alertText}>{budgetStatus.description}</Text>
+      <View className={`gap-xs rounded-lg border bg-surface p-md ${isBudgetHealthy ? "border-success" : "border-danger"}`}>
+        <Text className="text-[17px] font-bold text-text">{budgetStatus.title}</Text>
+        <Text className="text-sm leading-[21px] text-textMuted">{budgetStatus.description}</Text>
       </View>
 
-      <View style={[styles.fillUpCard, shadows.soft]}>
-        <Text style={styles.fillUpLabel}>Tank Forecast</Text>
-        <Text style={styles.fillUpValue}>{Math.max(projectedDaysUntilFillUp, 0).toFixed(1)} days until next fill-up</Text>
-        <Text style={styles.fillUpMeta}>Estimated refill cost: {moneyFormat.format(projectedFillUpCost)} based on your current fuel and mileage inputs.</Text>
-        <Text style={styles.fillUpStatus}>{fuelStatus}</Text>
+      <View style={shadows.soft} className="gap-sm rounded-lg border border-border bg-surface p-md">
+        <Text className="text-base font-bold text-text">Tank Forecast</Text>
+        <Text className="text-[22px] font-bold text-accent">{Math.max(projectedDaysUntilFillUp, 0).toFixed(1)} days until next fill-up</Text>
+        <Text className="text-sm leading-5 text-textMuted">Estimated refill cost: {moneyFormat.format(projectedFillUpCost)} based on your current fuel and mileage inputs.</Text>
+        <Text className="text-[13px] font-bold uppercase tracking-[0.5px] text-text">{fuelStatus}</Text>
       </View>
 
       {shouldShowSetupChecklist ? (
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Get Fully Set Up</Text>
-          <View style={styles.checklistWrap}>
+        <View className="gap-sm rounded-lg border border-border bg-surface p-md">
+          <Text className="text-lg font-bold text-text">Get Fully Set Up</Text>
+          <View className="gap-xs">
             {setupSteps.map((step) => (
-              <Pressable key={step.label} onPress={() => router.push(step.path)} style={styles.checklistRow}>
+              <Pressable key={step.label} onPress={() => router.push(step.path)} className="flex-row items-center gap-sm rounded-md bg-surfaceSoft px-md py-3">
                 <Ionicons
                   name={step.complete ? "checkmark-circle" : "ellipse-outline"}
                   size={20}
                   color={step.complete ? colors.success : colors.textMuted}
                 />
-                <Text style={styles.checklistLabel}>{step.label}</Text>
+                <Text className="flex-1 text-[15px] font-semibold text-text">{step.label}</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </Pressable>
             ))}
@@ -199,7 +196,7 @@ export default function Home() {
         </View>
       ) : null}
 
-      <View style={styles.quickActionsRow}>
+      <View className="flex-row gap-sm">
         <QuickActionCard
           colors={colors}
           title="Update budget"
@@ -230,10 +227,10 @@ export default function Home() {
 }
 
 function QuickActionCard({
-  colors,
   title,
   description,
   icon,
+  colors,
   onPress,
 }: {
   colors: ThemeColors;
@@ -243,195 +240,10 @@ function QuickActionCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [quickActionStyles.card(colors), pressed && quickActionStyles.pressed]}>
+    <Pressable onPress={onPress} className="flex-1 gap-xs rounded-lg border border-border bg-surface p-md active:opacity-85">
       <Ionicons name={icon} size={20} color={colors.accent} />
-      <Text style={quickActionStyles.title(colors)}>{title}</Text>
-      <Text style={quickActionStyles.description(colors)}>{description}</Text>
+      <Text className="text-base font-bold text-text">{title}</Text>
+      <Text className="text-[13px] leading-[19px] text-textMuted">{description}</Text>
     </Pressable>
   );
 }
-
-const quickActionStyles = {
-  card: (colors: ThemeColors) => ({
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    gap: spacing.xs,
-  }),
-  pressed: {
-    opacity: 0.85,
-  },
-  title: (colors: ThemeColors) => ({
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "700" as const,
-  }),
-  description: (colors: ThemeColors) => ({
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-  }),
-};
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    brandLogo: {
-      width: 64,
-      height: 64,
-    },
-    balanceCard: {
-      backgroundColor: colors.surface,
-      borderRadius: radii.xl,
-      padding: spacing.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      gap: spacing.sm,
-    },
-    statusPill: {
-      alignSelf: "flex-start",
-      backgroundColor: "rgba(45, 212, 191, 0.18)",
-      borderRadius: radii.round,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-    },
-    statusPillLabel: {
-      color: colors.accent,
-      fontSize: 12,
-      fontWeight: "700",
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
-    balanceLabel: {
-      color: colors.textMuted,
-      fontSize: 15,
-    },
-    balance: {
-      color: colors.text,
-      fontSize: 38,
-      fontWeight: "700",
-      marginTop: spacing.xs,
-    },
-    budgetStatusText: {
-      fontSize: 14,
-      fontWeight: "700",
-    },
-    balanceRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-      marginTop: spacing.sm,
-      flexWrap: "wrap",
-    },
-    metricBlock: {
-      minWidth: "30%",
-      flexGrow: 1,
-      backgroundColor: colors.surfaceSoft,
-      borderRadius: radii.md,
-      padding: spacing.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    smallLabel: {
-      color: colors.textMuted,
-      marginBottom: 4,
-    },
-    income: {
-      color: colors.success,
-      fontSize: 18,
-      fontWeight: "600",
-    },
-    expense: {
-      color: colors.danger,
-      fontSize: 16,
-      fontWeight: "600",
-    },
-    neutral: {
-      color: colors.text,
-      fontSize: 16,
-      fontWeight: "600",
-    },
-    fillUpCard: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      padding: spacing.md,
-      gap: spacing.sm,
-    },
-    fillUpLabel: {
-      color: colors.text,
-      fontSize: 16,
-      fontWeight: "700",
-    },
-    fillUpValue: {
-      color: colors.accent,
-      fontSize: 22,
-      fontWeight: "700",
-    },
-    fillUpMeta: {
-      color: colors.textMuted,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    fillUpStatus: {
-      color: colors.text,
-      fontSize: 13,
-      fontWeight: "700",
-      textTransform: "uppercase",
-      letterSpacing: 0.5,
-    },
-    alertCard: {
-      borderRadius: radii.lg,
-      borderWidth: 1,
-      backgroundColor: colors.surface,
-      padding: spacing.md,
-      gap: spacing.xs,
-    },
-    alertTitle: {
-      color: colors.text,
-      fontSize: 17,
-      fontWeight: "700",
-    },
-    alertText: {
-      color: colors.textMuted,
-      fontSize: 14,
-      lineHeight: 21,
-    },
-    sectionCard: {
-      borderRadius: radii.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-      padding: spacing.md,
-      gap: spacing.sm,
-    },
-    sectionTitle: {
-      color: colors.text,
-      fontSize: 18,
-      fontWeight: "700",
-    },
-    checklistWrap: {
-      gap: spacing.xs,
-    },
-    checklistRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.sm,
-      backgroundColor: colors.surfaceSoft,
-      borderRadius: radii.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 12,
-    },
-    checklistLabel: {
-      flex: 1,
-      color: colors.text,
-      fontSize: 15,
-      fontWeight: "600",
-    },
-    quickActionsRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
-  });
