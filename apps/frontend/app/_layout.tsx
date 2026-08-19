@@ -13,6 +13,11 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <AppPreferencesProvider>
+        {/* VehicleProvider must stay above FinanceProvider: FinanceContext
+            calls useVehicle() internally to auto-fill combinedMpg/
+            tankCapacityGallons from the selected vehicle, which throws
+            ("useVehicle must be used inside VehicleProvider") if the
+            nesting is reversed. */}
         <VehicleProvider>
           <FinanceProvider>
             <BudgetProvider>

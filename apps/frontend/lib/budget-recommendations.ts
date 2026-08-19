@@ -24,6 +24,9 @@ export interface RecommendationInput {
  * how their budget looks. Always returns at least one message (an
  * encouraging one when there isn't enough logged data yet, matching the
  * app's ADHD-friendly, non-shaming tone elsewhere).
+ *
+ * Not currently called from any screen - see spending-categories.ts's
+ * module docstring for why this is still here despite that.
  */
 export function getBudgetRecommendations(input: RecommendationInput): string[] {
   const { breakdown, projectedBudgetAfterEssentials, monthlyIncome } = input;

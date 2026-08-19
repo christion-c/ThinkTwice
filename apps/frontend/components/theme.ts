@@ -74,8 +74,6 @@ export const getColors = (
     ? { ...palettes[mode], ...highContrastOverrides[mode] }
     : palettes[mode];
 
-export const colors = palettes.dark;
-
 export const spacing = {
   xs: 6,
   sm: 10,
