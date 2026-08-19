@@ -1,3 +1,5 @@
+import "../global.css";
+
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
@@ -7,26 +9,29 @@ import { AppPreferencesProvider, useThemeColors } from "../components/AppPrefere
 import { AuthProvider, useAuth } from "../components/AuthProvider";
 import { BudgetProvider } from "../components/BudgetContext";
 import { FinanceProvider } from "../components/FinanceContext";
+import ThemeVarsRoot from "../components/ThemeVarsRoot";
 import { VehicleProvider } from "../components/VehicleContext";
 
 export default function RootLayout() {
   return (
     <AuthProvider>
       <AppPreferencesProvider>
-        {/* VehicleProvider must stay above FinanceProvider: FinanceContext
-            calls useVehicle() internally to auto-fill combinedMpg/
-            tankCapacityGallons from the selected vehicle, which throws
-            ("useVehicle must be used inside VehicleProvider") if the
-            nesting is reversed. */}
-        <VehicleProvider>
-          <FinanceProvider>
-            <BudgetProvider>
-              <AuthGate>
-                <AppStack />
-              </AuthGate>
-            </BudgetProvider>
-          </FinanceProvider>
-        </VehicleProvider>
+        <ThemeVarsRoot>
+          {/* VehicleProvider must stay above FinanceProvider: FinanceContext
+              calls useVehicle() internally to auto-fill combinedMpg/
+              tankCapacityGallons from the selected vehicle, which throws
+              ("useVehicle must be used inside VehicleProvider") if the
+              nesting is reversed. */}
+          <VehicleProvider>
+            <FinanceProvider>
+              <BudgetProvider>
+                <AuthGate>
+                  <AppStack />
+                </AuthGate>
+              </BudgetProvider>
+            </FinanceProvider>
+          </VehicleProvider>
+        </ThemeVarsRoot>
       </AppPreferencesProvider>
     </AuthProvider>
   );
