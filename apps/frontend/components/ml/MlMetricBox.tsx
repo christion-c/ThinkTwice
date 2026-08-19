@@ -1,19 +1,16 @@
 import { Text, View } from "react-native";
 
-import type { MlPreviewStyles } from "./ml-preview-styles";
-
 interface MlMetricBoxProps {
   label: string;
   value: string;
-  styles: MlPreviewStyles;
 }
 
 /** One label/value tile in a metric grid (e.g. "Projected fuel cost" / "$64.20"). */
-export default function MlMetricBox({ label, value, styles }: MlMetricBoxProps) {
+export default function MlMetricBox({ label, value }: MlMetricBoxProps) {
   return (
-    <View style={styles.metricBox}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
+    <View className="flex-1 gap-1 rounded-md border border-border p-sm">
+      <Text className="text-xs uppercase tracking-[0.4px] text-textMuted">{label}</Text>
+      <Text className="text-base font-bold text-text">{value}</Text>
     </View>
   );
 }

@@ -1,22 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Text, View } from "react-native";
 
 import BottomNav from "../components/BottomNav";
 import PageScaffold from "../components/PageScaffold";
 import { useThemeColors } from "../components/AppPreferences";
 import { useAuth } from "../components/AuthProvider";
-import { radii, spacing } from "../components/theme";
 import MlAccountInfoBox from "../components/ml/MlAccountInfoBox";
 import MlMetricBox from "../components/ml/MlMetricBox";
 import MlPreviewControls from "../components/ml/MlPreviewControls";
-import { createMlPreviewStyles } from "../components/ml/ml-preview-styles";
 import { useMlPreview } from "../hooks/useMlPreview";
 import { fetchFillUpHistory, type SavedFillUpHistoryEntry } from "../lib/backend-api";
 
 export default function MlPreviewPage() {
   const colors = useThemeColors();
   const { user } = useAuth();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const { milesInput, setMilesInput, data, loading, error, reload } = useMlPreview(user?.uid ?? "guest");
   const [historyEntries, setHistoryEntries] = useState<SavedFillUpHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -45,8 +42,8 @@ export default function MlPreviewPage() {
 
   return (
     <PageScaffold title="Fuel forecast" subtitle="Fuel cost forecast" footer={<BottomNav active="Home" />}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Fuel forecast</Text>
+      <View className="gap-md rounded-lg border border-border bg-surface p-lg">
+        <Text className="text-xl font-bold text-text">Fuel forecast</Text>
 
         <MlPreviewControls
           milesInput={milesInput}
@@ -57,42 +54,40 @@ export default function MlPreviewPage() {
           idleLabel="Run prediction"
           loadingLabel="Predicting..."
           colors={colors}
-          styles={styles}
         />
 
         <MlAccountInfoBox
           label="Account"
           userId={user?.uid ?? "guest"}
           historyCount={data?.history_count ?? 0}
-          styles={styles}
         />
 
         {data ? (
           <>
-            <View style={styles.metricRow}>
-              <MlMetricBox label="Projected fuel cost" value={`$${data.fuel_prediction.toFixed(2)}`} styles={styles} />
-              <MlMetricBox label="Budget total" value={`$${data.total_prediction.toFixed(2)}`} styles={styles} />
+            <View className="flex-row gap-sm">
+              <MlMetricBox label="Projected fuel cost" value={`$${data.fuel_prediction.toFixed(2)}`} />
+              <MlMetricBox label="Budget total" value={`$${data.total_prediction.toFixed(2)}`} />
             </View>
 
-            <View style={styles.metricRow}>
-              <MlMetricBox label="History entries" value={String(data.history_count)} styles={styles} />
-              <MlMetricBox label="Rows used" value={String(data.rows)} styles={styles} />
+            <View className="flex-row gap-sm">
+              <MlMetricBox label="History entries" value={String(data.history_count)} />
+              <MlMetricBox label="Rows used" value={String(data.rows)} />
             </View>
 
-            <View style={styles.feedbackBox}>
-              <Text style={styles.feedbackLabel}>Forecast</Text>
-              <Text style={styles.feedbackText}>{data.feedback}</Text>
+            <View className="rounded-md border border-border bg-background p-sm">
+              <Text className="mb-1 text-xs uppercase tracking-[0.4px] text-textMuted">Forecast</Text>
+              <Text className="text-sm leading-5 text-text">{data.feedback}</Text>
             </View>
 
-            <View style={styles.historyPanel}>
-              <Text style={styles.smallTitle}>Recent fill-ups</Text>
+            <View className="gap-sm rounded-md border border-border bg-background p-sm">
+              <Text className="text-base font-semibold text-text">Recent fill-ups</Text>
               {historyLoading ? (
-                <View style={styles.loadingRow}>
+                <View className="flex-row items-center gap-sm">
                   <ActivityIndicator color={colors.accent} />
-                  <Text style={styles.text}>Loading history...</Text>
+                  <Text className="text-sm leading-5 text-textMuted">Loading history...</Text>
                 </View>
               ) : historyEntries.length === 0 ? (
-                <Text style={styles.text}>No saved fill-up history yet.</Text>
+                <Text className="text-sm leading-5 text-textMuted">No saved fill-up history yet.</Text>
               ) : (
                 [...historyEntries]
                   .sort((a, b) => {
@@ -102,12 +97,12 @@ export default function MlPreviewPage() {
                   })
                   .slice(0, 10)
                   .map((entry, index) => (
-                    <View key={`${entry.recordedAt ?? entry.observedCost}-${index}`} style={styles.rowBox}>
-                      <Text style={styles.rowText}>{entry.recordedAt ? new Date(entry.recordedAt).toLocaleDateString() : "Recorded date unavailable"}</Text>
-                      <Text style={styles.rowText}>Miles: {entry.milesDriven}</Text>
-                      <Text style={styles.rowText}>Fuel price: ${entry.fuelPrice.toFixed(2)}</Text>
-                      <Text style={styles.rowText}>Gallons: {entry.gallons.toFixed(2)}</Text>
-                      <Text style={styles.rowText}>Observed cost: ${entry.observedCost.toFixed(2)}</Text>
+                    <View key={`${entry.recordedAt ?? entry.observedCost}-${index}`} className="gap-0.5 rounded-md border border-border p-sm">
+                      <Text className="text-[13px] text-textMuted">{entry.recordedAt ? new Date(entry.recordedAt).toLocaleDateString() : "Recorded date unavailable"}</Text>
+                      <Text className="text-[13px] text-textMuted">Miles: {entry.milesDriven}</Text>
+                      <Text className="text-[13px] text-textMuted">Fuel price: ${entry.fuelPrice.toFixed(2)}</Text>
+                      <Text className="text-[13px] text-textMuted">Gallons: {entry.gallons.toFixed(2)}</Text>
+                      <Text className="text-[13px] text-textMuted">Observed cost: ${entry.observedCost.toFixed(2)}</Text>
                     </View>
                   ))
               )}
@@ -118,32 +113,3 @@ export default function MlPreviewPage() {
     </PageScaffold>
   );
 }
-
-const createStyles = (colors: Parameters<typeof createMlPreviewStyles>[0]) => {
-  const shared = createMlPreviewStyles(colors);
-
-  // Page-specific extras beyond the shared card/form/metric styles.
-  const extras = StyleSheet.create({
-    historyPanel: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      padding: spacing.sm,
-      backgroundColor: colors.background,
-      gap: spacing.sm,
-    },
-    rowBox: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      padding: spacing.sm,
-      gap: 2,
-    },
-    rowText: {
-      color: colors.textMuted,
-      fontSize: 13,
-    },
-  });
-
-  return { ...shared, ...extras };
-};

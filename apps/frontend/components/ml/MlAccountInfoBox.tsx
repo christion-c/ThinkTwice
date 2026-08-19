@@ -1,21 +1,18 @@
 import { Text, View } from "react-native";
 
-import type { MlPreviewStyles } from "./ml-preview-styles";
-
 interface MlAccountInfoBoxProps {
   label: string;
   userId: string;
   historyCount: number;
-  styles: MlPreviewStyles;
 }
 
 /** Shows which account a preview's data belongs to, and its history size. */
-export default function MlAccountInfoBox({ label, userId, historyCount, styles }: MlAccountInfoBoxProps) {
+export default function MlAccountInfoBox({ label, userId, historyCount }: MlAccountInfoBoxProps) {
   return (
-    <View style={styles.userInfoBox}>
-      <Text style={styles.userInfoLabel}>{label}</Text>
-      <Text style={styles.userInfoValue}>{userId}</Text>
-      <Text style={styles.userInfoHint}>History: {historyCount} entries</Text>
+    <View className="gap-1 rounded-md border border-border bg-background p-sm">
+      <Text className="text-xs uppercase tracking-[0.4px] text-textMuted">{label}</Text>
+      <Text className="text-sm font-semibold text-text">{userId}</Text>
+      <Text className="text-[13px] text-textMuted">History: {historyCount} entries</Text>
     </View>
   );
 }

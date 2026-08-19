@@ -1,7 +1,6 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 
 import type { ThemeColors } from "../theme";
-import type { MlPreviewStyles } from "./ml-preview-styles";
 
 interface MlPreviewControlsProps {
   milesInput: string;
@@ -12,7 +11,6 @@ interface MlPreviewControlsProps {
   idleLabel: string;
   loadingLabel: string;
   colors: ThemeColors;
-  styles: MlPreviewStyles;
 }
 
 /** Miles-driven input, submit button, and the loading/error feedback beneath it. */
@@ -25,39 +23,35 @@ export default function MlPreviewControls({
   idleLabel,
   loadingLabel,
   colors,
-  styles,
 }: MlPreviewControlsProps) {
   return (
     <>
-      <View style={styles.formRow}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Miles driven</Text>
+      <View className="gap-sm">
+        <View className="gap-1">
+          <Text className="text-xs font-semibold uppercase tracking-[0.4px] text-text">Miles driven</Text>
           <TextInput
             value={milesInput}
             onChangeText={onMilesChange}
             keyboardType="numeric"
-            style={styles.input}
+            className="rounded-md border border-border bg-background px-sm py-sm text-text"
             placeholder="120"
             placeholderTextColor={colors.textMuted}
           />
         </View>
       </View>
 
-      <Pressable
-        onPress={onSubmit}
-        style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
-      >
-        <Text style={styles.primaryButtonLabel}>{loading ? loadingLabel : idleLabel}</Text>
+      <Pressable onPress={onSubmit} className="self-start rounded-md bg-accent px-md py-sm active:opacity-80">
+        <Text className="text-sm font-semibold text-surface">{loading ? loadingLabel : idleLabel}</Text>
       </Pressable>
 
       {loading ? (
-        <View style={styles.loadingRow}>
+        <View className="flex-row items-center gap-sm">
           <ActivityIndicator color={colors.accent} />
-          <Text style={styles.text}>Loading preview data...</Text>
+          <Text className="text-sm leading-5 text-textMuted">Loading preview data...</Text>
         </View>
       ) : null}
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text className="text-sm text-danger">{error}</Text> : null}
     </>
   );
 }
