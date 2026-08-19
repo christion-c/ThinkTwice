@@ -28,6 +28,12 @@ export default function PageScaffold({
   const styles = useMemo(() => createStyles(colors, compactCards), [colors, compactCards]);
   const scrollRef = useRef<ScrollView>(null);
 
+  // Belt-and-suspenders against rubber-band overscroll: the ScrollView below
+  // already sets bounces/alwaysBounceVertical/overScrollMode false and CSS
+  // overscrollBehavior: none, but that quartet still isn't airtight on every
+  // platform (Safari in particular can rubber-band past the content edge
+  // regardless). This manually snaps back to the last valid offset as a
+  // final catch, rather than trusting any single native/CSS flag alone.
   const handleScroll = ({ nativeEvent }: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
     const maxOffset = Math.max(nativeEvent.contentSize.height - nativeEvent.layoutMeasurement.height, 0);
     if (nativeEvent.contentOffset.y > maxOffset) {
