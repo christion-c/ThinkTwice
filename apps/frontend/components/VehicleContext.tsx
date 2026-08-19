@@ -67,9 +67,15 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setBackendUser(null);
-    setVehicles([]);
-    setSelectedVehicleId(null);
+    // Deliberately doesn't clear backendUser/vehicles/selectedVehicleId
+    // before fetching: useRefetchOnFocus calls this every time a screen
+    // regains focus, and clearing first would (a) flash the vehicle
+    // selector empty on every tab switch, and (b) permanently reset
+    // selectedVehicleId below back to null before the fetch resolves,
+    // making the "keep the current selection if it still exists" check
+    // always fail. Leaving the previous state in place until the fetch
+    // resolves also means a transient network failure below just shows
+    // an error over the last-known data instead of wiping it blank.
     setErrorMessage("");
 
     try {
