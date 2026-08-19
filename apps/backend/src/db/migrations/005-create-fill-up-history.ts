@@ -1,5 +1,10 @@
 import type { Migration } from "./migration.types.js";
 
+/**
+ * Creates per-fill-up fuel records, backing both the fuel forecast on the
+ * Fuel screen and the ML service's /ml-preview debug endpoint (see
+ * services/ml/app/history.py).
+ */
 export const createFillUpHistoryMigration: Migration = {
   id: "005_create_fill_up_history",
   description: "Create the fill_up_history table",
