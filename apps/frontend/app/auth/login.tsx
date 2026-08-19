@@ -16,6 +16,8 @@ import PageScaffold from "../../components/PageScaffold";
 import AuthSubmitButton from "../../components/auth/AuthSubmitButton";
 import AuthTextField from "../../components/auth/AuthTextField";
 import PreviewModeNotice from "../../components/auth/PreviewModeNotice";
+import Card from "../../components/ui/Card";
+import StatusMessage from "../../components/ui/StatusMessage";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -155,7 +157,7 @@ export default function Login() {
       title="ThinkTwice"
       subtitle="Welcome back. Sign in to continue where you left off."
     >
-      <View className="gap-md rounded-lg border border-border bg-surface p-lg">
+      <Card gap="md">
         <Text className="text-[22px] font-bold text-text">Account Login</Text>
 
         <PreviewModeNotice
@@ -188,7 +190,7 @@ export default function Login() {
           colors={colors}
         />
 
-        {errorMessage ? <Text className="text-sm text-danger">{errorMessage}</Text> : null}
+        <StatusMessage message={errorMessage} tone="error" />
 
         <AuthSubmitButton
           onPress={() => void handleLogin()}
@@ -222,7 +224,7 @@ export default function Login() {
             <Text className="text-center text-sm font-bold text-accent">Sign up</Text>
           </Pressable>
         </View>
-      </View>
+      </Card>
     </PageScaffold>
   );
 }

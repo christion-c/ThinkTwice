@@ -1,10 +1,11 @@
 import { router } from "expo-router";
-import { Text, View } from "react-native";
 
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
 import PageScaffold from "../../components/PageScaffold";
 import SettingsBackButton from "../../components/settings/SettingsBackButton";
 import SettingToggleRow from "../../components/settings/SettingToggleRow";
+import Card from "../../components/ui/Card";
+import CardTitle from "../../components/ui/CardTitle";
 
 export default function Accessibility() {
   const colors = useThemeColors();
@@ -21,8 +22,8 @@ export default function Accessibility() {
       subtitle="Adjust the app to match your comfort and readability needs."
       headerLeft={<SettingsBackButton onPress={() => router.replace("/settings/preferences")} colors={colors} />}
     >
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Display Comfort</Text>
+      <Card>
+        <CardTitle>Display Comfort</CardTitle>
         <SettingToggleRow
           title="High contrast"
           caption="Stronger borders and text for easier scanning."
@@ -37,7 +38,7 @@ export default function Accessibility() {
           onValueChange={setCompactCards}
           colors={colors}
         />
-      </View>
+      </Card>
     </PageScaffold>
   );
 }

@@ -5,6 +5,9 @@ import { useAppPreferences, useThemeColors } from "../../components/AppPreferenc
 import PageScaffold from "../../components/PageScaffold";
 import SettingsBackButton from "../../components/settings/SettingsBackButton";
 import SettingToggleRow from "../../components/settings/SettingToggleRow";
+import Card from "../../components/ui/Card";
+import CardText from "../../components/ui/CardText";
+import CardTitle from "../../components/ui/CardTitle";
 
 export default function DailyRhythmSettings() {
   const colors = useThemeColors();
@@ -24,15 +27,15 @@ export default function DailyRhythmSettings() {
       subtitle="Shape how the app supports your routine without feeling noisy."
       headerLeft={<SettingsBackButton onPress={() => router.replace("/settings/preferences")} colors={colors} />}
     >
-      <View className="gap-md rounded-lg border border-border bg-surface p-lg">
+      <Card gap="md">
         <View className="gap-xs">
           <View className="self-start rounded-round bg-[rgba(45,212,191,0.16)] px-2.5 py-1">
             <Text className="text-xs font-bold uppercase tracking-[0.8px] text-accent">Demo-ready</Text>
           </View>
           <Text className="text-[22px] font-bold text-text">Your app, tuned for the day ahead</Text>
-          <Text className="text-[15px] leading-[22px] text-textMuted">
+          <CardText>
             These controls are designed to feel polished and useful, whether you want a calmer dashboard or a more proactive planning flow.
-          </Text>
+          </CardText>
         </View>
 
         <View className="flex-row gap-sm">
@@ -45,10 +48,10 @@ export default function DailyRhythmSettings() {
             <Text className="text-xs text-textMuted">focus mode</Text>
           </View>
         </View>
-      </View>
+      </Card>
 
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Daily support</Text>
+      <Card>
+        <CardTitle>Daily support</CardTitle>
         <SettingToggleRow
           title="Check-in reminders"
           caption="Keep light follow-up prompts visible so your routine stays on track."
@@ -56,10 +59,10 @@ export default function DailyRhythmSettings() {
           onValueChange={setRemindersEnabled}
           colors={colors}
         />
-      </View>
+      </Card>
 
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Dashboard feel</Text>
+      <Card>
+        <CardTitle>Dashboard feel</CardTitle>
         <SettingToggleRow
           title="Compact cards"
           caption="Use tighter spacing for a denser, more modern overview."
@@ -67,7 +70,7 @@ export default function DailyRhythmSettings() {
           onValueChange={setCompactCards}
           colors={colors}
         />
-      </View>
+      </Card>
     </PageScaffold>
   );
 }

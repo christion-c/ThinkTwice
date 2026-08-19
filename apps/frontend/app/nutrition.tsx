@@ -1,7 +1,8 @@
-import { Text, View } from "react-native";
-
 import BottomNav from "../components/BottomNav";
 import PageScaffold from "../components/PageScaffold";
+import Card from "../components/ui/Card";
+import CardText from "../components/ui/CardText";
+import CardTitle from "../components/ui/CardTitle";
 
 /**
  * Nutrition daily check-ins are paused (not this screen's decision — see
@@ -12,13 +13,13 @@ import PageScaffold from "../components/PageScaffold";
 export default function Nutrition() {
   return (
     <PageScaffold title="Nutrition" subtitle="This feature isn't available yet." footer={<BottomNav />}>
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Check back soon</Text>
-        <Text className="text-[15px] leading-[21px] text-textMuted">
+      <Card>
+        <CardTitle>Check back soon</CardTitle>
+        <CardText tight>
           Daily nutrition check-ins are paused while the team finishes this feature. Your fuel and
           finance data on the other screens aren’t affected.
-        </Text>
-      </View>
+        </CardText>
+      </Card>
     </PageScaffold>
   );
 }

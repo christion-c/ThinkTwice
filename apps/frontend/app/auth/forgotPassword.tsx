@@ -1,13 +1,15 @@
 import { router } from "expo-router";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text } from "react-native";
 
 import { useThemeColors } from "../../components/AppPreferences";
 import PageScaffold from "../../components/PageScaffold";
 import AuthSubmitButton from "../../components/auth/AuthSubmitButton";
 import AuthTextField from "../../components/auth/AuthTextField";
 import PreviewModeNotice from "../../components/auth/PreviewModeNotice";
+import Card from "../../components/ui/Card";
+import StatusMessage from "../../components/ui/StatusMessage";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function ForgotPassword() {
@@ -48,7 +50,7 @@ export default function ForgotPassword() {
       title="Reset Password"
       subtitle="Recover account access quickly and safely."
     >
-      <View className="gap-md rounded-lg border border-border bg-surface p-lg">
+      <Card gap="md">
         <Text className="text-[22px] font-bold text-text">Request Reset Link</Text>
 
         <PreviewModeNotice
@@ -66,8 +68,8 @@ export default function ForgotPassword() {
           colors={colors}
         />
 
-        {errorMessage ? <Text className="text-sm text-danger">{errorMessage}</Text> : null}
-        {successMessage ? <Text className="text-sm text-success">{successMessage}</Text> : null}
+        <StatusMessage message={errorMessage} tone="error" />
+        <StatusMessage message={successMessage} tone="success" />
 
         <AuthSubmitButton
           onPress={() => void handleReset()}
@@ -79,7 +81,7 @@ export default function ForgotPassword() {
         <Pressable onPress={() => router.push("/auth/login")}>
           <Text className="text-center text-sm font-bold text-accent">Back to sign in</Text>
         </Pressable>
-      </View>
+      </Card>
     </PageScaffold>
   );
 }

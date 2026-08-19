@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text } from "react-native";
 
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
 import { useAuth } from "../../components/AuthProvider";
@@ -9,6 +9,9 @@ import BottomNav from "../../components/BottomNav";
 import { useFinance } from "../../components/FinanceContext";
 import PageScaffold from "../../components/PageScaffold";
 import { useVehicle } from "../../components/VehicleContext";
+import Card from "../../components/ui/Card";
+import CardText from "../../components/ui/CardText";
+import CardTitle from "../../components/ui/CardTitle";
 import { useRefetchOnFocus } from "../../hooks/useRefetchOnFocus";
 
 const moneyFormat = new Intl.NumberFormat("en-US", {
@@ -43,21 +46,20 @@ export default function Profile() {
       }
       footer={<BottomNav active="Profile" />}
     >
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Account Snapshot</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Signed in as {accountLabel}.</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Cloud Status: {backendUser ? "Connected" : loading ? "Loading" : "Not synced yet"}</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Current monthly fuel cost: {moneyFormat.format(monthlyFuelBudget)}</Text>
+      <Card>
+        <CardTitle>Account Snapshot</CardTitle>
+        <CardText>Signed in as {accountLabel}.</CardText>
+        <CardText>Cloud Status: {backendUser ? "Connected" : loading ? "Loading" : "Not synced yet"}</CardText>
+        <CardText>Current monthly fuel cost: {moneyFormat.format(monthlyFuelBudget)}</CardText>
         <Text className="mt-0.5 text-sm font-semibold text-accent">Appearance: {colorMode === "dark" ? "Dark" : "Light"}</Text>
-      </View>
+      </Card>
 
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Account Details</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Active vehicle: {selectedVehicle?.nickname ?? "None selected"}</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">High contrast: {highContrast ? "On" : "Off"}</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Reminders: {remindersEnabled ? "On" : "Off"}</Text>
-      </View>
-
+      <Card>
+        <CardTitle>Account Details</CardTitle>
+        <CardText>Active vehicle: {selectedVehicle?.nickname ?? "None selected"}</CardText>
+        <CardText>High contrast: {highContrast ? "On" : "Off"}</CardText>
+        <CardText>Reminders: {remindersEnabled ? "On" : "Off"}</CardText>
+      </Card>
     </PageScaffold>
   );
 }

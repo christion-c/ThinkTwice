@@ -6,6 +6,10 @@ import { Pressable, Switch, Text, View } from "react-native";
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
 import PageScaffold from "../../components/PageScaffold";
 import SettingsBackButton from "../../components/settings/SettingsBackButton";
+import Card from "../../components/ui/Card";
+import CardText from "../../components/ui/CardText";
+import CardTitle from "../../components/ui/CardTitle";
+import StatusMessage from "../../components/ui/StatusMessage";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function ProfileSettings() {
@@ -46,9 +50,9 @@ export default function ProfileSettings() {
       subtitle="Adjust a few frontend app options for your experience."
       headerLeft={<SettingsBackButton onPress={() => router.replace("/profile/profile")} colors={colors} />}
     >
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Appearance</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Choose the app color mode.</Text>
+      <Card>
+        <CardTitle>Appearance</CardTitle>
+        <CardText>Choose the app color mode.</CardText>
 
         <View className="flex-row gap-sm">
           <Pressable
@@ -73,10 +77,10 @@ export default function ProfileSettings() {
             </Text>
           </Pressable>
         </View>
-      </View>
+      </Card>
 
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Basic Options</Text>
+      <Card>
+        <CardTitle>Basic Options</CardTitle>
 
         <View className="flex-row items-center justify-between gap-md py-1.5">
           <View className="flex-1 gap-0.5">
@@ -94,13 +98,13 @@ export default function ProfileSettings() {
           <Switch value={highContrast} onValueChange={setHighContrast} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
         </View>
 
-      </View>
+      </Card>
 
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Session</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Sign out of your current account on this device.</Text>
+      <Card>
+        <CardTitle>Session</CardTitle>
+        <CardText>Sign out of your current account on this device.</CardText>
 
-        {logoutError ? <Text className="text-sm text-danger">{logoutError}</Text> : null}
+        <StatusMessage message={logoutError} tone="error" />
 
         <Pressable
           onPress={handleLogout}
@@ -109,7 +113,7 @@ export default function ProfileSettings() {
         >
           <Text className="text-base font-bold text-danger">{isSigningOut ? "Signing out..." : "Log Out"}</Text>
         </Pressable>
-      </View>
+      </Card>
     </PageScaffold>
   );
 }
