@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { useThemeColors } from "../../components/AppPreferences";
@@ -8,12 +8,10 @@ import PageScaffold from "../../components/PageScaffold";
 import AuthSubmitButton from "../../components/auth/AuthSubmitButton";
 import AuthTextField from "../../components/auth/AuthTextField";
 import PreviewModeNotice from "../../components/auth/PreviewModeNotice";
-import { createAuthFormStyles } from "../../components/auth/auth-form-styles";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function Register() {
   const colors = useThemeColors();
-  const styles = useMemo(() => createAuthFormStyles(colors), [colors]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,13 +58,12 @@ export default function Register() {
       title="Sign Up"
       subtitle="Create your account and personalize your experience."
     >
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Create Account</Text>
+      <View className="gap-md rounded-lg border border-border bg-surface p-lg">
+        <Text className="text-[22px] font-bold text-text">Create Account</Text>
 
         <PreviewModeNotice
           visible={!isFirebaseConfigured}
           message="Preview mode is active. Firebase env variables are missing, so account creation is disabled."
-          styles={styles}
         />
 
         <AuthTextField
@@ -77,7 +74,6 @@ export default function Register() {
           textContentType="emailAddress"
           placeholder="you@example.com"
           colors={colors}
-          styles={styles}
         />
 
         <AuthTextField
@@ -88,7 +84,6 @@ export default function Register() {
           textContentType="newPassword"
           placeholder="Minimum 6 characters"
           colors={colors}
-          styles={styles}
         />
 
         <AuthTextField
@@ -99,23 +94,21 @@ export default function Register() {
           textContentType="password"
           placeholder="Re-enter password"
           colors={colors}
-          styles={styles}
         />
 
-        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        {errorMessage ? <Text className="text-sm text-danger">{errorMessage}</Text> : null}
 
         <AuthSubmitButton
           onPress={() => void handleRegister()}
           isSubmitting={isSubmitting}
           idleLabel="Sign Up"
           submittingLabel="Creating account..."
-          styles={styles}
         />
 
-        <View style={styles.signupRow}>
-          <Text style={styles.subtleText}>Already have an account?</Text>
+        <View className="flex-row items-center justify-center gap-2">
+          <Text className="text-sm text-textMuted">Already have an account?</Text>
           <Pressable onPress={() => router.push("/auth/login")}>
-            <Text style={styles.linkText}>Sign in</Text>
+            <Text className="text-center text-sm font-bold text-accent">Sign in</Text>
           </Pressable>
         </View>
       </View>

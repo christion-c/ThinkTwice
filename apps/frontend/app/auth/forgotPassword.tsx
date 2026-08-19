@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { useThemeColors } from "../../components/AppPreferences";
@@ -8,12 +8,10 @@ import PageScaffold from "../../components/PageScaffold";
 import AuthSubmitButton from "../../components/auth/AuthSubmitButton";
 import AuthTextField from "../../components/auth/AuthTextField";
 import PreviewModeNotice from "../../components/auth/PreviewModeNotice";
-import { createAuthFormStyles } from "../../components/auth/auth-form-styles";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function ForgotPassword() {
   const colors = useThemeColors();
-  const styles = useMemo(() => createAuthFormStyles(colors), [colors]);
 
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -50,13 +48,12 @@ export default function ForgotPassword() {
       title="Reset Password"
       subtitle="Recover account access quickly and safely."
     >
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Request Reset Link</Text>
+      <View className="gap-md rounded-lg border border-border bg-surface p-lg">
+        <Text className="text-[22px] font-bold text-text">Request Reset Link</Text>
 
         <PreviewModeNotice
           visible={!isFirebaseConfigured}
           message="Preview mode is active. Firebase env variables are missing, so password reset is disabled."
-          styles={styles}
         />
 
         <AuthTextField
@@ -67,22 +64,20 @@ export default function ForgotPassword() {
           textContentType="emailAddress"
           placeholder="you@example.com"
           colors={colors}
-          styles={styles}
         />
 
-        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-        {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
+        {errorMessage ? <Text className="text-sm text-danger">{errorMessage}</Text> : null}
+        {successMessage ? <Text className="text-sm text-success">{successMessage}</Text> : null}
 
         <AuthSubmitButton
           onPress={() => void handleReset()}
           isSubmitting={isSubmitting}
           idleLabel="Send Reset Email"
           submittingLabel="Sending..."
-          styles={styles}
         />
 
         <Pressable onPress={() => router.push("/auth/login")}>
-          <Text style={styles.linkText}>Back to sign in</Text>
+          <Text className="text-center text-sm font-bold text-accent">Back to sign in</Text>
         </Pressable>
       </View>
     </PageScaffold>

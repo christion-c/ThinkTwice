@@ -2,7 +2,6 @@ import { Text, TextInput, View } from "react-native";
 import type { KeyboardTypeOptions, TextInputProps } from "react-native";
 
 import type { ThemeColors } from "../theme";
-import type { AuthFormStyles } from "./auth-form-styles";
 
 interface AuthTextFieldProps {
   label: string;
@@ -10,7 +9,6 @@ interface AuthTextFieldProps {
   onChangeText: (value: string) => void;
   placeholder: string;
   colors: ThemeColors;
-  styles: AuthFormStyles;
   secureTextEntry?: boolean;
   keyboardType?: KeyboardTypeOptions;
   textContentType?: TextInputProps["textContentType"];
@@ -23,14 +21,13 @@ export default function AuthTextField({
   onChangeText,
   placeholder,
   colors,
-  styles,
   secureTextEntry,
   keyboardType = "default",
   textContentType,
 }: AuthTextFieldProps) {
   return (
-    <View style={styles.formGroup}>
-      <Text style={styles.label}>{label}</Text>
+    <View className="gap-1.5">
+      <Text className="text-[13px] font-semibold text-textMuted">{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -39,7 +36,7 @@ export default function AuthTextField({
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         textContentType={textContentType}
-        style={styles.input}
+        className="rounded-sm border border-border bg-surfaceSoft px-sm py-3 text-base text-text"
         placeholder={placeholder}
         placeholderTextColor={colors.textMuted}
       />

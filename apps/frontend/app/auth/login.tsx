@@ -7,8 +7,8 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
-import { useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Platform, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
@@ -16,8 +16,6 @@ import PageScaffold from "../../components/PageScaffold";
 import AuthSubmitButton from "../../components/auth/AuthSubmitButton";
 import AuthTextField from "../../components/auth/AuthTextField";
 import PreviewModeNotice from "../../components/auth/PreviewModeNotice";
-import { createAuthFormStyles } from "../../components/auth/auth-form-styles";
-import { radii } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -25,7 +23,6 @@ WebBrowser.maybeCompleteAuthSession();
 export default function Login() {
   const colors = useThemeColors();
   const { colorMode } = useAppPreferences();
-  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
@@ -158,19 +155,17 @@ export default function Login() {
       title="ThinkTwice"
       subtitle="Welcome back. Sign in to continue where you left off."
     >
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Account Login</Text>
+      <View className="gap-md rounded-lg border border-border bg-surface p-lg">
+        <Text className="text-[22px] font-bold text-text">Account Login</Text>
 
         <PreviewModeNotice
           visible={!isFirebaseConfigured}
           message="Preview mode is active. Firebase env variables are missing, so auth is temporarily disabled."
-          styles={styles}
         />
 
         <PreviewModeNotice
           visible={isFirebaseConfigured && !isGoogleConfigured}
           message="Google sign-in is unavailable until Google OAuth client IDs are added to env."
-          styles={styles}
         />
 
         <AuthTextField
@@ -181,7 +176,6 @@ export default function Login() {
           textContentType="emailAddress"
           placeholder="you@example.com"
           colors={colors}
-          styles={styles}
         />
 
         <AuthTextField
@@ -192,44 +186,40 @@ export default function Login() {
           textContentType="password"
           placeholder="Enter password"
           colors={colors}
-          styles={styles}
         />
 
-        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        {errorMessage ? <Text className="text-sm text-danger">{errorMessage}</Text> : null}
 
         <AuthSubmitButton
           onPress={() => void handleLogin()}
           isSubmitting={isSubmitting}
           idleLabel="Sign In"
           submittingLabel="Signing in..."
-          styles={styles}
         />
 
         <Pressable
           onPress={() => void handleGoogleSignIn()}
           disabled={isGoogleSubmitting || !isGoogleConfigured || !isFirebaseConfigured}
-          style={({ pressed }) => [
-            styles.googleButton,
-            useBlackGoogleButton ? styles.googleButtonBlack : styles.googleButtonWhite,
-            (pressed || isGoogleSubmitting) && styles.buttonPressed,
-          ]}
+          className={`items-center rounded-md border py-3 active:opacity-85 disabled:opacity-85 ${
+            useBlackGoogleButton ? "border-[#5F6368] bg-[#131314]" : "border-[#DADCE0] bg-white"
+          }`}
         >
-          <View style={styles.googleButtonContent}>
+          <View className="flex-row items-center gap-2.5">
             <GoogleMark size={18} />
-            <Text style={[styles.googleButtonLabel, useBlackGoogleButton ? styles.googleButtonLabelBlack : styles.googleButtonLabelWhite]}>
+            <Text className={`text-base font-bold ${useBlackGoogleButton ? "text-white" : "text-[#3C4043]"}`}>
               {isGoogleSubmitting ? "Connecting Google..." : "Continue with Google"}
             </Text>
           </View>
         </Pressable>
 
         <Pressable onPress={() => router.push("/auth/forgotPassword")}>
-          <Text style={styles.linkText}>Forgot password?</Text>
+          <Text className="text-center text-sm font-bold text-accent">Forgot password?</Text>
         </Pressable>
 
-        <View style={styles.signupRow}>
-          <Text style={styles.subtleText}>Need an account?</Text>
+        <View className="flex-row items-center justify-center gap-2">
+          <Text className="text-sm text-textMuted">Need an account?</Text>
           <Pressable onPress={() => router.push("/auth/register")}>
-            <Text style={styles.linkText}>Sign up</Text>
+            <Text className="text-center text-sm font-bold text-accent">Sign up</Text>
           </Pressable>
         </View>
       </View>
@@ -253,44 +243,6 @@ function getAuthErrorMessage(error: unknown) {
       return "Unable to sign in right now. Please try again.";
   }
 }
-
-const createStyles = (colors: Parameters<typeof createAuthFormStyles>[0]) => {
-  const shared = createAuthFormStyles(colors);
-
-  const extras = StyleSheet.create({
-    googleButton: {
-      borderRadius: radii.md,
-      borderWidth: 1,
-      paddingVertical: 12,
-      alignItems: "center",
-    },
-    googleButtonWhite: {
-      backgroundColor: "#FFFFFF",
-      borderColor: "#DADCE0",
-    },
-    googleButtonBlack: {
-      backgroundColor: "#131314",
-      borderColor: "#5F6368",
-    },
-    googleButtonContent: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-    },
-    googleButtonLabel: {
-      fontSize: 16,
-      fontWeight: "700",
-    },
-    googleButtonLabelWhite: {
-      color: "#3C4043",
-    },
-    googleButtonLabelBlack: {
-      color: "#FFFFFF",
-    },
-  });
-
-  return { ...shared, ...extras };
-};
 
 function GoogleMark({ size = 18 }: { size?: number }) {
   return (
