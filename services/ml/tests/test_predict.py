@@ -162,12 +162,10 @@ def test_predict_scales_realistically_with_miles_driven():
 
 
 def test_build_prediction_scales_realistically_with_miles_driven():
-    history = [
-        {"miles_driven": 180, "observed_cost": 52.5},
-        {"miles_driven": 210, "observed_cost": 63.0},
-        {"miles_driven": 250, "observed_cost": 75.0},
-    ]
-
+    # No seeded history for this user, so this exercises the synthetic
+    # baseline dataset's cost-per-mile scaling directly - the separate
+    # history-blend path is covered by test_main.py's
+    # test_build_prediction_blends_math_with_user_history.
     prediction_120 = build_prediction(
         miles_driven=120, user_id="realistic-user")
     prediction_200 = build_prediction(
