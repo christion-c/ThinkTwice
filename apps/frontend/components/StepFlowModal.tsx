@@ -1,9 +1,7 @@
-import { useMemo } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import type { KeyboardAvoidingViewProps } from "react-native";
 
 import type { StepFlowStepConfig } from "../hooks/useStepFlow";
-import { createStepFlowStyles } from "./step-flow-styles";
 import type { ThemeColors } from "./theme";
 
 interface StepFlowModalProps<K extends string> {
@@ -33,36 +31,37 @@ export default function StepFlowModal<K extends string>({
   keyboardBehavior = Platform.OS === "ios" ? "position" : "height",
   keyboardVerticalOffset = Platform.OS === "ios" ? 24 : 0,
 }: StepFlowModalProps<K>) {
-  const styles = useMemo(() => createStepFlowStyles(colors), [colors]);
-
   return (
     <Modal transparent visible={Boolean(step)} animationType="fade" onRequestClose={onCancel}>
       <KeyboardAvoidingView
         behavior={keyboardBehavior}
         keyboardVerticalOffset={keyboardVerticalOffset}
-        style={styles.modalBackdrop}
+        className="flex-1 justify-end bg-[rgba(4,8,12,0.68)]"
       >
-        <View style={[styles.modalContainer, { marginBottom: webKeyboardInset }]}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{step?.title}</Text>
-            <Text style={styles.modalHint}>{step?.hint}</Text>
+        {/* marginBottom is a runtime pixel value from useWebKeyboardInset, so it
+            stays an inline style - Tailwind classes can't express an
+            unbounded runtime number. */}
+        <View style={{ marginBottom: webKeyboardInset }} className="px-md pb-lg">
+          <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
+            <Text className="text-xl font-bold text-text">{step?.title}</Text>
+            <Text className="text-sm leading-5 text-textMuted">{step?.hint}</Text>
             <TextInput
               value={draft}
               onChangeText={onChangeDraft}
               keyboardType={step?.keyboardType ?? "default"}
               autoCapitalize={step?.autoCapitalize ?? "sentences"}
               autoCorrect={step?.autoCorrect ?? true}
-              style={styles.modalInput}
+              className="rounded-md border border-border bg-surfaceSoft px-md py-3 text-base text-text"
               placeholder={step?.placeholder}
               placeholderTextColor={colors.textMuted}
               autoFocus
             />
-            <View style={styles.modalActions}>
-              <Pressable onPress={onCancel} style={styles.modalSecondaryButton}>
-                <Text style={styles.modalSecondaryLabel}>Cancel</Text>
+            <View className="mt-xs flex-row justify-end gap-sm">
+              <Pressable onPress={onCancel} className="rounded-md border border-border px-md py-2.5">
+                <Text className="text-sm font-semibold text-text">Cancel</Text>
               </Pressable>
-              <Pressable onPress={onConfirm} style={styles.modalPrimaryButton}>
-                <Text style={styles.modalPrimaryLabel}>{isLastStep ? "Done" : "Next"}</Text>
+              <Pressable onPress={onConfirm} className="rounded-md bg-accent px-md py-2.5">
+                <Text className="text-sm font-bold text-accentDeep">{isLastStep ? "Done" : "Next"}</Text>
               </Pressable>
             </View>
           </View>
