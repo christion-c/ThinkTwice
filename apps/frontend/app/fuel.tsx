@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 
 import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
@@ -9,7 +9,7 @@ import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { useVehicle } from "../components/VehicleContext";
 import { saveFillUpHistory } from "../lib/backend-api";
-import { radii, shadows, spacing, type ThemeColors } from "../components/theme";
+import { shadows } from "../components/theme";
 import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useStepFlow, type StepFlowStepConfig } from "../hooks/useStepFlow";
@@ -41,7 +41,6 @@ const VEHICLE_DETAILS_STEPS: StepFlowStepConfig<VehicleDetailsStepKey>[] = [
 export default function Fuel() {
   const colors = useThemeColors();
   const { user } = useAuth();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const {
     vehicles,
     selectedVehicle,
@@ -208,18 +207,18 @@ export default function Fuel() {
       subtitle="Track your driving inputs so budget and refill predictions stay realistic."
       footer={<BottomNav active="Fuel" />}
     >
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Forecast</Text>
-        <Text style={styles.cardText}>Estimated next refill cost: {moneyFormat.format(projectedFillUpCost)}</Text>
-        <Text style={styles.cardText}>Estimated days remaining: {Math.max(projectedDaysUntilFillUp, 0).toFixed(1)}</Text>
-        <Text style={styles.cardText}>Monthly fuel reserve: {moneyFormat.format(monthlyFuelBudget)}</Text>
+      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
+        <Text className="text-xl font-bold text-text">Forecast</Text>
+        <Text className="text-[15px] leading-[22px] text-textMuted">Estimated next refill cost: {moneyFormat.format(projectedFillUpCost)}</Text>
+        <Text className="text-[15px] leading-[22px] text-textMuted">Estimated days remaining: {Math.max(projectedDaysUntilFillUp, 0).toFixed(1)}</Text>
+        <Text className="text-[15px] leading-[22px] text-textMuted">Monthly fuel reserve: {moneyFormat.format(monthlyFuelBudget)}</Text>
       </View>
 
-      <View style={styles.inputCard}>
-        <View style={styles.syncHeaderRow}>
+      <View className="gap-sm rounded-lg border border-border bg-surface p-md">
+        <View className="flex-row items-center justify-between gap-sm">
           <View>
-            <Text style={styles.inputTitle}>Vehicle</Text>
-            <Text style={styles.inputSubtitle}>Choose or add a vehicle.</Text>
+            <Text className="text-xl font-bold text-text">Vehicle</Text>
+            <Text className="text-sm text-textMuted">Choose or add a vehicle.</Text>
           </View>
 
           <Pressable
@@ -227,21 +226,21 @@ export default function Fuel() {
               void refreshVehicles();
             }}
             disabled={loading}
-            style={({ pressed }) => [styles.secondaryButton, (pressed || loading) && styles.buttonPressed]}
+            className="rounded-sm border border-border bg-surfaceSoft px-sm py-2 active:opacity-85 disabled:opacity-85"
           >
-            <Text style={styles.secondaryButtonLabel}>{loading ? "Loading..." : "Refresh"}</Text>
+            <Text className="text-[13px] font-semibold text-text">{loading ? "Loading..." : "Refresh"}</Text>
           </Pressable>
         </View>
 
         {loading ? (
-          <View style={styles.loadingRow}>
+          <View className="flex-row items-center gap-xs">
             <ActivityIndicator color={colors.accent} size="small" />
-            <Text style={styles.inputSubtitle}>Refreshing vehicles...</Text>
+            <Text className="text-sm text-textMuted">Refreshing vehicles...</Text>
           </View>
         ) : null}
 
         {vehicles.length > 0 ? (
-          <View style={styles.vehicleSelectorWrap}>
+          <View className="flex-row flex-wrap gap-xs">
             {vehicles.map((vehicle) => {
               const active = vehicle.id === selectedVehicleId;
 
@@ -249,14 +248,11 @@ export default function Fuel() {
                 <Pressable
                   key={vehicle.id}
                   onPress={() => selectVehicle(vehicle.id)}
-                  style={[styles.vehicleChip, active && styles.vehicleChipActive]}
+                  className={`rounded-round border px-sm py-1.5 ${
+                    active ? "border-accent bg-[rgba(45,212,191,0.18)]" : "border-border bg-surfaceSoft"
+                  }`}
                 >
-                  <Text
-                    style={[
-                      styles.vehicleChipLabel,
-                      active && styles.vehicleChipLabelActive,
-                    ]}
-                  >
+                  <Text className={`text-[13px] font-semibold ${active ? "text-accent" : "text-textMuted"}`}>
                     {vehicle.nickname}
                   </Text>
                 </Pressable>
@@ -264,42 +260,42 @@ export default function Fuel() {
             })}
           </View>
         ) : (
-          <Text style={styles.inputSubtitle}>
+          <Text className="text-sm text-textMuted">
             No vehicles yet. Fill these fields and save to create your first one.
           </Text>
         )}
 
-        <View style={styles.fieldList}>
-          <Pressable onPress={startVehicleFlow} style={styles.primaryButton}>
-            <Text style={styles.primaryButtonLabel}>{hasExistingVehicle ? "Update vehicle details" : "Add vehicle details"}</Text>
+        <View className="gap-sm">
+          <Pressable onPress={startVehicleFlow} className="items-center rounded-md bg-accent py-3">
+            <Text className="text-[15px] font-bold text-accentDeep">{hasExistingVehicle ? "Update vehicle details" : "Add vehicle details"}</Text>
           </Pressable>
         </View>
 
-        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-        {saveMessage ? <Text style={styles.successText}>{saveMessage}</Text> : null}
+        {errorMessage ? <Text className="text-sm text-danger">{errorMessage}</Text> : null}
+        {saveMessage ? <Text className="text-sm text-success">{saveMessage}</Text> : null}
       </View>
 
-      <View style={styles.quickRow}>
-        <View style={[styles.quickCard, shadows.soft]}>
-          <Text style={styles.quickLabel}>Fill-Up Gallons</Text>
-          <Text style={styles.quickValue}>{fuelGallonsInput || "0"}</Text>
+      <View className="flex-row gap-sm">
+        <View style={shadows.soft} className="flex-1 gap-xs rounded-md border border-border bg-surface p-md">
+          <Text className="text-[13px] uppercase tracking-[0.4px] text-textMuted">Fill-Up Gallons</Text>
+          <Text className="text-[28px] font-bold text-text">{fuelGallonsInput || "0"}</Text>
         </View>
-        <View style={[styles.quickCard, shadows.soft]}>
-          <Text style={styles.quickLabel}>Current MPG</Text>
-          <Text style={styles.quickValue}>{combinedMpgInput || "0"}</Text>
+        <View style={shadows.soft} className="flex-1 gap-xs rounded-md border border-border bg-surface p-md">
+          <Text className="text-[13px] uppercase tracking-[0.4px] text-textMuted">Current MPG</Text>
+          <Text className="text-[28px] font-bold text-text">{combinedMpgInput || "0"}</Text>
         </View>
       </View>
 
-      <View style={styles.inputCard}>
-        <Text style={styles.inputTitle}>Fuel Check-In</Text>
-        <Text style={styles.inputSubtitle}>Check in after every fill-up.</Text>
+      <View className="gap-sm rounded-lg border border-border bg-surface p-md">
+        <Text className="text-xl font-bold text-text">Fuel Check-In</Text>
+        <Text className="text-sm text-textMuted">Check in after every fill-up.</Text>
 
-        <View style={styles.inlineFieldWrap}>
-          <Text style={styles.inlineFieldLabel}>Check-in date</Text>
+        <View className="flex-1 gap-1.5">
+          <Text className="text-[13px] font-semibold text-textMuted">Check-in date</Text>
           <TextInput
             value={fillUpDateInput}
             onChangeText={setFillUpDateInput}
-            style={styles.input}
+            className="rounded-sm border border-border bg-surfaceSoft px-sm py-2.5 text-base text-text"
             placeholder="YYYY-MM-DD"
             keyboardType="default"
             autoCapitalize="none"
@@ -307,9 +303,9 @@ export default function Fuel() {
           />
         </View>
 
-        <View style={styles.fieldList}>
-          <Pressable onPress={startFuelFlow} style={styles.primaryButton}>
-            <Text style={styles.primaryButtonLabel}>Start fuel check-in</Text>
+        <View className="gap-sm">
+          <Pressable onPress={startFuelFlow} className="items-center rounded-md bg-accent py-3">
+            <Text className="text-[15px] font-bold text-accentDeep">Start fuel check-in</Text>
           </Pressable>
         </View>
       </View>
@@ -350,162 +346,6 @@ function normalizeDateInput(dateInput: string) {
 
   return Number.isNaN(candidate.getTime()) ? new Date() : candidate;
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    card: {
-      backgroundColor: colors.surface,
-      borderRadius: radii.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.lg,
-      gap: spacing.sm,
-    },
-    cardTitle: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: "700",
-    },
-    cardText: {
-      color: colors.textMuted,
-      fontSize: 15,
-      lineHeight: 22,
-    },
-    quickRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
-    quickCard: {
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.md,
-      padding: spacing.md,
-      gap: spacing.xs,
-    },
-    quickLabel: {
-      color: colors.textMuted,
-      fontSize: 13,
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
-    quickValue: {
-      color: colors.text,
-      fontSize: 28,
-      fontWeight: "700",
-    },
-    inputCard: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      padding: spacing.md,
-      gap: spacing.sm,
-    },
-    inputTitle: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: "700",
-    },
-    inputSubtitle: {
-      color: colors.textMuted,
-      fontSize: 14,
-    },
-    syncHeaderRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: spacing.sm,
-    },
-    loadingRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.xs,
-    },
-    vehicleSelectorWrap: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: spacing.xs,
-    },
-    vehicleChip: {
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingVertical: 6,
-      paddingHorizontal: spacing.sm,
-      backgroundColor: colors.surfaceSoft,
-    },
-    vehicleChipActive: {
-      borderColor: colors.accent,
-      backgroundColor: "rgba(45, 212, 191, 0.18)",
-    },
-    vehicleChipLabel: {
-      color: colors.textMuted,
-      fontSize: 13,
-      fontWeight: "600",
-    },
-    vehicleChipLabelActive: {
-      color: colors.accent,
-    },
-    fieldList: {
-      gap: spacing.sm,
-    },
-    inlineFieldWrap: {
-      flex: 1,
-      gap: 6,
-    },
-    inlineFieldLabel: {
-      color: colors.textMuted,
-      fontSize: 13,
-      fontWeight: "600",
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.sm,
-      backgroundColor: colors.surfaceSoft,
-      color: colors.text,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 10,
-      fontSize: 16,
-    },
-    secondaryButton: {
-      borderRadius: radii.sm,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceSoft,
-      paddingVertical: 8,
-      paddingHorizontal: spacing.sm,
-    },
-    secondaryButtonLabel: {
-      color: colors.text,
-      fontSize: 13,
-      fontWeight: "600",
-    },
-    primaryButton: {
-      borderRadius: radii.md,
-      backgroundColor: colors.accent,
-      paddingVertical: 12,
-      alignItems: "center",
-    },
-    primaryButtonLabel: {
-      color: colors.accentDeep,
-      fontSize: 15,
-      fontWeight: "700",
-    },
-    errorText: {
-      color: colors.danger,
-      fontSize: 14,
-    },
-    successText: {
-      color: colors.success,
-      fontSize: 14,
-    },
-    buttonPressed: {
-      opacity: 0.85,
-    },
-  });
 
 function parseOptionalNumber(value: string) {
   const trimmedValue = value.trim();
