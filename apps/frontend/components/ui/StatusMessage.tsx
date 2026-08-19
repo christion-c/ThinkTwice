@@ -10,12 +10,10 @@ interface StatusMessageProps {
 }
 
 export default function StatusMessage({ message, tone }: StatusMessageProps) {
-  // Nothing to render when there's no message.
   if (!message) {
     return null;
   }
 
-  // Pick the color token for this message's tone.
   const toneClass = tone === "error" ? "text-danger" : "text-success";
 
   return <Text className={`text-sm ${toneClass}`}>{message}</Text>;

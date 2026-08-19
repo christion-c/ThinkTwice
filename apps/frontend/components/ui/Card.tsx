@@ -17,15 +17,11 @@ interface CardProps extends Pick<ViewProps, "style"> {
 }
 
 export default function Card({ children, gap = "sm", padding = "lg", className = "", style }: CardProps) {
-  // Look up the gap utility for the requested size.
   const gapClass = gap === "md" ? "gap-md" : gap === "xs" ? "gap-xs" : "gap-sm";
-  // Look up the padding utility for the requested size.
   const paddingClass = padding === "md" ? "p-md" : "p-lg";
-  // Base look every card shares: rounded corners, a border, the surface color.
   const baseClass = "rounded-lg border border-border bg-surface";
 
   return (
-    // Combine the base look, the two size classes, and any caller-supplied extras.
     <View style={style} className={`${baseClass} ${gapClass} ${paddingClass} ${className}`}>
       {children}
     </View>

@@ -13,7 +13,6 @@ interface CardTextProps {
 }
 
 export default function CardText({ children, tight = false, className = "" }: CardTextProps) {
-  // Pick the line-height variant for this instance.
   const leadingClass = tight ? "leading-[21px]" : "leading-[22px]";
 
   return <Text className={`text-[15px] text-textMuted ${leadingClass} ${className}`}>{children}</Text>;
