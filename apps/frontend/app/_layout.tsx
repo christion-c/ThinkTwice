@@ -2,7 +2,7 @@ import "../global.css";
 
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 
 import { AppPreferencesProvider, useThemeColors } from "../components/AppPreferences";
@@ -62,8 +62,7 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   if (initializing) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}
-      >
+      <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator color={colors.accent} size="large" />
       </View>
     );
@@ -104,11 +103,3 @@ function AppStack() {
     </Stack>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});

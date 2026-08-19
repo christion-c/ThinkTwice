@@ -1,10 +1,7 @@
-import { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
-import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
 import PageScaffold from "../components/PageScaffold";
-import { radii, spacing, type ThemeColors } from "../components/theme";
 
 /**
  * Nutrition daily check-ins are paused (not this screen's decision — see
@@ -13,14 +10,11 @@ import { radii, spacing, type ThemeColors } from "../components/theme";
  * renders something honest instead of a broken page if anyone reaches it.
  */
 export default function Nutrition() {
-  const colors = useThemeColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
   return (
     <PageScaffold title="Nutrition" subtitle="This feature isn't available yet." footer={<BottomNav />}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Check back soon</Text>
-        <Text style={styles.cardText}>
+      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
+        <Text className="text-xl font-bold text-text">Check back soon</Text>
+        <Text className="text-[15px] leading-[21px] text-textMuted">
           Daily nutrition check-ins are paused while the team finishes this feature. Your fuel and
           finance data on the other screens aren’t affected.
         </Text>
@@ -28,25 +22,3 @@ export default function Nutrition() {
     </PageScaffold>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    card: {
-      backgroundColor: colors.surface,
-      borderRadius: radii.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.lg,
-      gap: spacing.sm,
-    },
-    cardTitle: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: "700",
-    },
-    cardText: {
-      color: colors.textMuted,
-      fontSize: 15,
-      lineHeight: 21,
-    },
-  });
