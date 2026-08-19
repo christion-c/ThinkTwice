@@ -63,6 +63,13 @@ export async function insertFillUpHistory(
   );
 }
 
+/**
+ * Same data as listFillUpHistoryByUserId, keyed by Firebase UID instead of
+ * the internal user id. Exists for the ML service's internal-only route
+ * (see fill-up-history.routes.ts's GET /internal), which only has the
+ * Firebase UID on hand and has no reason to resolve it to a Postgres user
+ * row first.
+ */
 export async function listFillUpHistoryByFirebaseUid(
   firebaseUid: string,
 ): Promise<FillUpEntry[]> {

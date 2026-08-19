@@ -159,6 +159,12 @@ export async function listVehiclesForUser(
 
 /**
  * Updates a vehicle only when it belongs to the specified user.
+ *
+ * Every column is set via a CASE WHEN <field was present> guard rather than
+ * building the SET clause dynamically per-request: it keeps the query text
+ * (and therefore its prepared-statement plan) identical across calls
+ * regardless of which fields a given PATCH included, while still only
+ * touching the columns the caller actually sent.
  */
 export async function updateVehicleForUser(
   input: UpdateVehicleInput,
