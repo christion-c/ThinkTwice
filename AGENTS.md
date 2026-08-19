@@ -2,11 +2,18 @@
 
 ## Ownership
 
-- Christion Callahan owns `apps/backend/` and backend/database integration.
-- Parker Lewis owns `apps/frontend/`.
-- Gabriel Phipps owns `services/ml/`.
-- Coordinate changes to `compose.yaml`, `.env.example`, `infra/`, database schemas,
-  and API request/response contracts with every affected owner.
+- Christion Callahan owns the whole project (`apps/backend/`, `apps/frontend/`,
+  `services/ml/`, and everything shared) — the capstone team dissolved after
+  presentation (Aug 2026); this is no longer a per-folder split between
+  separate owners.
+- Parker Lewis occasionally contributes, most often to `apps/frontend/`.
+- Gabriel Phipps and James Lewis are no longer on the project — don't route
+  questions or coordination to them.
+- Because one person now owns everything, there's no cross-owner coordination
+  step required before touching `compose.yaml`, `.env.example`, `infra/`,
+  database schemas, or API request/response contracts — just be deliberate,
+  since those are still the files most likely to break something else if
+  changed carelessly.
 - Read and follow the nearest nested `AGENTS.md`. Frontend work must follow the
   Expo SDK version pinned there.
 

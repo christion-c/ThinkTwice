@@ -1,22 +1,27 @@
 # ThinkTwice Project Context
 
-Last audited: 2026-08-11
-
-Audited base revision: `14e4c9d` on `Christion`
+Last audited: 2026-08-19
 
 ## Team ownership
 
-- Backend: Christion Callahan
-- Frontend: Parker Lewis and James Lewis
-- Machine learning: Gabriel Phipps
+The capstone team dissolved after presentation (Aug 2026):
+
+- Christion Callahan now owns the whole project (backend, frontend, and ML).
+- Parker Lewis occasionally contributes, most often to the frontend.
+- Gabriel Phipps and James Lewis are no longer on the project. Historical
+  entries below that name them as owners of a given area are preserved as a
+  record of what was true at the time, not current fact.
 
 ## Stack
 
-- Expo SDK 54 / React Native frontend
+- Expo SDK 54 / React Native frontend, now styled with Tailwind CSS via
+  NativeWind (see the 2026-08-19 entry below) rather than StyleSheet.create
 - Node 22 / Express / TypeScript backend
 - PostgreSQL 17
 - Firebase Authentication
-- Python 3.12 / FastAPI ML service (pandas + scikit-learn for forecasting)
+- Python 3.12 / FastAPI ML service - pure-Python recency-weighted average
+  forecasting (see the 2026-08-13 entry below); no longer uses pandas or
+  scikit-learn despite what earlier entries in this log describe
 - Docker Compose development environment
 
 ## Authentication model
@@ -37,8 +42,11 @@ Audited base revision: `14e4c9d` on `Christion`
 - The backend is the ML service's primary caller for the supported path:
   `GET /predictions` loads the user's recent `budget_entries` and forwards
   them to the ML service's `POST /predict`, which returns a forecast (a
-  plain average below 3 logged entries, a per-cost `LinearRegression` on
-  `[miles_driven, meals]` at 3+).
+  plain average below 3 logged entries; a recency-weighted average of each
+  entry's own fuel-cost-per-mile at 3+ — despite the `method: "linear_
+  regression"` label kept for API-shape stability, this has not used
+  scikit-learn's `LinearRegression` since Parker's rewrite; see the
+  2026-08-13 entry below).
 - Vehicle profiles are persisted through the backend/PostgreSQL API.
 - Finance planner inputs now persist server-side per user (`finance_inputs`
   table, `GET`/`PUT /finance/inputs`), with a local AsyncStorage cache for
@@ -133,6 +141,56 @@ frontend linked to. Fixed with a shared-secret header
 timing-safe comparison) rather than `requireAuth`, since the caller is the
 ML service, not an end user. Verified locally: no header → 401, wrong token
 → 401, correct token → 200.
+
+## Capstone ends; Christion takes over the whole project (2026-08-13)
+
+Presentation done, the team dissolved. Christion now owns backend, frontend,
+and ML end to end; Parker occasionally contributes (mostly frontend); Gabe
+and James are off the project. The "Team ownership" section at the top of
+this file reflects the current state — earlier entries below that name
+Gabriel or James as an area's owner describe what was true at the time, not
+current fact.
+
+Also around this time, Parker's ML rewrite replaced the `pandas`/
+scikit-learn `LinearRegression` approach with a pure-Python recency-weighted
+average of each entry's own cost-per-mile — `pandas` and `scikit-learn` are
+no longer dependencies at all. The `method: "linear_regression"` field name
+in the API response is kept for shape stability, not because it's still a
+literal fitted regression.
+
+## Full-project modularization and integrity pass (2026-08-19)
+
+A large pass across all three services, at Christion's request, to check
+project-wide correctness and split things up for maintainability. Highlights
+(see git log on `main` for the full list of commits):
+
+- **Backend**: extracted a shared route-param validation helper; deduped the
+  vehicle PATCH handler.
+- **ML service**: split the 432-line `app/main.py` monolith into
+  `models.py`/`dataset.py`/`history.py`/`prediction.py`/`main.py`; confirmed
+  (via a fresh venv install) that `pandas`/`scikit-learn` were genuinely
+  unused and removed them from `requirements.txt`.
+- **Frontend**: migrated the entire styling system from React Native
+  `StyleSheet.create` to Tailwind CSS via NativeWind (`tailwind.config.js`,
+  `components/ThemeVarsRoot.tsx` bridges the app's runtime dark/light/
+  high-contrast theme into Tailwind as CSS variables). Extracted a set of
+  shared UI primitives at `components/ui/` (`Card`, `CardTitle`, `CardText`,
+  `StatusMessage`) plus several domain-specific shared components/hooks
+  (`useStepFlow` + `StepFlowModal` for the app's several "one field at a
+  time" wizards, `useMlPreview` for the two ML debug screens, shared auth
+  and settings-screen components). Removed two components (`Header.tsx`,
+  `SideMenu.tsx`) that had zero importers and predated the current
+  navigation/theming system.
+- Found and fixed a couple of real bugs along the way: `VehicleContext`'s
+  `refreshVehicles` cleared `selectedVehicleId` before its fetch resolved,
+  which silently defeated its own "keep the current selection" logic and
+  reset a multi-vehicle user's selection on every screen focus;
+  `debug/ml-account.tsx` read a `food_prediction` field the ML service's
+  response no longer includes (`undefined.toFixed()` would have thrown).
+- Every change in this pass was verified with the affected service's real
+  checks (backend: typecheck/build/test; ML: pytest in both a fresh venv and
+  the project's own; frontend: typecheck/lint/a full `expo export --platform
+  web` build) rather than assumed safe from the diff alone.
 
 ## Known incomplete or external work
 

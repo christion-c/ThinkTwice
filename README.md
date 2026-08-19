@@ -14,15 +14,9 @@ ThinkTwice is an ADHD-friendly personal finance and habit-tracking app. Instead 
 
 The whole stack runs in Docker, so every team member works with the same versions, dependencies, database, and environment. **You do not need to install Node.js, npm, Python, PostgreSQL, or any project dependency directly on your computer** — Docker handles all of it.
 
-**Team ownership** — work primarily inside your own folder, and coordinate with the team before changing anything shared:
+**Team ownership** — the capstone team dissolved after presentation (Aug 2026). Christion Callahan now owns the whole project end to end (backend, frontend, and ML); Parker Lewis occasionally contributes, most often to `apps/frontend/`. Gabriel Phipps and James Lewis are no longer on the project.
 
-| Area | Owner(s) | Folder |
-| --- | --- | --- |
-| Back end | Christion Callahan | `apps/backend/` |
-| Front end and Machine Learning | Parker and James Lewis | `apps/frontend/` `services/ml` |
-| Gabriel Phipps |
-
-Shared files that need coordination before changing: `compose.yaml`, `.env.example`, `infra/`, `packages/`, database schemas, and API request/response formats.
+Since one person owns everything, there's no longer a "coordinate with the folder's owner" step for shared files (`compose.yaml`, `.env.example`, `infra/`, `packages/`, database schemas, API request/response formats) — just be careful with them, since they're still the files most likely to break another part of the app if changed carelessly.
 
 ---
 
@@ -229,6 +223,18 @@ The front end reads `EXPO_PUBLIC_API_URL` from `.env`. Set it based on how you'r
 
 Everyone should use the committed Docker configuration as the standard development environment. Do not change shared infrastructure files without communicating with the team, and never commit secrets or local environment files.
 
+---
 
+## Deploying
+
+The frontend deploys to Firebase Hosting. From `apps/frontend`:
+
+```bash
 npx expo export --platform web --clear
 npx firebase-tools@latest deploy --only hosting
+```
+
+Backend and ML service deploys go to Cloud Run via Docker — see
+`apps/backend/README.md` for the exact build/push/deploy commands and the
+project's GCP resource reference (project ID, region, service names, Artifact
+Registry path).
