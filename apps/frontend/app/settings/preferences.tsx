@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useMemo, useState } from "react";
@@ -6,6 +5,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
 import PageScaffold from "../../components/PageScaffold";
+import SettingsBackButton from "../../components/settings/SettingsBackButton";
 import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
@@ -46,12 +46,7 @@ export default function ProfileSettings() {
     <PageScaffold
       title="Profile Settings"
       subtitle="Adjust a few frontend app options for your experience."
-      headerLeft={
-        <Pressable onPress={() => router.replace("/profile/profile")} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={18} color={colors.text} />
-          <Text style={styles.backButtonLabel}>Back</Text>
-        </Pressable>
-      }
+      headerLeft={<SettingsBackButton onPress={() => router.replace("/profile/profile")} colors={colors} />}
     >
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Appearance</Text>
@@ -115,22 +110,6 @@ export default function ProfileSettings() {
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    backButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-      borderRadius: radii.md,
-      backgroundColor: colors.surfaceSoft,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    backButtonLabel: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
-    },
     card: {
       backgroundColor: colors.surface,
       borderWidth: 1,

@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -6,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useThemeColors } from "../../components/AppPreferences";
 import { useAuth } from "../../components/AuthProvider";
 import PageScaffold from "../../components/PageScaffold";
+import SettingsBackButton from "../../components/settings/SettingsBackButton";
 import { useVehicle } from "../../components/VehicleContext";
 import { radii, spacing, type ThemeColors } from "../../components/theme";
 
@@ -19,12 +19,7 @@ export default function Account() {
     <PageScaffold
       title="Account"
       subtitle="Manage your personal details and account preferences."
-      headerLeft={
-        <Pressable onPress={() => router.replace("/settings/preferences")} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={18} color={colors.text} />
-          <Text style={styles.backButtonLabel}>Back</Text>
-        </Pressable>
-      }
+      headerLeft={<SettingsBackButton onPress={() => router.replace("/settings/preferences")} colors={colors} />}
     >
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Identity</Text>
@@ -55,22 +50,6 @@ export default function Account() {
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    backButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-      borderRadius: radii.md,
-      backgroundColor: colors.surfaceSoft,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    backButtonLabel: {
-      color: colors.text,
-      fontSize: 14,
-      fontWeight: "600",
-    },
     card: {
       backgroundColor: colors.surface,
       borderWidth: 1,
