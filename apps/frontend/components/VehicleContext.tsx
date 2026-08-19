@@ -113,6 +113,14 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
     setSelectedVehicleId(vehicleId);
   }, []);
 
+  const selectedVehicle = useMemo(
+    () =>
+      selectedVehicleId === null
+        ? null
+        : vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null,
+    [selectedVehicleId, vehicles],
+  );
+
   const syncVehicle = useCallback(
     async (input: SyncVehicleInput) => {
       if (!user) {
@@ -173,15 +181,7 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
         setSyncing(false);
       }
     },
-    [selectedVehicleId, user, vehicles],
-  );
-
-  const selectedVehicle = useMemo(
-    () =>
-      selectedVehicleId === null
-        ? null
-        : vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null,
-    [selectedVehicleId, vehicles],
+    [selectedVehicle, user],
   );
 
   const value = useMemo(
