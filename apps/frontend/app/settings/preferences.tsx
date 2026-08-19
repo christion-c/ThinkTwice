@@ -1,12 +1,11 @@
 import { router } from "expo-router";
 import { signOut } from "firebase/auth";
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, Switch, Text, View } from "react-native";
 
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
 import PageScaffold from "../../components/PageScaffold";
 import SettingsBackButton from "../../components/settings/SettingsBackButton";
-import { radii, spacing, type ThemeColors } from "../../components/theme";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function ProfileSettings() {
@@ -19,7 +18,6 @@ export default function ProfileSettings() {
     highContrast,
     setHighContrast,
   } = useAppPreferences();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
 
@@ -48,152 +46,70 @@ export default function ProfileSettings() {
       subtitle="Adjust a few frontend app options for your experience."
       headerLeft={<SettingsBackButton onPress={() => router.replace("/profile/profile")} colors={colors} />}
     >
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Appearance</Text>
-        <Text style={styles.cardText}>Choose the app color mode.</Text>
+      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
+        <Text className="text-xl font-bold text-text">Appearance</Text>
+        <Text className="text-[15px] leading-[22px] text-textMuted">Choose the app color mode.</Text>
 
-        <View style={styles.modeRow}>
+        <View className="flex-row gap-sm">
           <Pressable
             onPress={() => setColorMode("dark")}
-            style={[styles.modeButton, colorMode === "dark" && styles.modeButtonActive]}
+            className={`flex-1 items-center rounded-md border py-3 ${
+              colorMode === "dark" ? "border-accent bg-[rgba(45,212,191,0.2)]" : "border-border bg-surfaceSoft"
+            }`}
           >
-            <Text style={[styles.modeButtonLabel, colorMode === "dark" && styles.modeButtonLabelActive]}>Dark</Text>
+            <Text className={`text-[15px] ${colorMode === "dark" ? "font-bold text-accent" : "font-semibold text-textMuted"}`}>
+              Dark
+            </Text>
           </Pressable>
 
           <Pressable
             onPress={() => setColorMode("light")}
-            style={[styles.modeButton, colorMode === "light" && styles.modeButtonActive]}
+            className={`flex-1 items-center rounded-md border py-3 ${
+              colorMode === "light" ? "border-accent bg-[rgba(45,212,191,0.2)]" : "border-border bg-surfaceSoft"
+            }`}
           >
-            <Text style={[styles.modeButtonLabel, colorMode === "light" && styles.modeButtonLabelActive]}>Light</Text>
+            <Text className={`text-[15px] ${colorMode === "light" ? "font-bold text-accent" : "font-semibold text-textMuted"}`}>
+              Light
+            </Text>
           </Pressable>
         </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Basic Options</Text>
+      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
+        <Text className="text-xl font-bold text-text">Basic Options</Text>
 
-        <View style={styles.optionRow}>
-          <View style={styles.optionTextWrap}>
-            <Text style={styles.optionTitle}>Compact Cards</Text>
-            <Text style={styles.optionCaption}>Use tighter spacing in cards.</Text>
+        <View className="flex-row items-center justify-between gap-md py-1.5">
+          <View className="flex-1 gap-0.5">
+            <Text className="text-base font-semibold text-text">Compact Cards</Text>
+            <Text className="text-sm text-textMuted">Use tighter spacing in cards.</Text>
           </View>
           <Switch value={compactCards} onValueChange={setCompactCards} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
         </View>
 
-        <View style={styles.optionRow}>
-          <View style={styles.optionTextWrap}>
-            <Text style={styles.optionTitle}>High Contrast</Text>
-            <Text style={styles.optionCaption}>Increase visual separation and stronger text colors.</Text>
+        <View className="flex-row items-center justify-between gap-md py-1.5">
+          <View className="flex-1 gap-0.5">
+            <Text className="text-base font-semibold text-text">High Contrast</Text>
+            <Text className="text-sm text-textMuted">Increase visual separation and stronger text colors.</Text>
           </View>
           <Switch value={highContrast} onValueChange={setHighContrast} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
         </View>
 
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Session</Text>
-        <Text style={styles.cardText}>Sign out of your current account on this device.</Text>
+      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
+        <Text className="text-xl font-bold text-text">Session</Text>
+        <Text className="text-[15px] leading-[22px] text-textMuted">Sign out of your current account on this device.</Text>
 
-        {logoutError ? <Text style={styles.errorText}>{logoutError}</Text> : null}
+        {logoutError ? <Text className="text-sm text-danger">{logoutError}</Text> : null}
 
         <Pressable
           onPress={handleLogout}
           disabled={isSigningOut}
-          style={({ pressed }) => [styles.logoutButton, (pressed || isSigningOut) && styles.buttonPressed]}
+          className="mt-xs items-center rounded-md border border-danger bg-transparent py-3 active:opacity-85 disabled:opacity-85"
         >
-          <Text style={styles.logoutButtonLabel}>{isSigningOut ? "Signing out..." : "Log Out"}</Text>
+          <Text className="text-base font-bold text-danger">{isSigningOut ? "Signing out..." : "Log Out"}</Text>
         </Pressable>
       </View>
     </PageScaffold>
   );
 }
-
-const createStyles = (colors: ThemeColors) =>
-  StyleSheet.create({
-    card: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      padding: spacing.lg,
-      gap: spacing.sm,
-    },
-    cardTitle: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: "700",
-    },
-    cardText: {
-      color: colors.textMuted,
-      fontSize: 15,
-      lineHeight: 22,
-      marginBottom: spacing.xs,
-    },
-    modeRow: {
-      flexDirection: "row",
-      gap: spacing.sm,
-    },
-    modeButton: {
-      flex: 1,
-      borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surfaceSoft,
-      paddingVertical: 12,
-      alignItems: "center",
-    },
-    modeButtonActive: {
-      borderColor: colors.accent,
-      backgroundColor: "rgba(45, 212, 191, 0.2)",
-    },
-    modeButtonLabel: {
-      color: colors.textMuted,
-      fontSize: 15,
-      fontWeight: "600",
-    },
-    modeButtonLabelActive: {
-      color: colors.accent,
-      fontWeight: "700",
-    },
-    optionRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: 6,
-      gap: spacing.md,
-    },
-    optionTextWrap: {
-      flex: 1,
-      gap: 2,
-    },
-    optionTitle: {
-      color: colors.text,
-      fontSize: 16,
-      fontWeight: "600",
-    },
-    optionCaption: {
-      color: colors.textMuted,
-      fontSize: 14,
-    },
-    logoutButton: {
-      borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: colors.danger,
-      backgroundColor: "transparent",
-      paddingVertical: 12,
-      alignItems: "center",
-      marginTop: spacing.xs,
-    },
-    logoutButtonLabel: {
-      color: colors.danger,
-      fontSize: 16,
-      fontWeight: "700",
-    },
-    errorText: {
-      color: colors.danger,
-      fontSize: 14,
-    },
-    buttonPressed: {
-      opacity: 0.85,
-    },
-  });
