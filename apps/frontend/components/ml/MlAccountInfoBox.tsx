@@ -6,7 +6,7 @@ interface MlAccountInfoBoxProps {
   historyCount: number;
 }
 
-/** Shows which account a preview's data belongs to, and its history size. */
+// Shows which account a preview's data belongs to, and its history size.
 export default function MlAccountInfoBox({ label, userId, historyCount }: MlAccountInfoBoxProps) {
   return (
     <View className="gap-1 rounded-md border border-border bg-background p-sm">

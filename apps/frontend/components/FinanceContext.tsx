@@ -189,6 +189,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     await Promise.all([loadCloudFinanceInputs(), loadFillUpHistory()]);
   }, [loadCloudFinanceInputs, loadFillUpHistory]);
 
+  // Auto-fill MPG/tank-capacity inputs from the selected vehicle's own
+  // saved specs, whenever the selection changes.
   useEffect(() => {
     if (selectedVehicle?.combinedMpg !== null && selectedVehicle?.combinedMpg !== undefined) {
       setCombinedMpgInput(String(selectedVehicle.combinedMpg));
@@ -230,6 +232,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const cloudSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Persists every input change locally right away, and to the backend
+  // after a short debounce (so rapid keystrokes don't each trigger a
+  // network call).
   useEffect(() => {
     const snapshot = {
       incomeInput,

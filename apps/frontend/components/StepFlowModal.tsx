@@ -13,12 +13,13 @@ interface StepFlowModalProps<K extends string> {
   onConfirm: () => void;
   webKeyboardInset: number;
   colors: ThemeColors;
-  /** Defaults match fuel.tsx's tuning; finance.tsx passes its own (see git history for why they differ per-page). */
+  // Defaults match fuel.tsx's tuning; finance.tsx passes its own (see
+  // git history for why they differ per-page).
   keyboardBehavior?: KeyboardAvoidingViewProps["behavior"];
   keyboardVerticalOffset?: number;
 }
 
-/** Renders the current step of a useStepFlow wizard as a bottom-anchored modal. */
+// Renders the current step of a useStepFlow wizard as a bottom-anchored modal.
 export default function StepFlowModal<K extends string>({
   step,
   isLastStep,

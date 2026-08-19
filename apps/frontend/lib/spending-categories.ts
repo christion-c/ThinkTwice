@@ -1,20 +1,19 @@
 import type { BackendBudgetEntry } from "./backend-api";
 
-/**
- * Categorizes logged spending the way the project's own pitch does: fuel is
- * essential (you need it to get to work/school), food check-ins are
- * discretionary (dining/snacks, as opposed to a fixed grocery bill the
- * finance planner already covers under "fixed costs"). This is a simple,
- * deterministic rule over the two cost fields the app actually collects —
- * not a per-transaction classifier, since nothing in the data model
- * distinguishes "gas for commuting" from "gas for a road trip" today.
- *
- * Not currently called from any screen - it's the categorization half of
- * the budget-recommendations engine (see budget-recommendations.ts), built
- * for the nutrition/budget check-in flow that's paused (see
- * app/nutrition.tsx and BudgetContext.tsx). No runtime cost while unused,
- * so it's kept rather than deleted.
- */
+// Categorizes logged spending the way the project's own pitch does:
+// fuel is essential (you need it to get to work/school), food
+// check-ins are discretionary (dining/snacks, as opposed to a fixed
+// grocery bill the finance planner already covers under "fixed
+// costs"). This is a simple, deterministic rule over the two cost
+// fields the app actually collects - not a per-transaction classifier,
+// since nothing in the data model distinguishes "gas for commuting"
+// from "gas for a road trip" today.
+//
+// Not currently called from any screen - it's the categorization half
+// of the budget-recommendations engine (see budget-recommendations.ts),
+// built for the nutrition/budget check-in flow that's paused (see
+// app/nutrition.tsx and BudgetContext.tsx). No runtime cost while
+// unused, so it's kept rather than deleted.
 export interface SpendingBreakdown {
   essentialTotal: number;
   discretionaryTotal: number;
@@ -37,7 +36,7 @@ export function categorizeSpending(entries: BackendBudgetEntry[]): SpendingBreak
   };
 }
 
-/** Discretionary share of logged (essential + discretionary) spending, 0 when there's nothing logged yet. */
+// Discretionary share of logged (essential + discretionary) spending, 0 when there's nothing logged yet.
 export function discretionaryShare(breakdown: SpendingBreakdown): number {
   const total = breakdown.essentialTotal + breakdown.discretionaryTotal;
   return total > 0 ? breakdown.discretionaryTotal / total : 0;

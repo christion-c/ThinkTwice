@@ -5,7 +5,7 @@ interface MlMetricBoxProps {
   value: string;
 }
 
-/** One label/value tile in a metric grid (e.g. "Projected fuel cost" / "$64.20"). */
+// One label/value tile in a metric grid (e.g. "Projected fuel cost" / "$64.20").
 export default function MlMetricBox({ label, value }: MlMetricBoxProps) {
   return (
     <View className="flex-1 gap-1 rounded-md border border-border p-sm">

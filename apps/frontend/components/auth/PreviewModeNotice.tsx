@@ -5,7 +5,7 @@ interface PreviewModeNoticeProps {
   message: string;
 }
 
-/** The "Firebase not configured" banner shown by every auth form when running unconfigured. */
+// The "Firebase not configured" banner shown by every auth form when running unconfigured.
 export default function PreviewModeNotice({ visible, message }: PreviewModeNoticeProps) {
   if (!visible) {
     return null;

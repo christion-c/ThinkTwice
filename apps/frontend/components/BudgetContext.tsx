@@ -19,17 +19,16 @@ import {
   type PredictionResult,
 } from "../lib/backend-api";
 
-/**
- * No screen currently calls useBudget() - app/nutrition.tsx (its intended
- * consumer) is a stub because daily nutrition check-ins are paused (see
- * that file's own comment). BudgetProvider is still mounted in
- * app/_layout.tsx though, so its refresh() effect below fires
- * fetchBudgetEntries/fetchPredictions for every signed-in session with
- * nothing reading the result. Left wired up rather than torn out, since
- * pausing a feature isn't the same as deciding it's gone for good and
- * unwinding the provider is a one-line change to redo when nutrition
- * comes back - flagging this here so it doesn't look accidental.
- */
+// No screen currently calls useBudget() - app/nutrition.tsx (its
+// intended consumer) is a stub because daily nutrition check-ins are
+// paused (see that file's own comment). BudgetProvider is still
+// mounted in app/_layout.tsx though, so its refresh() effect below
+// fires fetchBudgetEntries/fetchPredictions for every signed-in
+// session with nothing reading the result. Left wired up rather than
+// torn out, since pausing a feature isn't the same as deciding it's
+// gone for good and unwinding the provider is a one-line change to
+// redo when nutrition comes back - flagging this here so it doesn't
+// look accidental.
 
 type BudgetContextValue = {
   entries: BackendBudgetEntry[];

@@ -1,15 +1,14 @@
-/**
- * Client for the ML service's debug-only GET /ml-preview endpoint (see
- * services/ml/app/prediction.py's build_prediction). This is a separate,
- * unauthenticated preview flow that the frontend calls directly from the
- * browser - not to be confused with the backend-mediated POST /predict
- * path used by the main app (see backend-api.ts's prediction calls).
- *
- * Response fields match the ML service's response dict exactly (snake_case,
- * no camelCase aliasing - that's only applied to /predict). There is no
- * `food_prediction` field: the model currently only forecasts fuel cost.
- */
-
+// Client for the ML service's debug-only GET /ml-preview endpoint (see
+// services/ml/app/prediction.py's build_prediction). This is a
+// separate, unauthenticated preview flow that the frontend calls
+// directly from the browser - not to be confused with the
+// backend-mediated POST /predict path used by the main app (see
+// backend-api.ts's prediction calls).
+//
+// Response fields match the ML service's response dict exactly
+// (snake_case, no camelCase aliasing - that's only applied to
+// /predict). There is no `food_prediction` field: the model currently
+// only forecasts fuel cost.
 export interface MlPreviewResponse {
   rows: number;
   history_count: number;
@@ -44,7 +43,7 @@ function buildCandidateUrls(miles: string, userId: string): string[] {
   ].filter((value): value is string => Boolean(value));
 }
 
-/** Tries each candidate host in turn, throwing with the last error if none respond. */
+// Tries each candidate host in turn, throwing with the last error if none respond.
 export async function fetchMlPreview(miles: string, userId: string): Promise<MlPreviewResponse> {
   const candidates = buildCandidateUrls(miles, userId);
   let lastError = "";

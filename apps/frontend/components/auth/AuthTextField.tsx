@@ -14,7 +14,7 @@ interface AuthTextFieldProps {
   textContentType?: TextInputProps["textContentType"];
 }
 
-/** Labeled text field used by every auth form's email/password inputs. */
+// Labeled text field used by every auth form's email/password inputs.
 export default function AuthTextField({
   label,
   value,

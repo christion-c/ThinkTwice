@@ -8,7 +8,7 @@ interface AuthSubmitButtonProps {
   disabled?: boolean;
 }
 
-/** The primary submit button shared by every auth form (sign in, sign up, reset). */
+// The primary submit button shared by every auth form (sign in, sign up, reset).
 export default function AuthSubmitButton({
   onPress,
   isSubmitting,

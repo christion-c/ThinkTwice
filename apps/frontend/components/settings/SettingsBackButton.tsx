@@ -8,7 +8,7 @@ interface SettingsBackButtonProps {
   colors: ThemeColors;
 }
 
-/** The "← Back" pill every settings/account screen puts in its header. */
+// The "← Back" pill every settings/account screen puts in its header.
 export default function SettingsBackButton({ onPress, colors }: SettingsBackButtonProps) {
   return (
     <Pressable

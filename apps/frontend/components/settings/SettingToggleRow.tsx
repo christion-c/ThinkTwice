@@ -10,7 +10,7 @@ interface SettingToggleRowProps {
   colors: ThemeColors;
 }
 
-/** A title/caption row with a trailing Switch, used by every settings screen with on/off preferences. */
+// A title/caption row with a trailing Switch, used by every settings screen with on/off preferences.
 export default function SettingToggleRow({ title, caption, value, onValueChange, colors }: SettingToggleRowProps) {
   return (
     <View className="flex-row items-center justify-between gap-md border-t border-border py-2">

@@ -13,7 +13,7 @@ interface MlPreviewControlsProps {
   colors: ThemeColors;
 }
 
-/** Miles-driven input, submit button, and the loading/error feedback beneath it. */
+// Miles-driven input, submit button, and the loading/error feedback beneath it.
 export default function MlPreviewControls({
   milesInput,
   onMilesChange,

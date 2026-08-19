@@ -6,10 +6,10 @@ const moneyFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-/** Discretionary spending above this share of logged costs gets called out. */
+// Discretionary spending above this share of logged costs gets called out.
 const HIGH_DISCRETIONARY_SHARE = 0.4;
 
-/** Fuel spending above this share of income gets called out. */
+// Fuel spending above this share of income gets called out.
 const HIGH_FUEL_INCOME_SHARE = 0.15;
 
 export interface RecommendationInput {
@@ -18,16 +18,14 @@ export interface RecommendationInput {
   monthlyIncome: number;
 }
 
-/**
- * Generates a short, prioritized list of practical suggestions from the
- * user's actual numbers, rather than a single static message regardless of
- * how their budget looks. Always returns at least one message (an
- * encouraging one when there isn't enough logged data yet, matching the
- * app's ADHD-friendly, non-shaming tone elsewhere).
- *
- * Not currently called from any screen - see spending-categories.ts's
- * module docstring for why this is still here despite that.
- */
+// Generates a short, prioritized list of practical suggestions from
+// the user's actual numbers, rather than a single static message
+// regardless of how their budget looks. Always returns at least one
+// message (an encouraging one when there isn't enough logged data yet,
+// matching the app's ADHD-friendly, non-shaming tone elsewhere).
+//
+// Not currently called from any screen - see spending-categories.ts's
+// module comment for why this is still here despite that.
 export function getBudgetRecommendations(input: RecommendationInput): string[] {
   const { breakdown, projectedBudgetAfterEssentials, monthlyIncome } = input;
   const recommendations: string[] = [];

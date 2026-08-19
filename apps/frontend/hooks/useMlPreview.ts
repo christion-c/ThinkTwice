@@ -7,16 +7,14 @@ import { fetchMlPreview, type MlPreviewResponse } from "../lib/ml-preview-api";
 // back (success or failure) after a generous warm-up window.
 const WARMUP_ERROR_DELAY_MS = 30000;
 
-/**
- * Shared fetch + loading/error state for the ML debug preview endpoint.
- * Used by both app/ml-preview.tsx (the preview page) and
- * app/debug/ml-account.tsx (the internal per-account debug view) - they
- * call the exact same backend endpoint and only differ in what they render.
- *
- * Guards against out-of-order responses (an earlier, slower request
- * resolving after a newer one already succeeded) via a request-id ref, and
- * won't overwrite already-loaded data with a stale-request error.
- */
+// Shared fetch + loading/error state for the ML debug preview endpoint.
+// Used by both app/ml-preview.tsx (the preview page) and
+// app/debug/ml-account.tsx (the internal per-account debug view) -
+// they call the exact same backend endpoint and only differ in what
+// they render. Guards against out-of-order responses (an earlier,
+// slower request resolving after a newer one already succeeded) via a
+// request-id ref, and won't overwrite already-loaded data with a
+// stale-request error.
 export function useMlPreview(userId: string, initialMiles = "120") {
   const [milesInput, setMilesInput] = useState(initialMiles);
   const [data, setData] = useState<MlPreviewResponse | null>(null);
@@ -27,6 +25,8 @@ export function useMlPreview(userId: string, initialMiles = "120") {
   const hasDataRef = useRef(false);
 
   const loadPreview = useCallback(async (miles: string) => {
+    // Bump the request id so any earlier in-flight request can recognize
+    // itself as stale once this one starts.
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
     if (errorTimeoutRef.current) {
@@ -37,6 +37,8 @@ export function useMlPreview(userId: string, initialMiles = "120") {
     setLoading(true);
     setError("");
 
+    // Only fires if this exact request is still the latest one and
+    // nothing has loaded yet by the time the warm-up window elapses.
     errorTimeoutRef.current = setTimeout(() => {
       if (requestIdRef.current !== requestId || hasDataRef.current) {
         return;
@@ -48,6 +50,7 @@ export function useMlPreview(userId: string, initialMiles = "120") {
 
     try {
       const payload = await fetchMlPreview(miles, userId);
+      // A newer request already started - ignore this now-stale response.
       if (requestIdRef.current !== requestId) {
         return;
       }

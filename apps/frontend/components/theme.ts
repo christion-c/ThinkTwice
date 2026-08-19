@@ -42,11 +42,9 @@ export const palettes: Record<ColorMode, ThemeColors> = {
   },
 };
 
-/**
- * High contrast keeps each mode's accent/status colors (so the app still
- * looks like itself) but pushes background/text/border to their most
- * legible extremes, and thickens borders so card edges stay visible.
- */
+// High contrast keeps each mode's accent/status colors (so the app
+// still looks like itself) but pushes background/text/border to their
+// most legible extremes, and thickens borders so card edges stay visible.
 const highContrastOverrides: Record<ColorMode, Partial<ThemeColors>> = {
   dark: {
     background: "#000000",
