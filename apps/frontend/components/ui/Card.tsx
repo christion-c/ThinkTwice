@@ -6,8 +6,9 @@ import type { ViewProps } from "react-native";
 // screen in the app (card sections, form panels, status panels, etc.).
 interface CardProps extends Pick<ViewProps, "style"> {
   children: ReactNode;
-  // Space between this card's own children. "sm" is the more common case.
-  gap?: "sm" | "md";
+  // Space between this card's own children. "sm" is the more common case;
+  // "xs" is used by the smaller status/alert-style cards.
+  gap?: "xs" | "sm" | "md";
   // Inner padding. "lg" is the more common case; "md" is used by denser panels.
   padding?: "md" | "lg";
   // Escape hatch for one-off additions (a status border color, active:
@@ -17,7 +18,7 @@ interface CardProps extends Pick<ViewProps, "style"> {
 
 export default function Card({ children, gap = "sm", padding = "lg", className = "", style }: CardProps) {
   // Look up the gap utility for the requested size.
-  const gapClass = gap === "md" ? "gap-md" : "gap-sm";
+  const gapClass = gap === "md" ? "gap-md" : gap === "xs" ? "gap-xs" : "gap-sm";
   // Look up the padding utility for the requested size.
   const paddingClass = padding === "md" ? "p-md" : "p-lg";
   // Base look every card shares: rounded corners, a border, the surface color.

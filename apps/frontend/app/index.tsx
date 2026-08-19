@@ -9,6 +9,7 @@ import BottomNav from "../components/BottomNav";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { shadows, type ThemeColors } from "../components/theme";
+import Card from "../components/ui/Card";
 import { useAuth } from "../components/AuthProvider";
 import { useVehicle } from "../components/VehicleContext";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
@@ -165,20 +166,20 @@ export default function Home() {
         </View>
       </View>
 
-      <View className={`gap-xs rounded-lg border bg-surface p-md ${isBudgetHealthy ? "border-success" : "border-danger"}`}>
+      <Card gap="xs" padding="md" className={isBudgetHealthy ? "border-success" : "border-danger"}>
         <Text className="text-[17px] font-bold text-text">{budgetStatus.title}</Text>
         <Text className="text-sm leading-[21px] text-textMuted">{budgetStatus.description}</Text>
-      </View>
+      </Card>
 
-      <View style={shadows.soft} className="gap-sm rounded-lg border border-border bg-surface p-md">
+      <Card padding="md" style={shadows.soft}>
         <Text className="text-base font-bold text-text">Tank Forecast</Text>
         <Text className="text-[22px] font-bold text-accent">{Math.max(projectedDaysUntilFillUp, 0).toFixed(1)} days until next fill-up</Text>
         <Text className="text-sm leading-5 text-textMuted">Estimated refill cost: {moneyFormat.format(projectedFillUpCost)} based on your current fuel and mileage inputs.</Text>
         <Text className="text-[13px] font-bold uppercase tracking-[0.5px] text-text">{fuelStatus}</Text>
-      </View>
+      </Card>
 
       {shouldShowSetupChecklist ? (
-        <View className="gap-sm rounded-lg border border-border bg-surface p-md">
+        <Card padding="md">
           <Text className="text-lg font-bold text-text">Get Fully Set Up</Text>
           <View className="gap-xs">
             {setupSteps.map((step) => (
@@ -193,7 +194,7 @@ export default function Home() {
               </Pressable>
             ))}
           </View>
-        </View>
+        </Card>
       ) : null}
 
       <View className="flex-row gap-sm">

@@ -10,6 +10,10 @@ import PageScaffold from "../components/PageScaffold";
 import { useVehicle } from "../components/VehicleContext";
 import { saveFillUpHistory } from "../lib/backend-api";
 import { shadows } from "../components/theme";
+import Card from "../components/ui/Card";
+import CardText from "../components/ui/CardText";
+import CardTitle from "../components/ui/CardTitle";
+import StatusMessage from "../components/ui/StatusMessage";
 import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useStepFlow, type StepFlowStepConfig } from "../hooks/useStepFlow";
@@ -207,17 +211,17 @@ export default function Fuel() {
       subtitle="Track your driving inputs so budget and refill predictions stay realistic."
       footer={<BottomNav active="Fuel" />}
     >
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Forecast</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Estimated next refill cost: {moneyFormat.format(projectedFillUpCost)}</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Estimated days remaining: {Math.max(projectedDaysUntilFillUp, 0).toFixed(1)}</Text>
-        <Text className="text-[15px] leading-[22px] text-textMuted">Monthly fuel reserve: {moneyFormat.format(monthlyFuelBudget)}</Text>
-      </View>
+      <Card>
+        <CardTitle>Forecast</CardTitle>
+        <CardText>Estimated next refill cost: {moneyFormat.format(projectedFillUpCost)}</CardText>
+        <CardText>Estimated days remaining: {Math.max(projectedDaysUntilFillUp, 0).toFixed(1)}</CardText>
+        <CardText>Monthly fuel reserve: {moneyFormat.format(monthlyFuelBudget)}</CardText>
+      </Card>
 
-      <View className="gap-sm rounded-lg border border-border bg-surface p-md">
+      <Card padding="md">
         <View className="flex-row items-center justify-between gap-sm">
           <View>
-            <Text className="text-xl font-bold text-text">Vehicle</Text>
+            <CardTitle>Vehicle</CardTitle>
             <Text className="text-sm text-textMuted">Choose or add a vehicle.</Text>
           </View>
 
@@ -271,9 +275,9 @@ export default function Fuel() {
           </Pressable>
         </View>
 
-        {errorMessage ? <Text className="text-sm text-danger">{errorMessage}</Text> : null}
-        {saveMessage ? <Text className="text-sm text-success">{saveMessage}</Text> : null}
-      </View>
+        <StatusMessage message={errorMessage} tone="error" />
+        <StatusMessage message={saveMessage} tone="success" />
+      </Card>
 
       <View className="flex-row gap-sm">
         <View style={shadows.soft} className="flex-1 gap-xs rounded-md border border-border bg-surface p-md">
@@ -286,8 +290,8 @@ export default function Fuel() {
         </View>
       </View>
 
-      <View className="gap-sm rounded-lg border border-border bg-surface p-md">
-        <Text className="text-xl font-bold text-text">Fuel Check-In</Text>
+      <Card padding="md">
+        <CardTitle>Fuel Check-In</CardTitle>
         <Text className="text-sm text-textMuted">Check in after every fill-up.</Text>
 
         <View className="flex-1 gap-1.5">
@@ -308,7 +312,7 @@ export default function Fuel() {
             <Text className="text-[15px] font-bold text-accentDeep">Start fuel check-in</Text>
           </Pressable>
         </View>
-      </View>
+      </Card>
 
       <StepFlowModal
         step={fuelFlow.activeStep}

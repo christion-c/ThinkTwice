@@ -6,6 +6,8 @@ import PageScaffold from "../../components/PageScaffold";
 import MlAccountInfoBox from "../../components/ml/MlAccountInfoBox";
 import MlMetricBox from "../../components/ml/MlMetricBox";
 import MlPreviewControls from "../../components/ml/MlPreviewControls";
+import Card from "../../components/ui/Card";
+import CardTitle from "../../components/ui/CardTitle";
 import { useMlPreview } from "../../hooks/useMlPreview";
 
 export default function PrivateMlAccountPage() {
@@ -19,8 +21,8 @@ export default function PrivateMlAccountPage() {
       subtitle="Private account-scoped preview view for testing. This route is not linked in the main app navigation."
       scrollable
     >
-      <View className="gap-md rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Private account monitor</Text>
+      <Card gap="md">
+        <CardTitle>Private account monitor</CardTitle>
         <Text className="text-sm leading-5 text-textMuted">Open this route directly by URL while signed in to watch the same account’s history count and predictions update.</Text>
 
         <MlAccountInfoBox
@@ -58,7 +60,7 @@ export default function PrivateMlAccountPage() {
             </View>
           </>
         ) : null}
-      </View>
+      </Card>
     </PageScaffold>
   );
 }

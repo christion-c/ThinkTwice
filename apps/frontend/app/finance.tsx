@@ -6,6 +6,9 @@ import BottomNav from "../components/BottomNav";
 import StepFlowModal from "../components/StepFlowModal";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
+import Card from "../components/ui/Card";
+import CardText from "../components/ui/CardText";
+import CardTitle from "../components/ui/CardTitle";
 import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useStepFlow, type StepFlowStepConfig } from "../hooks/useStepFlow";
@@ -78,41 +81,41 @@ export default function Finance() {
       subtitle="Build your monthly budget and reserve room for fuel before surprises hit."
       footer={<BottomNav active="Finance" />}
     >
-      <View className="gap-sm rounded-lg border border-border bg-surface p-lg">
-        <Text className="text-xl font-bold text-text">Budget Snapshot</Text>
-        <Text className="text-[15px] leading-[21px] text-textMuted">Take-home income: {moneyFormat.format(monthlyIncome)}</Text>
-        <Text className="text-[15px] leading-[21px] text-textMuted">Variable spending: {moneyFormat.format(monthlyExpenses)}</Text>
-        <Text className="text-[15px] leading-[21px] text-textMuted">Fixed costs: {moneyFormat.format(monthlyFixedCosts)}</Text>
-        <Text className="text-[15px] leading-[21px] text-textMuted">Monthly Fuel Cost: {moneyFormat.format(monthlyFuelBudget)}</Text>
+      <Card>
+        <CardTitle>Budget Snapshot</CardTitle>
+        <CardText tight>Take-home income: {moneyFormat.format(monthlyIncome)}</CardText>
+        <CardText tight>Variable spending: {moneyFormat.format(monthlyExpenses)}</CardText>
+        <CardText tight>Fixed costs: {moneyFormat.format(monthlyFixedCosts)}</CardText>
+        <CardText tight>Monthly Fuel Cost: {moneyFormat.format(monthlyFuelBudget)}</CardText>
         <Text className="mt-xs text-base font-bold text-accent">Projected Available Balance: {moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
-      </View>
+      </Card>
 
-      <View className={`gap-xs rounded-lg border bg-surface p-md ${isHealthy ? "border-success" : "border-danger"}`}>
+      <Card gap="xs" padding="md" className={isHealthy ? "border-success" : "border-danger"}>
         <Text className="text-base font-bold text-text">Budget Health</Text>
         <Text className={`text-[22px] font-bold ${isHealthy ? "text-success" : "text-danger"}`}>
           {isHealthy ? "Healthy" : "Needs attention"}
         </Text>
-      </View>
+      </Card>
 
       <View className="flex-row flex-wrap gap-sm">
-        <View className="min-w-[30%] flex-1 gap-xs rounded-lg border border-border bg-surface p-md">
+        <Card gap="xs" padding="md" className="min-w-[30%] flex-1">
           <Text className="text-[13px] uppercase tracking-[0.5px] text-textMuted">Weekly Budget</Text>
           <Text className="text-[22px] font-bold text-text">{moneyFormat.format(weeklySpendTarget)}</Text>
-        </View>
-        <View className="min-w-[30%] flex-1 gap-xs rounded-lg border border-border bg-surface p-md">
+        </Card>
+        <Card gap="xs" padding="md" className="min-w-[30%] flex-1">
           <Text className="text-[13px] uppercase tracking-[0.5px] text-textMuted">Fuel share</Text>
           <Text className="text-[22px] font-bold text-text">
             {monthlyIncome > 0 ? `${Math.round((monthlyFuelBudget / monthlyIncome) * 100)}%` : "0%"}
           </Text>
-        </View>
-        <View className="min-w-[30%] flex-1 gap-xs rounded-lg border border-border bg-surface p-md">
+        </Card>
+        <Card gap="xs" padding="md" className="min-w-[30%] flex-1">
           <Text className="text-[13px] uppercase tracking-[0.5px] text-textMuted">Spent each month</Text>
           <Text className="text-[22px] font-bold text-text">{`${Math.round(spendingHabitRatio * 100)}%`}</Text>
-        </View>
+        </Card>
       </View>
 
-      <View className="gap-sm rounded-lg border border-border bg-surface p-md">
-        <Text className="text-xl font-bold text-text">Budget Check-In</Text>
+      <Card padding="md">
+        <CardTitle>Budget Check-In</CardTitle>
 
         <View className="gap-sm">
           <Pressable onPress={startFinanceFlow} className="items-center rounded-md bg-accent py-3">
@@ -120,7 +123,7 @@ export default function Finance() {
           </Pressable>
           <Text className="text-sm text-textMuted">Enter your monthly income, spending, and recurring bills one step at a time.</Text>
         </View>
-      </View>
+      </Card>
 
       <StepFlowModal
         step={financeFlow.activeStep}
