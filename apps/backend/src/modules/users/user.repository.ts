@@ -1,8 +1,6 @@
 import { database } from "../../db/pool.js";
 
-/**
- * User information received from a verified Firebase ID token.
- */
+// User information received from a verified Firebase ID token.
 export interface UpsertUserInput {
   firebaseUid: string;
   email: string | null;
@@ -11,9 +9,7 @@ export interface UpsertUserInput {
   emailVerified: boolean;
 }
 
-/**
- * Application-facing representation of a PostgreSQL user.
- */
+// Application-facing representation of a PostgreSQL user.
 export interface UserProfile {
   id: string;
   firebaseUid: string;
@@ -25,9 +21,7 @@ export interface UserProfile {
   updatedAt: Date;
 }
 
-/**
- * Internal representation of a row returned by PostgreSQL.
- */
+// Internal representation of a row returned by PostgreSQL.
 interface UserRow {
   id: string;
   firebase_uid: string;
@@ -39,9 +33,7 @@ interface UserRow {
   updated_at: Date;
 }
 
-/**
- * Converts PostgreSQL snake_case column names into camelCase properties.
- */
+// Converts PostgreSQL snake_case column names into camelCase properties.
 function mapUserRow(row: UserRow): UserProfile {
   return {
     id: row.id,
@@ -55,12 +47,9 @@ function mapUserRow(row: UserRow): UserProfile {
   };
 }
 
-/**
- * Creates a ThinkTwice profile for a new Firebase user or updates the
- * existing profile when Firebase account information changes.
- *
- * PostgreSQL identifies the account using the verified Firebase UID.
- */
+// Creates a ThinkTwice profile for a new Firebase user, or updates the
+// existing one when Firebase account information changes. Postgres
+// identifies the account using the verified Firebase UID.
 export async function upsertUserFromFirebase(
   input: UpsertUserInput,
 ): Promise<UserProfile> {

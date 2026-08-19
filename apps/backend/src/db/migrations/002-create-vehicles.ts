@@ -1,8 +1,6 @@
 import type { Migration } from "./migration.types.js";
 
-/**
- * Creates user-owned vehicle profiles for fuel calculations and tracking.
- */
+// Creates user-owned vehicle profiles for fuel calculations and tracking.
 export const createVehiclesMigration: Migration = {
   id: "002_create_vehicles",
   description: "Create the vehicles table",

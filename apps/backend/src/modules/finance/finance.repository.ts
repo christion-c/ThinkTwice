@@ -24,6 +24,7 @@ interface FinanceInputsRow {
   current_tank_percent_input: string;
 }
 
+// Converts snake_case Postgres columns into the app's camelCase shape.
 function mapRow(row: FinanceInputsRow): FinanceInputs {
   return {
     incomeInput: row.income_input,
@@ -38,6 +39,7 @@ function mapRow(row: FinanceInputsRow): FinanceInputs {
   };
 }
 
+// Returned when a user has never saved finance inputs yet.
 const EMPTY_INPUTS: FinanceInputs = {
   incomeInput: "",
   expenseInput: "",
@@ -50,6 +52,7 @@ const EMPTY_INPUTS: FinanceInputs = {
   currentTankPercentInput: "",
 };
 
+// Reads the given user's saved finance inputs, or the empty defaults if none exist.
 export async function getFinanceInputsForUser(
   userId: string,
 ): Promise<FinanceInputs> {
@@ -74,6 +77,7 @@ export async function getFinanceInputsForUser(
   return result.rows[0] ? mapRow(result.rows[0]) : EMPTY_INPUTS;
 }
 
+// Creates or replaces the given user's finance inputs (one row per user).
 export async function upsertFinanceInputsForUser(
   userId: string,
   inputs: FinanceInputs,
@@ -134,6 +138,7 @@ export async function upsertFinanceInputsForUser(
 
   const row = result.rows[0];
 
+  // INSERT ... RETURNING should always yield exactly one row.
   if (!row) {
     throw new Error("PostgreSQL did not return the upserted finance inputs.");
   }

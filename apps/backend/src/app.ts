@@ -64,6 +64,8 @@ export function createApp() {
     });
   });
 
+  // Only /auth gets the tighter rate limiter; everything else uses the
+  // general one already applied above.
   app.use("/health", healthRouter);
   app.use("/auth", authRateLimiter, authRouter);
   app.use("/vehicles", vehicleRouter);
@@ -72,6 +74,7 @@ export function createApp() {
   app.use("/finance", financeRouter);
   app.use("/fill-up-history", fillUpHistoryRouter);
 
+  // Catches any request that didn't match a route above.
   const notFoundHandler: RequestHandler = (_request, response) => {
     response.status(404).json({
       error: "Route not found",
@@ -80,12 +83,15 @@ export function createApp() {
 
   app.use(notFoundHandler);
 
+  // Express's convention for an error handler: four params, the first
+  // being the error itself. Must be registered last.
   const errorHandler: ErrorRequestHandler = (
     error,
     _request,
     response,
     _next,
   ) => {
+    // Log the real error server-side, but never leak details to the client.
     console.error(error);
 
     response.status(500).json({

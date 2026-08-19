@@ -5,9 +5,7 @@ import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 
 export const authRouter = Router();
 
-/**
- * Returns the authenticated user's ThinkTwice profile.
- */
+// Returns the authenticated user's ThinkTwice profile.
 authRouter.get(
   "/me",
   requireAuth,

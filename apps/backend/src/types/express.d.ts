@@ -5,14 +5,9 @@ import type { UserProfile } from "../modules/users/user.repository.js";
 declare global {
   namespace Express {
     interface Request {
-      /**
-       * Verified Firebase token added by requireAuth.
-       */
+      // Verified Firebase token, added by requireAuth.
       auth?: DecodedIdToken;
-
-      /**
-       * ThinkTwice PostgreSQL profile added by syncCurrentUser.
-       */
+      // ThinkTwice PostgreSQL profile, added by syncCurrentUser.
       currentUser?: UserProfile;
     }
   }

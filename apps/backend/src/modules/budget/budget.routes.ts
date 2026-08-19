@@ -33,9 +33,7 @@ const entryIdSchema = z.uuid();
 // Every budget-entry endpoint requires a verified Firebase user.
 budgetRouter.use(requireAuth, syncCurrentUser);
 
-/**
- * Returns the authenticated user's most recent budget entries.
- */
+// Returns the authenticated user's most recent budget entries.
 budgetRouter.get("/", async (request, response, next) => {
   const currentUser = requireCurrentUser(request, response);
 
@@ -57,9 +55,7 @@ budgetRouter.get("/", async (request, response, next) => {
   }
 });
 
-/**
- * Creates a budget entry owned by the authenticated user.
- */
+// Creates a budget entry owned by the authenticated user.
 budgetRouter.post("/", async (request, response, next) => {
   const currentUser = requireCurrentUser(request, response);
 
@@ -98,9 +94,7 @@ budgetRouter.post("/", async (request, response, next) => {
   }
 });
 
-/**
- * Deletes a budget entry only when it belongs to the authenticated user.
- */
+// Deletes a budget entry only when it belongs to the authenticated user.
 budgetRouter.delete("/:entryId", async (request, response, next) => {
   const currentUser = requireCurrentUser(request, response);
 

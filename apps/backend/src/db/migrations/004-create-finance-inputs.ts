@@ -1,11 +1,8 @@
 import type { Migration } from "./migration.types.js";
 
-/**
- * Creates a single-row-per-user table for persisted finance planner inputs.
- *
- * All values are stored as TEXT to mirror the string-based form state on the
- * frontend. An empty string means the user has not entered a value.
- */
+// Creates a single-row-per-user table for persisted finance planner
+// inputs. All values are stored as TEXT to mirror the string-based
+// form state on the frontend - an empty string means "not entered yet".
 export const createFinanceInputsMigration: Migration = {
   id: "004_create_finance_inputs",
   description: "Create the finance_inputs table",

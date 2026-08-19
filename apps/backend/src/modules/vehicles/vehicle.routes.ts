@@ -50,9 +50,7 @@ const vehicleIdSchema = z.uuid();
 // Every vehicle endpoint requires a verified Firebase user.
 vehicleRouter.use(requireAuth, syncCurrentUser);
 
-/**
- * Returns the authenticated user's vehicles.
- */
+// Returns the authenticated user's vehicles.
 vehicleRouter.get("/", async (request, response, next) => {
   const currentUser = requireCurrentUser(request, response);
 
@@ -71,9 +69,7 @@ vehicleRouter.get("/", async (request, response, next) => {
   }
 });
 
-/**
- * Creates a vehicle owned by the authenticated user.
- */
+// Creates a vehicle owned by the authenticated user.
 vehicleRouter.post("/", async (request, response, next) => {
   const currentUser = requireCurrentUser(request, response);
 
@@ -113,9 +109,7 @@ vehicleRouter.post("/", async (request, response, next) => {
   }
 });
 
-/**
- * Updates a vehicle only when it belongs to the authenticated user.
- */
+// Updates a vehicle only when it belongs to the authenticated user.
 vehicleRouter.patch("/:vehicleId", async (request, response, next) => {
   const currentUser = requireCurrentUser(request, response);
 
@@ -168,9 +162,7 @@ vehicleRouter.patch("/:vehicleId", async (request, response, next) => {
   }
 });
 
-/**
- * Deletes a vehicle only when it belongs to the authenticated user.
- */
+// Deletes a vehicle only when it belongs to the authenticated user.
 vehicleRouter.delete("/:vehicleId", async (request, response, next) => {
   const currentUser = requireCurrentUser(request, response);
 

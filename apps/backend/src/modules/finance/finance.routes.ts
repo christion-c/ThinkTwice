@@ -28,11 +28,10 @@ const financeInputsSchema = z
   })
   .strict();
 
+// Every route below requires a verified, synced user.
 financeRouter.use(requireAuth, syncCurrentUser);
 
-/**
- * Returns the authenticated user's persisted finance planner inputs.
- */
+// Returns the authenticated user's persisted finance planner inputs.
 financeRouter.get("/inputs", async (request, response, next) => {
   const currentUser = requireCurrentUser(request, response);
 
@@ -48,9 +47,7 @@ financeRouter.get("/inputs", async (request, response, next) => {
   }
 });
 
-/**
- * Upserts the authenticated user's finance planner inputs.
- */
+// Upserts the authenticated user's finance planner inputs.
 financeRouter.put("/inputs", async (request, response, next) => {
   const currentUser = requireCurrentUser(request, response);
 

@@ -4,12 +4,9 @@ import { database } from "../db/pool.js";
 import { migrations } from "../db/migrations/index.js";
 import { runMigrations } from "../db/migrations/migration-runner.js";
 
-/**
- * Integration tests need a real PostgreSQL instance. Rather than failing
- * the whole suite when one isn't reachable (e.g. a laptop with Docker not
- * running), tests check this once and skip themselves with a clear
- * message.
- */
+// Integration tests need a real Postgres instance. Rather than failing
+// the whole suite when one isn't reachable (e.g. a laptop with Docker
+// not running), tests check this once and skip themselves with a clear message.
 export async function isDatabaseAvailable(): Promise<boolean> {
   try {
     await database.query("SELECT 1");
@@ -19,15 +16,12 @@ export async function isDatabaseAvailable(): Promise<boolean> {
   }
 }
 
-/**
- * Confirms a database is reachable and applies migrations against it.
- *
- * Node's test runner executes separate test files concurrently by
- * default, so each integration-test file must make sure the schema it
- * needs actually exists rather than assuming another file's `before` hook
- * ran first. runMigrations is safe to call concurrently from multiple
- * files: the migration runner takes a PostgreSQL advisory lock.
- */
+// Confirms a database is reachable and applies migrations against it.
+// Node's test runner executes separate test files concurrently by
+// default, so each integration-test file must make sure the schema it
+// needs actually exists rather than assuming another file's `before`
+// hook ran first. runMigrations is safe to call concurrently from
+// multiple files: the migration runner takes a Postgres advisory lock.
 export async function ensureSchemaReady(): Promise<boolean> {
   const available = await isDatabaseAvailable();
 
@@ -39,12 +33,11 @@ export async function ensureSchemaReady(): Promise<boolean> {
   return true;
 }
 
-/**
- * Inserts a throwaway user for a single test. Callers are responsible for
- * deleting it (see deleteTestUser) so repeated test runs don't accumulate
- * rows in a shared development database.
- */
+// Inserts a throwaway user for a single test. Callers are responsible
+// for deleting it (see deleteTestUser) so repeated test runs don't
+// accumulate rows in a shared development database.
 export async function createTestUser(): Promise<string> {
+  // Prefix with "test-" so leftover rows are easy to spot/clean up manually.
   const firebaseUid = `test-${randomUUID()}`;
 
   const result = await database.query<{ id: string }>(
@@ -58,6 +51,7 @@ export async function createTestUser(): Promise<string> {
 
   const userId = result.rows[0]?.id;
 
+  // INSERT ... RETURNING should always yield exactly one row.
   if (!userId) {
     throw new Error("Failed to create test user.");
   }
@@ -65,6 +59,7 @@ export async function createTestUser(): Promise<string> {
   return userId;
 }
 
+// Removes the user this test created, keeping the shared dev database clean.
 export async function deleteTestUser(userId: string): Promise<void> {
   await database.query("DELETE FROM users WHERE id = $1", [userId]);
 }

@@ -1,12 +1,8 @@
 import type { Migration } from "./migration.types.js";
 
-/**
- * Creates the application's user-profile table.
- *
- * Firebase remains responsible for authentication. PostgreSQL stores only
- * ThinkTwice profile information and the Firebase UID used to identify the
- * authenticated user.
- */
+// Creates the application's user-profile table. Firebase remains
+// responsible for authentication - Postgres stores only ThinkTwice
+// profile information plus the Firebase UID used to identify the user.
 export const createUsersMigration: Migration = {
   id: "001_create_users",
   description: "Create the users table",

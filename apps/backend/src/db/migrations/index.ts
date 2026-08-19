@@ -5,11 +5,8 @@ import { createFinanceInputsMigration } from "./004-create-finance-inputs.js";
 import { createFillUpHistoryMigration } from "./005-create-fill-up-history.js";
 import type { Migration } from "./migration.types.js";
 
-/**
- * Contains every ThinkTwice database migration in execution order.
- *
- * Never reorder, rename, or remove an applied migration.
- */
+// Every ThinkTwice database migration, in execution order. Never
+// reorder, rename, or remove an already-applied migration.
 export const migrations: readonly Migration[] = [
   createUsersMigration,
   createVehiclesMigration,

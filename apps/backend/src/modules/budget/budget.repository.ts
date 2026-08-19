@@ -33,30 +33,25 @@ interface BudgetEntryRow {
   updated_at: Date;
 }
 
-/**
- * Converts a PostgreSQL budget entry row into the application's format.
- *
- * PostgreSQL NUMERIC values are returned as strings, so cost and mileage
- * fields are converted to numbers here.
- */
+// Converts a PostgreSQL budget entry row into the application's format.
 function mapBudgetEntryRow(row: BudgetEntryRow): BudgetEntry {
   return {
     id: row.id,
     userId: row.user_id,
     entryDate: row.entry_date,
+    // NUMERIC columns come back as strings from the pg driver.
     fuelCost: row.fuel_cost === null ? null : Number(row.fuel_cost),
     foodCost: row.food_cost === null ? null : Number(row.food_cost),
     milesDriven:
       row.miles_driven === null ? null : Number(row.miles_driven),
+    // meals is already an INTEGER column, no conversion needed.
     meals: row.meals,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-/**
- * Creates a budget/habit check-in owned by the authenticated user.
- */
+// Creates a budget/habit check-in owned by the authenticated user.
 export async function createBudgetEntry(
   input: CreateBudgetEntryInput,
 ): Promise<BudgetEntry> {
@@ -95,6 +90,7 @@ export async function createBudgetEntry(
 
   const entry = result.rows[0];
 
+  // INSERT ... RETURNING should always yield exactly one row.
   if (!entry) {
     throw new Error("PostgreSQL did not return the created budget entry.");
   }
@@ -102,10 +98,8 @@ export async function createBudgetEntry(
   return mapBudgetEntryRow(entry);
 }
 
-/**
- * Returns the most recent budget entries belonging to the specified user,
- * newest first.
- */
+// Returns the most recent budget entries belonging to the specified
+// user, newest first.
 export async function listBudgetEntriesForUser(
   userId: string,
   limit: number,
@@ -133,9 +127,7 @@ export async function listBudgetEntriesForUser(
   return result.rows.map(mapBudgetEntryRow);
 }
 
-/**
- * Deletes a budget entry only when it belongs to the specified user.
- */
+// Deletes a budget entry only when it belongs to the specified user.
 export async function deleteBudgetEntryForUser(
   entryId: string,
   userId: string,
@@ -149,5 +141,6 @@ export async function deleteBudgetEntryForUser(
     [entryId, userId],
   );
 
+  // Exactly one row deleted means it existed and belonged to this user.
   return result.rowCount === 1;
 }

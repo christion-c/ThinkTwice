@@ -30,9 +30,7 @@ export const entrySchema = z
   })
   .strict();
 
-/**
- * Saves a fill-up entry for the authenticated user.
- */
+// Saves a fill-up entry for the authenticated user.
 fillUpHistoryRouter.post(
   "/",
   requireAuth,
@@ -65,9 +63,7 @@ fillUpHistoryRouter.post(
   },
 );
 
-/**
- * Returns fill-up history for the authenticated user.
- */
+// Returns fill-up history for the authenticated user.
 fillUpHistoryRouter.get(
   "/",
   requireAuth,
@@ -88,10 +84,8 @@ fillUpHistoryRouter.get(
   },
 );
 
-/**
- * Returns fill-up history for a Firebase UID.
- * Internal-only — called by the ML service on the Docker network.
- */
+// Returns fill-up history for a Firebase UID. Internal-only - called
+// by the ML service on the Docker network.
 fillUpHistoryRouter.get("/internal", requireInternalService, async (request, response, next) => {
   const firebaseUid =
     typeof request.query["firebase_uid"] === "string"

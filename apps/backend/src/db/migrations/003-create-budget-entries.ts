@@ -1,9 +1,7 @@
 import type { Migration } from "./migration.types.js";
 
-/**
- * Creates the daily budget/habit check-ins that back the finance and
- * nutrition screens, and provide training data for the ML forecast.
- */
+// Creates the daily budget/habit check-ins that back the finance and
+// nutrition screens, and provide training data for the ML forecast.
 export const createBudgetEntriesMigration: Migration = {
   id: "003_create_budget_entries",
   description: "Create the budget_entries table",
