@@ -1,15 +1,11 @@
-"""ThinkTwice ML service: FastAPI app setup and route registration.
-
-The actual logic lives in sibling modules so this file stays a short,
-readable index of "what endpoints exist and what they call":
-
-- models.py     Pydantic request/response shapes
-- dataset.py    synthetic reference dataset for /ml-preview's baseline
-- history.py    per-user fill-up history storage (backend-durable, with
-                 a local-file fallback)
-- prediction.py the actual prediction math for both /predict and
-                 /ml-preview
-"""
+# ThinkTwice ML service: FastAPI app setup and route registration.
+# The actual logic lives in sibling modules so this file stays a short,
+# readable index of "what endpoints exist and what they call":
+#   models.py     Pydantic request/response shapes
+#   dataset.py    synthetic reference dataset for /ml-preview's baseline
+#   history.py    per-user fill-up history storage (backend-durable,
+#                 with a local-file fallback)
+#   prediction.py the actual prediction math for both /predict and /ml-preview
 
 from typing import Any
 
@@ -28,6 +24,8 @@ from .prediction import (
 
 app = FastAPI(title="ThinkTwice ML Service")
 
+# Wide open: this service sits behind the backend and is not directly
+# exposed to end users with sensitive credentials to protect.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -44,18 +42,16 @@ def health() -> dict[str, Any]:
 
 @app.post("/predict", response_model=PredictResponse, response_model_by_alias=True)
 def predict(request: PredictRequest) -> PredictResponse:
-    """Forecasts fuel/food cost from the user's own recently logged entries.
-
-    This is the endpoint the real app uses (called server-to-server by
-    the backend's /predictions route) — not to be confused with
-    /ml-preview below, which is a separate debug-only flow.
-    """
+    # This is the endpoint the real app uses (called server-to-server by
+    # the backend's /predictions route) - not to be confused with
+    # /ml-preview below, which is a separate debug-only flow.
     if not request.entries:
         raise HTTPException(
             status_code=422,
             detail="At least one budget entry is required.",
         )
 
+    # Below the regression threshold, fall back to a plain average.
     if len(request.entries) < MIN_ENTRIES_FOR_REGRESSION:
         return predict_by_average(request.entries)
 
@@ -64,7 +60,7 @@ def predict(request: PredictRequest) -> PredictResponse:
 
 @app.post("/fill-up-history")
 def fill_up_history(payload: dict[str, Any]) -> dict[str, Any]:
-    """Backs the /ml-preview debug flow's own history writes (see history.py)."""
+    # Backs the /ml-preview debug flow's own history writes (see history.py).
     return save_user_history(payload)
 
 
@@ -77,12 +73,10 @@ def ml_preview(
     tank_capacity: float | None = None,
     gallons: float | None = None,
 ) -> dict[str, Any]:
-    """Debug-only preview endpoint — not called by the main app.
-
-    Backs the frontend's /ml-preview and /debug/ml-account screens, which
-    call this directly from the browser (via EXPO_PUBLIC_ML_API_URL)
-    rather than going through the backend.
-    """
+    # Debug-only preview endpoint, not called by the main app - backs
+    # the frontend's /ml-preview and /debug/ml-account screens, which
+    # call this directly from the browser (via EXPO_PUBLIC_ML_API_URL)
+    # rather than going through the backend.
     return build_prediction(
         miles_driven=miles_driven,
         user_id=user_id,
@@ -95,11 +89,11 @@ def ml_preview(
 
 # Re-exported so existing imports (`from app.main import build_prediction,
 # recency_weighted_average`, used by services/ml/tests/test_predict.py)
-# keep working after this module split — these are read-only re-exports,
+# keep working after this module split - these are read-only re-exports,
 # not mutated anywhere, so a plain import binding is safe here. Contrast
 # with HISTORY_PATH, which tests mutate directly and therefore import
-# from app.history instead of via this re-export (see history.py's
-# docstring and tests/test_main.py).
+# from app.history instead of via this re-export (see history.py and
+# tests/test_main.py).
 __all__ = [
     "app",
     "build_prediction",
