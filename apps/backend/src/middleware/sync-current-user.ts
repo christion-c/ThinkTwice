@@ -2,12 +2,9 @@ import type { RequestHandler } from "express";
 
 import { upsertUserFromFirebase } from "../modules/users/user.repository.js";
 
-/**
- * Creates or updates the PostgreSQL profile belonging to the verified
- * Firebase user and attaches it to the current request.
- *
- * This middleware must run after requireAuth.
- */
+// Creates or updates the PostgreSQL profile belonging to the verified
+// Firebase user and attaches it to the current request. Must run after
+// requireAuth, since it reads request.auth.
 export const syncCurrentUser: RequestHandler = async (
   request,
   response,
@@ -15,6 +12,8 @@ export const syncCurrentUser: RequestHandler = async (
 ) => {
   const authenticatedUser = request.auth;
 
+  // requireAuth should have set this already; guard anyway in case this
+  // middleware gets mounted on a route without it.
   if (!authenticatedUser) {
     response.status(401).json({
       error: "Authentication required",
@@ -23,6 +22,8 @@ export const syncCurrentUser: RequestHandler = async (
   }
 
   try {
+    // Insert on first sign-in, or update on every subsequent request -
+    // keeps the local profile in sync with whatever Firebase has now.
     request.currentUser = await upsertUserFromFirebase({
       firebaseUid: authenticatedUser.uid,
       email: authenticatedUser.email ?? null,
@@ -31,8 +32,10 @@ export const syncCurrentUser: RequestHandler = async (
       emailVerified: authenticatedUser.email_verified ?? false,
     });
 
+    // Profile synced - continue to the actual route handler.
     next();
   } catch (error) {
+    // Pass database errors to Express's error handler.
     next(error);
   }
 };

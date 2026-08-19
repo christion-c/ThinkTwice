@@ -2,12 +2,8 @@ import type { RequestHandler } from "express";
 
 import { firebaseAuth } from "../config/firebase.js";
 
-/**
- * Protects an API route using Firebase Authentication.
- *
- * Expected request header:
- * Authorization: Bearer <firebase-id-token>
- */
+// Protects a route using Firebase Authentication. Expects the request
+// header: Authorization: Bearer <firebase-id-token>
 export const requireAuth: RequestHandler = async (
   request,
   response,
@@ -23,11 +19,12 @@ export const requireAuth: RequestHandler = async (
     return;
   }
 
-  // Separate "Bearer" from the token and reject malformed headers.
+  // Split "Bearer <token>" into its two parts.
   const headerParts = authorizationHeader.trim().split(/\s+/);
   const scheme = headerParts[0];
   const idToken = headerParts[1];
 
+  // Reject anything that isn't exactly "Bearer <token>".
   if (
     scheme?.toLowerCase() !== "bearer" ||
     !idToken ||
@@ -46,8 +43,10 @@ export const requireAuth: RequestHandler = async (
     // Make the verified Firebase user available to later route handlers.
     request.auth = decodedToken;
 
+    // Token is valid - continue to the actual route handler.
     next();
   } catch {
+    // Signature invalid, token expired, or wrong project.
     response.status(401).json({
       error: "Invalid or expired authentication token",
     });

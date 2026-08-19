@@ -24,6 +24,7 @@ interface FillUpRow {
   recorded_at: Date;
 }
 
+// NUMERIC columns come back as strings from the pg driver - convert each to a number.
 function mapRow(row: FillUpRow): FillUpEntry {
   return {
     milesDriven: Number(row.miles_driven),
@@ -36,10 +37,12 @@ function mapRow(row: FillUpRow): FillUpEntry {
   };
 }
 
+// Saves one fill-up entry for the given user.
 export async function insertFillUpHistory(
   userId: string,
   entry: FillUpEntryInput,
 ): Promise<void> {
+  // Default to now when the caller didn't send an explicit timestamp.
   const recordedAt = entry.recordedAt ? new Date(entry.recordedAt) : new Date();
 
   await database.query(
@@ -63,13 +66,11 @@ export async function insertFillUpHistory(
   );
 }
 
-/**
- * Same data as listFillUpHistoryByUserId, keyed by Firebase UID instead of
- * the internal user id. Exists for the ML service's internal-only route
- * (see fill-up-history.routes.ts's GET /internal), which only has the
- * Firebase UID on hand and has no reason to resolve it to a Postgres user
- * row first.
- */
+// Same data as listFillUpHistoryByUserId, keyed by Firebase UID instead
+// of the internal user id. Exists for the ML service's internal-only
+// route (see fill-up-history.routes.ts's GET /internal), which only has
+// the Firebase UID on hand and has no reason to resolve it to a
+// Postgres user row first.
 export async function listFillUpHistoryByFirebaseUid(
   firebaseUid: string,
 ): Promise<FillUpEntry[]> {
@@ -89,6 +90,7 @@ export async function listFillUpHistoryByFirebaseUid(
   return result.rows.map(mapRow);
 }
 
+// Returns fill-up history for the given user, newest first.
 export async function listFillUpHistoryByUserId(
   userId: string,
 ): Promise<FillUpEntry[]> {

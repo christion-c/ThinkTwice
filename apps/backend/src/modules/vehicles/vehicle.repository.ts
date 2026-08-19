@@ -52,12 +52,7 @@ interface VehicleRow {
   updated_at: Date;
 }
 
-/**
- * Converts a PostgreSQL vehicle row into the application's vehicle format.
- *
- * PostgreSQL NUMERIC values are returned as strings, so gallon capacity and
- * MPG are converted to numbers here.
- */
+// Converts a PostgreSQL vehicle row into the application's vehicle format.
 function mapVehicleRow(row: VehicleRow): Vehicle {
   return {
     id: row.id,
@@ -66,6 +61,8 @@ function mapVehicleRow(row: VehicleRow): Vehicle {
     make: row.make,
     model: row.model,
     modelYear: row.model_year,
+    // NUMERIC columns come back as strings from the pg driver - convert
+    // to a number here, but keep null as null rather than coercing to 0.
     tankCapacityGallons:
       row.tank_capacity_gallons === null
         ? null
@@ -77,9 +74,7 @@ function mapVehicleRow(row: VehicleRow): Vehicle {
   };
 }
 
-/**
- * Creates a vehicle owned by the authenticated user.
- */
+// Creates a vehicle owned by the authenticated user.
 export async function createVehicle(
   input: CreateVehicleInput,
 ): Promise<Vehicle> {
@@ -121,6 +116,7 @@ export async function createVehicle(
 
   const vehicle = result.rows[0];
 
+  // INSERT ... RETURNING should always yield exactly one row.
   if (!vehicle) {
     throw new Error("PostgreSQL did not return the created vehicle.");
   }
@@ -128,9 +124,7 @@ export async function createVehicle(
   return mapVehicleRow(vehicle);
 }
 
-/**
- * Returns only the vehicles belonging to the specified user.
- */
+// Returns only the vehicles belonging to the specified user.
 export async function listVehiclesForUser(
   userId: string,
 ): Promise<Vehicle[]> {
@@ -157,21 +151,19 @@ export async function listVehiclesForUser(
   return result.rows.map(mapVehicleRow);
 }
 
-/**
- * Updates a vehicle only when it belongs to the specified user.
- *
- * Every column is set via a CASE WHEN <field was present> guard rather than
- * building the SET clause dynamically per-request: it keeps the query text
- * (and therefore its prepared-statement plan) identical across calls
- * regardless of which fields a given PATCH included, while still only
- * touching the columns the caller actually sent.
- */
+// Updates a vehicle only when it belongs to the specified user.
 export async function updateVehicleForUser(
   input: UpdateVehicleInput,
 ): Promise<Vehicle | null> {
+  // True only for fields the caller actually sent in the PATCH body.
   const has = (field: keyof UpdateVehicleInput) =>
     Object.prototype.hasOwnProperty.call(input, field);
 
+  // Every column below is set via a CASE WHEN <field was present> guard
+  // rather than building the SET clause dynamically per-request: this
+  // keeps the query text (and its prepared-statement plan) identical
+  // across calls regardless of which fields a given PATCH included,
+  // while still only touching the columns the caller actually sent.
   const result = await database.query<VehicleRow>(
     `
       UPDATE vehicles
@@ -227,12 +219,11 @@ export async function updateVehicleForUser(
 
   const vehicle = result.rows[0];
 
+  // No row means either the vehicle doesn't exist or belongs to someone else.
   return vehicle ? mapVehicleRow(vehicle) : null;
 }
 
-/**
- * Deletes a vehicle only when it belongs to the specified user.
- */
+// Deletes a vehicle only when it belongs to the specified user.
 export async function deleteVehicleForUser(
   vehicleId: string,
   userId: string,
@@ -246,5 +237,6 @@ export async function deleteVehicleForUser(
     [vehicleId, userId],
   );
 
+  // Exactly one row deleted means it existed and belonged to this user.
   return result.rowCount === 1;
 }
