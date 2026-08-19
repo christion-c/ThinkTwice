@@ -8,7 +8,7 @@
         "./*"
       ],
       "@thinktwice/shared-types": [
-        "../../packages/shared-types/index.ts"
+        "../../packages/shared-types/index.d.ts"
       ]
     }
   },

@@ -3,5 +3,5 @@
   "version": "0.1.0",
   "private": true,
   "description": "Type-only API contract shapes shared between apps/backend and apps/frontend. No runtime code — consumed via tsconfig path aliases, not npm install.",
-  "types": "index.ts"
+  "types": "index.d.ts"
 }
