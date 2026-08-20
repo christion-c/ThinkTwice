@@ -1,4 +1,5 @@
 import { database } from "../../db/pool.js";
+import { expectOneRow } from "../../lib/db-helpers.js";
 
 // User information received from a verified Firebase ID token.
 export interface UpsertUserInput {
@@ -91,12 +92,7 @@ export async function upsertUserFromFirebase(
     ],
   );
 
-  const user = result.rows[0];
-
-  // INSERT ... RETURNING should always provide one row.
-  if (!user) {
-    throw new Error("PostgreSQL did not return the created user.");
-  }
+  const user = expectOneRow(result, "created user");
 
   return mapUserRow(user);
 }

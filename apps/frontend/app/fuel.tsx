@@ -1,73 +1,38 @@
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import { useCallback } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
 import StepFlowModal from "../components/StepFlowModal";
-import { useAuth } from "../components/AuthProvider";
 import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { useVehicle } from "../components/VehicleContext";
-import { saveFillUpHistory } from "../lib/backend-api";
 import { shadows } from "../components/theme";
 import Card from "../components/ui/Card";
 import CardText from "../components/ui/CardText";
 import CardTitle from "../components/ui/CardTitle";
+import PrimaryButton from "../components/ui/PrimaryButton";
+import StatTile from "../components/ui/StatTile";
 import StatusMessage from "../components/ui/StatusMessage";
+import VehicleSelector from "../components/fuel/VehicleSelector";
 import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
-import { useStepFlow, type StepFlowStepConfig } from "../hooks/useStepFlow";
-
-const moneyFormat = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
-type FuelCheckinStepKey = "gallons" | "price" | "miles" | "tankLevel";
-type VehicleDetailsStepKey = "nickname" | "year" | "make" | "model" | "mpg" | "tank";
-
-const FUEL_CHECKIN_STEPS: StepFlowStepConfig<FuelCheckinStepKey>[] = [
-  { key: "gallons", title: "Gallons", hint: "Enter the gallons you put in your tank this fill-up.", placeholder: "0", keyboardType: "decimal-pad" },
-  { key: "price", title: "Price per gallon", hint: "Enter the price you paid per gallon.", placeholder: "0.00", keyboardType: "decimal-pad" },
-  { key: "miles", title: "Miles since last fill-up", hint: "Enter the miles you drove since your previous fill-up.", placeholder: "0", keyboardType: "decimal-pad" },
-  { key: "tankLevel", title: "Tank level", hint: "Enter how full the tank is right now.", placeholder: "0%", keyboardType: "decimal-pad" },
-];
-
-const VEHICLE_DETAILS_STEPS: StepFlowStepConfig<VehicleDetailsStepKey>[] = [
-  { key: "nickname", title: "Nickname", hint: "Enter a nickname for this vehicle.", placeholder: "eg. My daily driver", keyboardType: "default", autoCapitalize: "words", autoCorrect: true },
-  { key: "year", title: "Year", hint: "Enter the model year.", placeholder: "eg. 2016", keyboardType: "number-pad", autoCapitalize: "none", autoCorrect: false },
-  { key: "make", title: "Make", hint: "Enter the make.", placeholder: "eg. Toyota, Ford, Nissan", keyboardType: "default", autoCapitalize: "words", autoCorrect: true },
-  { key: "model", title: "Model", hint: "Enter the model.", placeholder: "Model Name", keyboardType: "default", autoCapitalize: "words", autoCorrect: true },
-  { key: "mpg", title: "MPG", hint: "Enter the vehicle’s average MPG.", placeholder: "0", keyboardType: "decimal-pad", autoCapitalize: "none", autoCorrect: false },
-  { key: "tank", title: "Tank size", hint: "Enter the tank size in gallons.", placeholder: "0", keyboardType: "decimal-pad", autoCapitalize: "none", autoCorrect: false },
-];
+import { useFuelCheckinFlow } from "../hooks/useFuelCheckinFlow";
+import { formatCurrency } from "../lib/money-format";
 
 export default function Fuel() {
   const colors = useThemeColors();
-  const { user } = useAuth();
   const {
     vehicles,
-    selectedVehicle,
     selectedVehicleId,
     loading,
     errorMessage,
     refreshVehicles,
     selectVehicle,
-    syncVehicle,
   } = useVehicle();
   const {
     fuelGallonsInput,
-    setFuelGallonsInput,
-    fuelPriceInput,
-    setFuelPriceInput,
-    milesPerWeekInput,
-    setMilesPerWeekInput,
     combinedMpgInput,
-    setCombinedMpgInput,
-    tankCapacityInput,
-    setTankCapacityInput,
-    currentTankPercentInput,
-    setCurrentTankPercentInput,
     projectedFillUpCost,
     projectedDaysUntilFillUp,
     monthlyFuelBudget,
@@ -80,130 +45,9 @@ export default function Fuel() {
     }, [refreshFinance, refreshVehicles]),
   );
 
-  const [nicknameInput, setNicknameInput] = useState("");
-  const [makeInput, setMakeInput] = useState("");
-  const [modelInput, setModelInput] = useState("");
-  const [modelYearInput, setModelYearInput] = useState("");
-  const [fillUpDateInput, setFillUpDateInput] = useState(() => getTodayIsoDateString());
-  const [saveMessage, setSaveMessage] = useState("");
-  const hasExistingVehicle = Boolean(vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0]);
   const webKeyboardInset = useWebKeyboardInset();
-
-  useEffect(() => {
-    setNicknameInput(selectedVehicle?.nickname ?? "");
-    setMakeInput(selectedVehicle?.make ?? "");
-    setModelInput(selectedVehicle?.model ?? "");
-    setModelYearInput(
-      selectedVehicle?.modelYear === null || selectedVehicle?.modelYear === undefined
-        ? ""
-        : String(selectedVehicle.modelYear),
-    );
-    setSaveMessage("");
-  }, [selectedVehicle]);
-
-  const handleSaveVehicle = async (values: {
-    nickname: string;
-    make: string;
-    model: string;
-    modelYear: number | null;
-    tankCapacityGallons: number | null;
-    combinedMpg: number | null;
-  }) => {
-    setSaveMessage("");
-
-    try {
-      await syncVehicle(values);
-      setSaveMessage("Vehicle Saved.");
-    } catch {
-      // Vehicle context provides the error message.
-    }
-  };
-
-  const persistFillUpHistory = async () => {
-    if (!user) {
-      return;
-    }
-
-    const entryDate = normalizeDateInput(fillUpDateInput);
-
-    try {
-      await saveFillUpHistory(user, {
-        milesDriven: parseOptionalNumber(milesPerWeekInput) || 0,
-        fuelPrice: parseOptionalNumber(fuelPriceInput) || 0,
-        combinedMpg: parseOptionalNumber(combinedMpgInput) || 0,
-        tankCapacity: parseOptionalNumber(tankCapacityInput) || 0,
-        gallons: parseOptionalNumber(fuelGallonsInput) || 0,
-        observedCost:
-          (parseOptionalNumber(fuelGallonsInput) ?? 0) *
-          (parseOptionalNumber(fuelPriceInput) ?? 0),
-        recordedAt: entryDate.toISOString(),
-      });
-    } catch {
-      // Ignore history save failures so the fuel flow remains uninterrupted.
-    }
-  };
-
-  const fuelFlow = useStepFlow<FuelCheckinStepKey>({
-    steps: FUEL_CHECKIN_STEPS,
-    onStepConfirmed: (key, value) => {
-      if (key === "gallons") {
-        setFuelGallonsInput(value);
-      } else if (key === "price") {
-        setFuelPriceInput(value);
-      } else if (key === "miles") {
-        setMilesPerWeekInput(value);
-      } else {
-        setCurrentTankPercentInput(value);
-      }
-    },
-    onComplete: () => persistFillUpHistory(),
-  });
-
-  const vehicleFlow = useStepFlow<VehicleDetailsStepKey>({
-    steps: VEHICLE_DETAILS_STEPS,
-    onStepConfirmed: (key, value) => {
-      if (key === "nickname") {
-        setNicknameInput(value);
-      } else if (key === "year") {
-        setModelYearInput(value);
-      } else if (key === "make") {
-        setMakeInput(value);
-      } else if (key === "model") {
-        setModelInput(value);
-      } else if (key === "mpg") {
-        setCombinedMpgInput(value);
-      } else {
-        setTankCapacityInput(value);
-      }
-    },
-    onComplete: (values) =>
-      handleSaveVehicle({
-        nickname: values.nickname,
-        make: values.make,
-        model: values.model,
-        modelYear: parseOptionalInt(values.year),
-        tankCapacityGallons: parseOptionalNumber(values.tank),
-        combinedMpg: parseOptionalNumber(values.mpg),
-      }),
-  });
-
-  const startFuelFlow = () =>
-    fuelFlow.start({
-      gallons: fuelGallonsInput,
-      price: fuelPriceInput,
-      miles: milesPerWeekInput,
-      tankLevel: currentTankPercentInput,
-    });
-
-  const startVehicleFlow = () =>
-    vehicleFlow.start({
-      nickname: nicknameInput,
-      year: modelYearInput,
-      make: makeInput,
-      model: modelInput,
-      mpg: combinedMpgInput,
-      tank: tankCapacityInput,
-    });
+  const { fuelFlow, vehicleFlow, startFuelFlow, startVehicleFlow, saveMessage } = useFuelCheckinFlow();
+  const hasExistingVehicle = Boolean(vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0]);
 
   return (
     <PageScaffold
@@ -213,9 +57,9 @@ export default function Fuel() {
     >
       <Card>
         <CardTitle>Forecast</CardTitle>
-        <CardText>Estimated next refill cost: {moneyFormat.format(projectedFillUpCost)}</CardText>
+        <CardText>Estimated next refill cost: {formatCurrency(projectedFillUpCost)}</CardText>
         <CardText>Estimated days remaining: {Math.max(projectedDaysUntilFillUp, 0).toFixed(1)}</CardText>
-        <CardText>Monthly fuel reserve: {moneyFormat.format(monthlyFuelBudget)}</CardText>
+        <CardText>Monthly fuel reserve: {formatCurrency(monthlyFuelBudget)}</CardText>
       </Card>
 
       <Card padding="md">
@@ -243,36 +87,14 @@ export default function Fuel() {
           </View>
         ) : null}
 
-        {vehicles.length > 0 ? (
-          <View className="flex-row flex-wrap gap-xs">
-            {vehicles.map((vehicle) => {
-              const active = vehicle.id === selectedVehicleId;
-
-              return (
-                <Pressable
-                  key={vehicle.id}
-                  onPress={() => selectVehicle(vehicle.id)}
-                  className={`rounded-round border px-sm py-1.5 ${
-                    active ? "border-accent bg-[rgba(45,212,191,0.18)]" : "border-border bg-surfaceSoft"
-                  }`}
-                >
-                  <Text className={`text-[13px] font-semibold ${active ? "text-accent" : "text-textMuted"}`}>
-                    {vehicle.nickname}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : (
-          <Text className="text-sm text-textMuted">
-            No vehicles yet. Fill these fields and save to create your first one.
-          </Text>
-        )}
+        <VehicleSelector vehicles={vehicles} selectedVehicleId={selectedVehicleId} onSelect={selectVehicle} />
 
         <View className="gap-sm">
-          <Pressable onPress={startVehicleFlow} className="items-center rounded-md bg-accent py-3">
-            <Text className="text-[15px] font-bold text-accentDeep">{hasExistingVehicle ? "Update vehicle details" : "Add vehicle details"}</Text>
-          </Pressable>
+          <PrimaryButton
+            onPress={startVehicleFlow}
+            label={hasExistingVehicle ? "Update vehicle details" : "Add vehicle details"}
+            textClassName="text-[15px]"
+          />
         </View>
 
         <StatusMessage message={errorMessage} tone="error" />
@@ -280,37 +102,30 @@ export default function Fuel() {
       </Card>
 
       <View className="flex-row gap-sm">
-        <View style={shadows.soft} className="flex-1 gap-xs rounded-md border border-border bg-surface p-md">
-          <Text className="text-[13px] uppercase tracking-[0.4px] text-textMuted">Fill-Up Gallons</Text>
-          <Text className="text-[28px] font-bold text-text">{fuelGallonsInput || "0"}</Text>
-        </View>
-        <View style={shadows.soft} className="flex-1 gap-xs rounded-md border border-border bg-surface p-md">
-          <Text className="text-[13px] uppercase tracking-[0.4px] text-textMuted">Current MPG</Text>
-          <Text className="text-[28px] font-bold text-text">{combinedMpgInput || "0"}</Text>
-        </View>
+        <StatTile
+          label="Fill-Up Gallons"
+          value={fuelGallonsInput || "0"}
+          style={shadows.soft}
+          className="flex-1 gap-xs rounded-md border border-border bg-surface p-md"
+          labelClassName="text-[13px] uppercase tracking-[0.4px] text-textMuted"
+          valueClassName="text-[28px] font-bold text-text"
+        />
+        <StatTile
+          label="Current MPG"
+          value={combinedMpgInput || "0"}
+          style={shadows.soft}
+          className="flex-1 gap-xs rounded-md border border-border bg-surface p-md"
+          labelClassName="text-[13px] uppercase tracking-[0.4px] text-textMuted"
+          valueClassName="text-[28px] font-bold text-text"
+        />
       </View>
 
       <Card padding="md">
         <CardTitle>Fuel Check-In</CardTitle>
         <Text className="text-sm text-textMuted">Check in after every fill-up.</Text>
 
-        <View className="flex-1 gap-1.5">
-          <Text className="text-[13px] font-semibold text-textMuted">Check-in date</Text>
-          <TextInput
-            value={fillUpDateInput}
-            onChangeText={setFillUpDateInput}
-            className="rounded-sm border border-border bg-surfaceSoft px-sm py-2.5 text-base text-text"
-            placeholder="YYYY-MM-DD"
-            keyboardType="default"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
-
         <View className="gap-sm">
-          <Pressable onPress={startFuelFlow} className="items-center rounded-md bg-accent py-3">
-            <Text className="text-[15px] font-bold text-accentDeep">Start fuel check-in</Text>
-          </Pressable>
+          <PrimaryButton onPress={startFuelFlow} label="Start fuel check-in" textClassName="text-[15px]" />
         </View>
       </Card>
 
@@ -337,38 +152,4 @@ export default function Fuel() {
       />
     </PageScaffold>
   );
-}
-
-function getTodayIsoDateString() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function normalizeDateInput(dateInput: string) {
-  const candidate = dateInput && !Number.isNaN(Date.parse(dateInput))
-    ? new Date(`${dateInput}T12:00:00`)
-    : new Date();
-
-  return Number.isNaN(candidate.getTime()) ? new Date() : candidate;
-}
-
-function parseOptionalNumber(value: string) {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return null;
-  }
-
-  const parsedValue = Number.parseFloat(trimmedValue);
-  return Number.isFinite(parsedValue) ? parsedValue : null;
-}
-
-function parseOptionalInt(value: string) {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return null;
-  }
-
-  const parsedValue = Number.parseInt(trimmedValue, 10);
-  return Number.isFinite(parsedValue) ? parsedValue : null;
 }

@@ -67,35 +67,49 @@ def recency_weighted_average(values: list[float]) -> float | None:
     return weighted_sum / total_weight if total_weight > 0 else None
 
 
-def build_prediction(
-    miles_driven: int = 120,
-    user_id: str | None = None,
-    fuel_price: float | None = None,
-    combined_mpg: float | None = None,
-    tank_capacity: float | None = None,
-    gallons: float | None = None,
-) -> dict[str, Any]:
-    # Backs GET /ml-preview: blends a synthetic baseline with real user
-    # history. Returns a dict rather than a Pydantic model since this
-    # is a debug/preview endpoint whose response shape has grown
-    # organically and isn't a stable public contract the way
-    # PredictResponse is.
+def _rates(
+    entries: list[dict[str, Any]],
+    cost_key: str,
+    miles_key: str,
+    miles_default: float = 0.0,
+) -> list[float]:
+    # Shared "cost / miles" rate extraction used for both the synthetic
+    # dataset baseline and the user-history blend below: pulls cost_key
+    # and miles_key off each dict-like entry, dropping any entry whose
+    # cost or miles isn't a positive number. miles_default controls
+    # what a *missing* miles_key falls back to before the positivity
+    # check - 0 for dataset rows (which always carry a real
+    # miles_driven anyway), the requested miles_driven for history
+    # entries (so an entry missing that field isn't just discarded).
+    #
+    # predict_by_regression's cost-per-mile calc (below) is intentionally
+    # separate: it operates on already-filtered BudgetEntry objects
+    # (not dicts), and guards the division with max(miles, 1) rather
+    # than filtering, since filtering already happened upstream.
+    rates: list[float] = []
+    for entry in entries:
+        miles = float(entry.get(miles_key, miles_default) or 0)
+        cost = float(entry.get(cost_key, 0) or 0)
+        if miles > 0 and cost > 0:
+            rates.append(cost / miles)
+    return rates
 
-    # Step 1: derive a cost-per-mile baseline from the synthetic reference dataset.
-    rows = build_dataset()
 
-    dataset_cost_per_mile = [
-        float(row["fuel_cost"]) / float(row["miles_driven"])
-        for row in rows
-        if float(row.get("miles_driven", 0) or 0) > 0
-    ]
-    baseline_cost_per_mile = (
-        sum(dataset_cost_per_mile) / len(dataset_cost_per_mile)
-        if dataset_cost_per_mile else 0.29
-    )
-    baseline_prediction = round(miles_driven * baseline_cost_per_mile, 2)
+def _baseline_cost_per_mile(rows: list[dict[str, Any]]) -> float:
+    # Derives a cost-per-mile baseline from the synthetic reference
+    # dataset, falling back to a plausible flat rate if it has no
+    # usable rows.
+    dataset_rates = _rates(rows, "fuel_cost", "miles_driven")
+    return sum(dataset_rates) / len(dataset_rates) if dataset_rates else 0.29
 
-    # Step 2: if the user has fill-up history, blend it into the baseline.
+
+def _blend_with_history(
+    user_id: str | None,
+    miles_driven: int,
+    baseline_prediction: float,
+) -> tuple[float, int, bool, float]:
+    # If the user has fill-up history, blends it into the math
+    # baseline. Returns (fuel_prediction, history_count, blended, blend_weight).
     history = load_user_history(user_id=user_id)
     history_count = len(history)
     fuel_prediction = baseline_prediction
@@ -103,12 +117,9 @@ def build_prediction(
     blend_weight = 0.0
 
     if history_count > 0:
-        history_rates = []
-        for entry in history:
-            entry_miles = float(entry.get("miles_driven", miles_driven) or 0)
-            observed_cost = float(entry.get("observed_cost", 0) or 0)
-            if entry_miles > 0 and observed_cost > 0:
-                history_rates.append(observed_cost / entry_miles)
+        history_rates = _rates(
+            history, "observed_cost", "miles_driven", miles_default=miles_driven
+        )
 
         if history_rates:
             history_rate = recency_weighted_average(history_rates)
@@ -125,17 +136,19 @@ def build_prediction(
                 )
                 blended = True
 
-    # Step 3: assemble the response, including a human-readable explanation.
-    total_prediction = round(fuel_prediction, 2)
-    next_week = {
-        "miles_driven": miles_driven,
-        "fuel_price": fuel_price,
-        "combined_mpg": combined_mpg,
-        "tank_capacity": tank_capacity,
-        "gallons": gallons,
-    }
+    return fuel_prediction, history_count, blended, blend_weight
+
+
+def _build_explanation(
+    rows_count: int,
+    miles_driven: int,
+    baseline_prediction: float,
+    history_count: int,
+    blended: bool,
+    blend_weight: float,
+) -> str:
     explanation_parts = [
-        f"The math baseline uses a real-world cost-per-mile estimate from {len(rows)} reference fill-ups and then personalizes it with the user's fill-up history.",
+        f"The math baseline uses a real-world cost-per-mile estimate from {rows_count} reference fill-ups and then personalizes it with the user's fill-up history.",
         f"For {miles_driven} miles, the baseline estimate is ${baseline_prediction:.2f} for fuel.",
     ]
 
@@ -151,6 +164,45 @@ def build_prediction(
             "This account does not yet have enough history, so the estimate is using the math baseline cost-per-mile model.",
         )
 
+    return " ".join(explanation_parts)
+
+
+def build_prediction(
+    miles_driven: int = 120,
+    user_id: str | None = None,
+    fuel_price: float | None = None,
+    combined_mpg: float | None = None,
+    tank_capacity: float | None = None,
+    gallons: float | None = None,
+) -> dict[str, Any]:
+    # Backs GET /ml-preview: blends a synthetic baseline with real user
+    # history. Returns a dict rather than a Pydantic model since this
+    # is a debug/preview endpoint whose response shape has grown
+    # organically and isn't a stable public contract the way
+    # PredictResponse is.
+
+    # Step 1: derive a cost-per-mile baseline from the synthetic reference dataset.
+    rows = build_dataset()
+    baseline_cost_per_mile = _baseline_cost_per_mile(rows)
+    baseline_prediction = round(miles_driven * baseline_cost_per_mile, 2)
+
+    # Step 2: if the user has fill-up history, blend it into the baseline.
+    fuel_prediction, history_count, blended, blend_weight = _blend_with_history(
+        user_id, miles_driven, baseline_prediction
+    )
+
+    # Step 3: assemble the response, including a human-readable explanation.
+    total_prediction = round(fuel_prediction, 2)
+    next_week = {
+        "miles_driven": miles_driven,
+        "fuel_price": fuel_price,
+        "combined_mpg": combined_mpg,
+        "tank_capacity": tank_capacity,
+        "gallons": gallons,
+    }
+    explanation = _build_explanation(
+        len(rows), miles_driven, baseline_prediction, history_count, blended, blend_weight
+    )
     feedback = (
         f"Using the current miles-driven input and recent fuel history, the fuel preview is ${fuel_prediction:.2f}."
     )
@@ -163,7 +215,7 @@ def build_prediction(
         "total_prediction": total_prediction,
         "sample_rows": rows[:5],
         "feedback": feedback,
-        "explanation": " ".join(explanation_parts),
+        "explanation": explanation,
     }
 
 

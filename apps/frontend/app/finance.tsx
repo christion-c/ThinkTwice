@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Text, View } from "react-native";
 
 import { useThemeColors } from "../components/AppPreferences";
 import BottomNav from "../components/BottomNav";
@@ -9,14 +9,12 @@ import PageScaffold from "../components/PageScaffold";
 import Card from "../components/ui/Card";
 import CardText from "../components/ui/CardText";
 import CardTitle from "../components/ui/CardTitle";
+import PrimaryButton from "../components/ui/PrimaryButton";
+import StatTile from "../components/ui/StatTile";
 import { useWebKeyboardInset } from "../hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
 import { useStepFlow, type StepFlowStepConfig } from "../hooks/useStepFlow";
-
-const moneyFormat = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
+import { formatCurrency } from "../lib/money-format";
 
 type FinanceCheckinStepKey = "income" | "expense" | "bills";
 
@@ -83,11 +81,11 @@ export default function Finance() {
     >
       <Card>
         <CardTitle>Budget Snapshot</CardTitle>
-        <CardText tight>Take-home income: {moneyFormat.format(monthlyIncome)}</CardText>
-        <CardText tight>Variable spending: {moneyFormat.format(monthlyExpenses)}</CardText>
-        <CardText tight>Fixed costs: {moneyFormat.format(monthlyFixedCosts)}</CardText>
-        <CardText tight>Monthly Fuel Cost: {moneyFormat.format(monthlyFuelBudget)}</CardText>
-        <Text className="mt-xs text-base font-bold text-accent">Projected Available Balance: {moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
+        <CardText tight>Take-home income: {formatCurrency(monthlyIncome)}</CardText>
+        <CardText tight>Variable spending: {formatCurrency(monthlyExpenses)}</CardText>
+        <CardText tight>Fixed costs: {formatCurrency(monthlyFixedCosts)}</CardText>
+        <CardText tight>Monthly Fuel Cost: {formatCurrency(monthlyFuelBudget)}</CardText>
+        <Text className="mt-xs text-base font-bold text-accent">Projected Available Balance: {formatCurrency(projectedBudgetAfterEssentials)}</Text>
       </Card>
 
       <Card gap="xs" padding="md" className={isHealthy ? "border-success" : "border-danger"}>
@@ -98,29 +96,34 @@ export default function Finance() {
       </Card>
 
       <View className="flex-row flex-wrap gap-sm">
-        <Card gap="xs" padding="md" className="min-w-[30%] flex-1">
-          <Text className="text-[13px] uppercase tracking-[0.5px] text-textMuted">Weekly Budget</Text>
-          <Text className="text-[22px] font-bold text-text">{moneyFormat.format(weeklySpendTarget)}</Text>
-        </Card>
-        <Card gap="xs" padding="md" className="min-w-[30%] flex-1">
-          <Text className="text-[13px] uppercase tracking-[0.5px] text-textMuted">Fuel share</Text>
-          <Text className="text-[22px] font-bold text-text">
-            {monthlyIncome > 0 ? `${Math.round((monthlyFuelBudget / monthlyIncome) * 100)}%` : "0%"}
-          </Text>
-        </Card>
-        <Card gap="xs" padding="md" className="min-w-[30%] flex-1">
-          <Text className="text-[13px] uppercase tracking-[0.5px] text-textMuted">Spent each month</Text>
-          <Text className="text-[22px] font-bold text-text">{`${Math.round(spendingHabitRatio * 100)}%`}</Text>
-        </Card>
+        <StatTile
+          label="Weekly Budget"
+          value={formatCurrency(weeklySpendTarget)}
+          className="min-w-[30%] flex-1 gap-xs rounded-lg border border-border bg-surface p-md"
+          labelClassName="text-[13px] uppercase tracking-[0.5px] text-textMuted"
+          valueClassName="text-[22px] font-bold text-text"
+        />
+        <StatTile
+          label="Fuel share"
+          value={monthlyIncome > 0 ? `${Math.round((monthlyFuelBudget / monthlyIncome) * 100)}%` : "0%"}
+          className="min-w-[30%] flex-1 gap-xs rounded-lg border border-border bg-surface p-md"
+          labelClassName="text-[13px] uppercase tracking-[0.5px] text-textMuted"
+          valueClassName="text-[22px] font-bold text-text"
+        />
+        <StatTile
+          label="Spent each month"
+          value={`${Math.round(spendingHabitRatio * 100)}%`}
+          className="min-w-[30%] flex-1 gap-xs rounded-lg border border-border bg-surface p-md"
+          labelClassName="text-[13px] uppercase tracking-[0.5px] text-textMuted"
+          valueClassName="text-[22px] font-bold text-text"
+        />
       </View>
 
       <Card padding="md">
         <CardTitle>Budget Check-In</CardTitle>
 
         <View className="gap-sm">
-          <Pressable onPress={startFinanceFlow} className="items-center rounded-md bg-accent py-3">
-            <Text className="text-[15px] font-bold text-accentDeep">Start monthly check-in</Text>
-          </Pressable>
+          <PrimaryButton onPress={startFinanceFlow} label="Start monthly check-in" textClassName="text-[15px]" />
           <Text className="text-sm text-textMuted">Enter your monthly income, spending, and recurring bills one step at a time.</Text>
         </View>
       </Card>

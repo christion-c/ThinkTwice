@@ -1,4 +1,5 @@
 import { database } from "../../db/pool.js";
+import { expectOneRow } from "../../lib/db-helpers.js";
 
 export interface FinanceInputs {
   incomeInput: string;
@@ -136,12 +137,7 @@ export async function upsertFinanceInputsForUser(
     ],
   );
 
-  const row = result.rows[0];
-
-  // INSERT ... RETURNING should always yield exactly one row.
-  if (!row) {
-    throw new Error("PostgreSQL did not return the upserted finance inputs.");
-  }
+  const row = expectOneRow(result, "upserted finance inputs");
 
   return mapRow(row);
 }

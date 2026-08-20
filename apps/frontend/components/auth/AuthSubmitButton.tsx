@@ -1,4 +1,4 @@
-import { Pressable, Text } from "react-native";
+import PrimaryButton from "../ui/PrimaryButton";
 
 interface AuthSubmitButtonProps {
   onPress: () => void;
@@ -17,12 +17,12 @@ export default function AuthSubmitButton({
   disabled = false,
 }: AuthSubmitButtonProps) {
   return (
-    <Pressable
+    <PrimaryButton
       onPress={onPress}
       disabled={isSubmitting || disabled}
-      className="items-center rounded-md bg-accent py-3 active:opacity-85 disabled:opacity-85"
-    >
-      <Text className="text-base font-bold text-accentDeep">{isSubmitting ? submittingLabel : idleLabel}</Text>
-    </Pressable>
+      label={isSubmitting ? submittingLabel : idleLabel}
+      className="active:opacity-85 disabled:opacity-85"
+      textClassName="text-base"
+    />
   );
 }

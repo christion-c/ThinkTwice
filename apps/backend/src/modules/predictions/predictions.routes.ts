@@ -1,12 +1,10 @@
 import { Router } from "express";
 
-import type { BudgetPrediction } from "@thinktwice/shared-types";
-
-import { env } from "../../config/env.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
-import { requireCurrentUser } from "../../lib/route-helpers.js";
+import { withCurrentUser } from "../../lib/route-helpers.js";
 import { listBudgetEntriesForUser } from "../budget/budget.repository.js";
+import { requestForecast } from "./predictions.client.js";
 
 export const predictionsRouter = Router();
 
@@ -23,14 +21,9 @@ predictionsRouter.use(requireAuth, syncCurrentUser);
 
 // Returns a spending forecast for the authenticated user, built from
 // their logged budget entries by the ML service.
-predictionsRouter.get("/", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
-
-  if (!currentUser) {
-    return;
-  }
-
-  try {
+predictionsRouter.get(
+  "/",
+  withCurrentUser(async (currentUser, request, response) => {
     // Pull the user's most recent entries to send to the ML service.
     const entries = await listBudgetEntriesForUser(
       currentUser.id,
@@ -47,48 +40,27 @@ predictionsRouter.get("/", async (request, response, next) => {
       return;
     }
 
-    // Forward the entries to the ML service's prediction endpoint.
-    const mlResponse = await fetch(`${env.ML_SERVICE_URL}/predict`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        entries: entries.map((entry) => ({
-          date: entry.entryDate,
-          fuelCost: entry.fuelCost,
-          foodCost: entry.foodCost,
-          milesDriven: entry.milesDriven,
-          meals: entry.meals,
-        })),
-      }),
-    });
+    const outcome = await requestForecast(entries);
 
-    // The ML service reached us but couldn't produce a prediction.
-    if (!mlResponse.ok) {
-      response.status(502).json({
-        error: "The prediction service could not process this request",
-      });
-      return;
-    }
-
-    const prediction = (await mlResponse.json()) as BudgetPrediction;
-
-    // Success - hand the prediction back to the frontend.
-    response.status(200).json({
-      available: true,
-      prediction,
-    });
-  } catch (error) {
-    if (error instanceof TypeError) {
-      // fetch() throws a TypeError for network-level failures (service
-      // unreachable, connection refused, DNS failure).
+    if (outcome.status === "unreachable") {
       response.status(502).json({
         error: "The prediction service is currently unreachable",
       });
       return;
     }
 
-    next(error);
-  }
-});
+    // The ML service reached us but couldn't produce a prediction.
+    if (outcome.status === "service-error") {
+      response.status(502).json({
+        error: "The prediction service could not process this request",
+      });
+      return;
+    }
+
+    // Success - hand the prediction back to the frontend.
+    response.status(200).json({
+      available: true,
+      prediction: outcome.prediction,
+    });
+  }),
+);

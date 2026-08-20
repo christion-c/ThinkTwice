@@ -13,12 +13,7 @@ import Card from "../../components/ui/Card";
 import CardText from "../../components/ui/CardText";
 import CardTitle from "../../components/ui/CardTitle";
 import { useRefetchOnFocus } from "../../hooks/useRefetchOnFocus";
-
-const moneyFormat = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
+import { formatCurrencyWhole } from "../../lib/money-format";
 
 export default function Profile() {
   const colors = useThemeColors();
@@ -50,7 +45,7 @@ export default function Profile() {
         <CardTitle>Account Snapshot</CardTitle>
         <CardText>Signed in as {accountLabel}.</CardText>
         <CardText>Cloud Status: {backendUser ? "Connected" : loading ? "Loading" : "Not synced yet"}</CardText>
-        <CardText>Current monthly fuel cost: {moneyFormat.format(monthlyFuelBudget)}</CardText>
+        <CardText>Current monthly fuel cost: {formatCurrencyWhole(monthlyFuelBudget)}</CardText>
         <Text className="mt-0.5 text-sm font-semibold text-accent">Appearance: {colorMode === "dark" ? "Dark" : "Light"}</Text>
       </Card>
 

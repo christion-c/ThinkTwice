@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
+import { requireCurrentUser } from "../../lib/route-helpers.js";
 
 export const authRouter = Router();
 
@@ -11,15 +12,14 @@ authRouter.get(
   requireAuth,
   syncCurrentUser,
   (request, response) => {
-    if (!request.currentUser) {
-      response.status(500).json({
-        error: "User profile unavailable",
-      });
+    const currentUser = requireCurrentUser(request, response);
+
+    if (!currentUser) {
       return;
     }
 
     response.status(200).json({
-      user: request.currentUser,
+      user: currentUser,
     });
   },
 );

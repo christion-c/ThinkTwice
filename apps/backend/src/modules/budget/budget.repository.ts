@@ -1,4 +1,5 @@
 import { database } from "../../db/pool.js";
+import { expectOneRow, numericOrNull } from "../../lib/db-helpers.js";
 
 export interface CreateBudgetEntryInput {
   userId: string;
@@ -40,10 +41,9 @@ function mapBudgetEntryRow(row: BudgetEntryRow): BudgetEntry {
     userId: row.user_id,
     entryDate: row.entry_date,
     // NUMERIC columns come back as strings from the pg driver.
-    fuelCost: row.fuel_cost === null ? null : Number(row.fuel_cost),
-    foodCost: row.food_cost === null ? null : Number(row.food_cost),
-    milesDriven:
-      row.miles_driven === null ? null : Number(row.miles_driven),
+    fuelCost: numericOrNull(row.fuel_cost),
+    foodCost: numericOrNull(row.food_cost),
+    milesDriven: numericOrNull(row.miles_driven),
     // meals is already an INTEGER column, no conversion needed.
     meals: row.meals,
     createdAt: row.created_at,
@@ -88,12 +88,7 @@ export async function createBudgetEntry(
     ],
   );
 
-  const entry = result.rows[0];
-
-  // INSERT ... RETURNING should always yield exactly one row.
-  if (!entry) {
-    throw new Error("PostgreSQL did not return the created budget entry.");
-  }
+  const entry = expectOneRow(result, "created budget entry");
 
   return mapBudgetEntryRow(entry);
 }

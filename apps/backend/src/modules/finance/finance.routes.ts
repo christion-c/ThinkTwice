@@ -4,8 +4,8 @@ import { z } from "zod";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 import {
-  requireCurrentUser,
   respondWithValidationError,
+  withCurrentUser,
 } from "../../lib/route-helpers.js";
 import {
   getFinanceInputsForUser,
@@ -32,47 +32,33 @@ const financeInputsSchema = z
 financeRouter.use(requireAuth, syncCurrentUser);
 
 // Returns the authenticated user's persisted finance planner inputs.
-financeRouter.get("/inputs", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
-
-  if (!currentUser) {
-    return;
-  }
-
-  try {
+financeRouter.get(
+  "/inputs",
+  withCurrentUser(async (currentUser, request, response) => {
     const inputs = await getFinanceInputsForUser(currentUser.id);
     response.status(200).json({ inputs });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);
 
 // Upserts the authenticated user's finance planner inputs.
-financeRouter.put("/inputs", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
+financeRouter.put(
+  "/inputs",
+  withCurrentUser(async (currentUser, request, response) => {
+    const validationResult = financeInputsSchema.safeParse(request.body);
 
-  if (!currentUser) {
-    return;
-  }
+    if (!validationResult.success) {
+      respondWithValidationError(
+        response,
+        validationResult.error,
+        "Invalid finance inputs",
+      );
+      return;
+    }
 
-  const validationResult = financeInputsSchema.safeParse(request.body);
-
-  if (!validationResult.success) {
-    respondWithValidationError(
-      response,
-      validationResult.error,
-      "Invalid finance inputs",
-    );
-    return;
-  }
-
-  try {
     const inputs = await upsertFinanceInputsForUser(
       currentUser.id,
       validationResult.data,
     );
     response.status(200).json({ inputs });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);

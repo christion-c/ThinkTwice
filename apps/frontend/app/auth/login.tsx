@@ -18,6 +18,7 @@ import AuthTextField from "../../components/auth/AuthTextField";
 import PreviewModeNotice from "../../components/auth/PreviewModeNotice";
 import Card from "../../components/ui/Card";
 import StatusMessage from "../../components/ui/StatusMessage";
+import { getAuthErrorMessage } from "../../lib/auth-errors";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -104,7 +105,7 @@ export default function Login() {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       router.replace("/");
     } catch (error) {
-      setErrorMessage(getAuthErrorMessage(error));
+      setErrorMessage(getAuthErrorMessage(error, "Unable to sign in right now. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -227,23 +228,6 @@ export default function Login() {
       </Card>
     </PageScaffold>
   );
-}
-
-function getAuthErrorMessage(error: unknown) {
-  const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
-
-  switch (code) {
-    case "auth/invalid-email":
-      return "Please enter a valid email address.";
-    case "auth/user-not-found":
-    case "auth/wrong-password":
-    case "auth/invalid-credential":
-      return "Email or password is incorrect.";
-    case "auth/too-many-requests":
-      return "Too many attempts. Please try again later.";
-    default:
-      return "Unable to sign in right now. Please try again.";
-  }
 }
 
 function GoogleMark({ size = 18 }: { size?: number }) {

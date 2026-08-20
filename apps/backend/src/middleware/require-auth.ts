@@ -2,6 +2,25 @@ import type { RequestHandler } from "express";
 
 import { firebaseAuth } from "../config/firebase.js";
 
+// Parses an `Authorization` header of the form "Bearer <token>",
+// returning the token or null if the header isn't exactly that shape
+// (case-insensitive scheme, exactly one token after it).
+export function parseBearerToken(header: string): string | null {
+  const headerParts = header.trim().split(/\s+/);
+  const scheme = headerParts[0];
+  const idToken = headerParts[1];
+
+  if (
+    scheme?.toLowerCase() !== "bearer" ||
+    !idToken ||
+    headerParts.length !== 2
+  ) {
+    return null;
+  }
+
+  return idToken;
+}
+
 // Protects a route using Firebase Authentication. Expects the request
 // header: Authorization: Bearer <firebase-id-token>
 export const requireAuth: RequestHandler = async (
@@ -19,17 +38,10 @@ export const requireAuth: RequestHandler = async (
     return;
   }
 
-  // Split "Bearer <token>" into its two parts.
-  const headerParts = authorizationHeader.trim().split(/\s+/);
-  const scheme = headerParts[0];
-  const idToken = headerParts[1];
+  const idToken = parseBearerToken(authorizationHeader);
 
   // Reject anything that isn't exactly "Bearer <token>".
-  if (
-    scheme?.toLowerCase() !== "bearer" ||
-    !idToken ||
-    headerParts.length !== 2
-  ) {
+  if (!idToken) {
     response.status(401).json({
       error: "Authorization header must use Bearer authentication",
     });

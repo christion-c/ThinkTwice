@@ -1,11 +1,12 @@
 import { router } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useState } from "react";
-import { Pressable, Switch, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { useAppPreferences, useThemeColors } from "../../components/AppPreferences";
 import PageScaffold from "../../components/PageScaffold";
 import SettingsBackButton from "../../components/settings/SettingsBackButton";
+import SettingToggleRow from "../../components/settings/SettingToggleRow";
 import Card from "../../components/ui/Card";
 import CardText from "../../components/ui/CardText";
 import CardTitle from "../../components/ui/CardTitle";
@@ -82,22 +83,21 @@ export default function ProfileSettings() {
       <Card>
         <CardTitle>Basic Options</CardTitle>
 
-        <View className="flex-row items-center justify-between gap-md py-1.5">
-          <View className="flex-1 gap-0.5">
-            <Text className="text-base font-semibold text-text">Compact Cards</Text>
-            <Text className="text-sm text-textMuted">Use tighter spacing in cards.</Text>
-          </View>
-          <Switch value={compactCards} onValueChange={setCompactCards} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
-        </View>
+        <SettingToggleRow
+          title="Compact Cards"
+          caption="Use tighter spacing in cards."
+          value={compactCards}
+          onValueChange={setCompactCards}
+          colors={colors}
+        />
 
-        <View className="flex-row items-center justify-between gap-md py-1.5">
-          <View className="flex-1 gap-0.5">
-            <Text className="text-base font-semibold text-text">High Contrast</Text>
-            <Text className="text-sm text-textMuted">Increase visual separation and stronger text colors.</Text>
-          </View>
-          <Switch value={highContrast} onValueChange={setHighContrast} trackColor={{ false: colors.surfaceSoft, true: colors.accent }} />
-        </View>
-
+        <SettingToggleRow
+          title="High Contrast"
+          caption="Increase visual separation and stronger text colors."
+          value={highContrast}
+          onValueChange={setHighContrast}
+          colors={colors}
+        />
       </Card>
 
       <Card>

@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { ZodError, ZodType } from "zod";
 
 import type { UserProfile } from "../modules/users/user.repository.js";
@@ -23,6 +23,46 @@ export function requireCurrentUser(
   return currentUser;
 }
 
+// Wraps an async route handler so a rejected promise is forwarded to
+// Express's error middleware via `next`, instead of crashing the
+// process or hanging the request. Express only does this
+// automatically for synchronous throws, not rejected promises.
+export function asyncHandler(
+  handler: (
+    request: Request,
+    response: Response,
+    next: NextFunction,
+  ) => Promise<void>,
+): RequestHandler {
+  return (request, response, next) => {
+    handler(request, response, next).catch(next);
+  };
+}
+
+// Wraps a route handler that needs the current user: resolves
+// requireCurrentUser, bails out (the 500 response already sent) when
+// it's missing, and otherwise calls through with the resolved profile.
+// Combines this with asyncHandler's promise-rejection forwarding since
+// every current-user route in this codebase is also async.
+export function withCurrentUser(
+  handler: (
+    currentUser: UserProfile,
+    request: Request,
+    response: Response,
+    next: NextFunction,
+  ) => Promise<void>,
+): RequestHandler {
+  return asyncHandler(async (request, response, next) => {
+    const currentUser = requireCurrentUser(request, response);
+
+    if (!currentUser) {
+      return;
+    }
+
+    await handler(currentUser, request, response, next);
+  });
+}
+
 // Responds with 400 and the field-level issues from a failed zod safeParse.
 export function respondWithValidationError(
   response: Response,
@@ -37,6 +77,14 @@ export function respondWithValidationError(
       field: issue.path.join("."),
       message: issue.message,
     })),
+  });
+}
+
+// Responds with 404 and a "<label> not found" message, for the
+// standard "delete/update matched no row owned by this user" case.
+export function respondNotFound(response: Response, label: string): void {
+  response.status(404).json({
+    error: `${label} not found`,
   });
 }
 

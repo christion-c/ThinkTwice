@@ -1,4 +1,5 @@
 import { database } from "../../db/pool.js";
+import { expectOneRow, numericOrNull } from "../../lib/db-helpers.js";
 
 export interface CreateVehicleInput {
   userId: string;
@@ -63,12 +64,8 @@ function mapVehicleRow(row: VehicleRow): Vehicle {
     modelYear: row.model_year,
     // NUMERIC columns come back as strings from the pg driver - convert
     // to a number here, but keep null as null rather than coercing to 0.
-    tankCapacityGallons:
-      row.tank_capacity_gallons === null
-        ? null
-        : Number(row.tank_capacity_gallons),
-    combinedMpg:
-      row.combined_mpg === null ? null : Number(row.combined_mpg),
+    tankCapacityGallons: numericOrNull(row.tank_capacity_gallons),
+    combinedMpg: numericOrNull(row.combined_mpg),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -114,12 +111,7 @@ export async function createVehicle(
     ],
   );
 
-  const vehicle = result.rows[0];
-
-  // INSERT ... RETURNING should always yield exactly one row.
-  if (!vehicle) {
-    throw new Error("PostgreSQL did not return the created vehicle.");
-  }
+  const vehicle = expectOneRow(result, "created vehicle");
 
   return mapVehicleRow(vehicle);
 }

@@ -1,4 +1,5 @@
 import { database } from "../../db/pool.js";
+import { numericOrNull } from "../../lib/db-helpers.js";
 
 export interface FillUpEntry {
   milesDriven: number;
@@ -27,12 +28,12 @@ interface FillUpRow {
 // NUMERIC columns come back as strings from the pg driver - convert each to a number.
 function mapRow(row: FillUpRow): FillUpEntry {
   return {
-    milesDriven: Number(row.miles_driven),
-    fuelPrice: Number(row.fuel_price),
-    combinedMpg: Number(row.combined_mpg),
-    tankCapacity: Number(row.tank_capacity),
-    gallons: Number(row.gallons),
-    observedCost: Number(row.observed_cost),
+    milesDriven: numericOrNull(row.miles_driven),
+    fuelPrice: numericOrNull(row.fuel_price),
+    combinedMpg: numericOrNull(row.combined_mpg),
+    tankCapacity: numericOrNull(row.tank_capacity),
+    gallons: numericOrNull(row.gallons),
+    observedCost: numericOrNull(row.observed_cost),
     recordedAt: row.recorded_at,
   };
 }

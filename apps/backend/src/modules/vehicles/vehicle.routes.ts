@@ -5,8 +5,9 @@ import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 import {
   parseRouteParam,
-  requireCurrentUser,
+  respondNotFound,
   respondWithValidationError,
+  withCurrentUser,
 } from "../../lib/route-helpers.js";
 import {
   createVehicle,
@@ -51,46 +52,34 @@ const vehicleIdSchema = z.uuid();
 vehicleRouter.use(requireAuth, syncCurrentUser);
 
 // Returns the authenticated user's vehicles.
-vehicleRouter.get("/", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
-
-  if (!currentUser) {
-    return;
-  }
-
-  try {
+vehicleRouter.get(
+  "/",
+  withCurrentUser(async (currentUser, request, response) => {
     const vehicles = await listVehiclesForUser(currentUser.id);
 
     response.status(200).json({
       vehicles,
     });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);
 
 // Creates a vehicle owned by the authenticated user.
-vehicleRouter.post("/", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
+vehicleRouter.post(
+  "/",
+  withCurrentUser(async (currentUser, request, response) => {
+    const validationResult = createVehicleSchema.safeParse(request.body);
 
-  if (!currentUser) {
-    return;
-  }
+    if (!validationResult.success) {
+      respondWithValidationError(
+        response,
+        validationResult.error,
+        "Invalid vehicle data",
+      );
+      return;
+    }
 
-  const validationResult = createVehicleSchema.safeParse(request.body);
+    const input = validationResult.data;
 
-  if (!validationResult.success) {
-    respondWithValidationError(
-      response,
-      validationResult.error,
-      "Invalid vehicle data",
-    );
-    return;
-  }
-
-  const input = validationResult.data;
-
-  try {
     const vehicle = await createVehicle({
       userId: currentUser.id,
       nickname: input.nickname,
@@ -104,93 +93,73 @@ vehicleRouter.post("/", async (request, response, next) => {
     response.status(201).json({
       vehicle,
     });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);
 
 // Updates a vehicle only when it belongs to the authenticated user.
-vehicleRouter.patch("/:vehicleId", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
+vehicleRouter.patch(
+  "/:vehicleId",
+  withCurrentUser(async (currentUser, request, response) => {
+    const vehicleId = parseRouteParam(response, vehicleIdSchema, request.params.vehicleId, "vehicle ID");
 
-  if (!currentUser) {
-    return;
-  }
+    if (!vehicleId) {
+      return;
+    }
 
-  const vehicleId = parseRouteParam(response, vehicleIdSchema, request.params.vehicleId, "vehicle ID");
+    const validationResult = updateVehicleSchema.safeParse(request.body);
 
-  if (!vehicleId) {
-    return;
-  }
+    if (!validationResult.success) {
+      respondWithValidationError(
+        response,
+        validationResult.error,
+        "Invalid vehicle data",
+      );
+      return;
+    }
 
-  const validationResult = updateVehicleSchema.safeParse(request.body);
+    // The repository distinguishes "field omitted" from "field explicitly
+    // set" via hasOwnProperty, and zod's partial schema already omits keys
+    // that weren't in the request body — so spreading `updates` preserves
+    // exactly the fields the client actually sent, nothing more.
+    const updateInput: UpdateVehicleInput = {
+      vehicleId,
+      userId: currentUser.id,
+      ...validationResult.data,
+    };
 
-  if (!validationResult.success) {
-    respondWithValidationError(
-      response,
-      validationResult.error,
-      "Invalid vehicle data",
-    );
-    return;
-  }
-
-  // The repository distinguishes "field omitted" from "field explicitly
-  // set" via hasOwnProperty, and zod's partial schema already omits keys
-  // that weren't in the request body — so spreading `updates` preserves
-  // exactly the fields the client actually sent, nothing more.
-  const updateInput: UpdateVehicleInput = {
-    vehicleId,
-    userId: currentUser.id,
-    ...validationResult.data,
-  };
-
-  try {
     const vehicle = await updateVehicleForUser(updateInput);
 
     if (!vehicle) {
-      response.status(404).json({
-        error: "Vehicle not found",
-      });
+      respondNotFound(response, "Vehicle");
       return;
     }
 
     response.status(200).json({
       vehicle,
     });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);
 
 // Deletes a vehicle only when it belongs to the authenticated user.
-vehicleRouter.delete("/:vehicleId", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
+vehicleRouter.delete(
+  "/:vehicleId",
+  withCurrentUser(async (currentUser, request, response) => {
+    const vehicleId = parseRouteParam(response, vehicleIdSchema, request.params.vehicleId, "vehicle ID");
 
-  if (!currentUser) {
-    return;
-  }
+    if (!vehicleId) {
+      return;
+    }
 
-  const vehicleId = parseRouteParam(response, vehicleIdSchema, request.params.vehicleId, "vehicle ID");
-
-  if (!vehicleId) {
-    return;
-  }
-
-  try {
     const deleted = await deleteVehicleForUser(
       vehicleId,
       currentUser.id,
     );
 
     if (!deleted) {
-      response.status(404).json({
-        error: "Vehicle not found",
-      });
+      respondNotFound(response, "Vehicle");
       return;
     }
 
     response.status(204).send();
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);

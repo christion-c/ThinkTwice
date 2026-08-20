@@ -1,7 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 
 import { useThemeColors } from "../components/AppPreferences";
@@ -10,20 +9,14 @@ import { useFinance } from "../components/FinanceContext";
 import PageScaffold from "../components/PageScaffold";
 import { shadows, type ThemeColors } from "../components/theme";
 import Card from "../components/ui/Card";
-import { useAuth } from "../components/AuthProvider";
+import StatTile from "../components/ui/StatTile";
 import { useVehicle } from "../components/VehicleContext";
 import { useRefetchOnFocus } from "../hooks/useRefetchOnFocus";
-
-const moneyFormat = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
+import { useSetupChecklist } from "../hooks/useSetupChecklist";
+import { formatCurrencyWhole } from "../lib/money-format";
 
 export default function Home() {
   const colors = useThemeColors();
-  const { user } = useAuth();
-  const [setupChecklistHidden, setSetupChecklistHidden] = useState(false);
   const {
     monthlyIncome,
     monthlyExpenses,
@@ -71,52 +64,7 @@ export default function Home() {
     },
   ];
 
-  const completionCount = setupSteps.filter((step) => step.complete).length;
-  const accountChecklistKey = user?.uid ? `thinktwice.setup-checklist.${user.uid}` : "thinktwice.setup-checklist.guest";
-  const shouldShowSetupChecklist = !setupChecklistHidden && completionCount < setupSteps.length;
-
-  useEffect(() => {
-    if (!user?.uid) {
-      setSetupChecklistHidden(false);
-      return;
-    }
-
-    const loadChecklistState = async () => {
-      try {
-        const storedValue = await AsyncStorage.getItem(accountChecklistKey);
-
-        if (!storedValue) {
-          return;
-        }
-
-        const parsedValue = JSON.parse(storedValue) as { hidden?: boolean };
-
-        if (typeof parsedValue.hidden === "boolean") {
-          setSetupChecklistHidden(parsedValue.hidden);
-        }
-      } catch {
-        // Ignore malformed persisted checklist state and keep defaults.
-      }
-    };
-
-    void loadChecklistState();
-  }, [accountChecklistKey, user?.uid]);
-
-  useEffect(() => {
-    if (completionCount === setupSteps.length && !setupChecklistHidden) {
-      setSetupChecklistHidden(true);
-    }
-  }, [completionCount, setupChecklistHidden, setupSteps.length]);
-
-  useEffect(() => {
-    if (!user?.uid) {
-      return;
-    }
-
-    if (setupChecklistHidden || completionCount === setupSteps.length) {
-      void AsyncStorage.setItem(accountChecklistKey, JSON.stringify({ hidden: true }));
-    }
-  }, [accountChecklistKey, completionCount, setupChecklistHidden, setupSteps.length, user?.uid]);
+  const { shouldShowSetupChecklist, completionCount } = useSetupChecklist(setupSteps);
 
   const fuelStatus =
     projectedDaysUntilFillUp <= 3
@@ -145,24 +93,33 @@ export default function Home() {
           </View>
         ) : null}
         <Text className="text-[15px] text-textMuted">Projected Free Cash This Month</Text>
-        <Text className="mt-xs text-[38px] font-bold text-text">{moneyFormat.format(projectedBudgetAfterEssentials)}</Text>
+        <Text className="mt-xs text-[38px] font-bold text-text">{formatCurrencyWhole(projectedBudgetAfterEssentials)}</Text>
         <Text className={`text-sm font-bold ${isBudgetHealthy ? "text-success" : "text-danger"}`}>{budgetStatus.title}</Text>
 
         <View className="mt-sm flex-row flex-wrap gap-sm">
-          <View className="min-w-[30%] grow rounded-md border border-border bg-surfaceSoft p-md">
-            <Text className="mb-1 text-textMuted">Income</Text>
-            <Text className="text-lg font-semibold text-success">{moneyFormat.format(monthlyIncome)}</Text>
-          </View>
+          <StatTile
+            label="Income"
+            value={formatCurrencyWhole(monthlyIncome)}
+            className="min-w-[30%] grow rounded-md border border-border bg-surfaceSoft p-md"
+            labelClassName="mb-1 text-textMuted"
+            valueClassName="text-lg font-semibold text-success"
+          />
 
-          <View className="min-w-[30%] grow rounded-md border border-border bg-surfaceSoft p-md">
-            <Text className="mb-1 text-textMuted">Spending</Text>
-            <Text className="text-base font-semibold text-danger">{moneyFormat.format(monthlyExpenses + monthlyFixedCosts)}</Text>
-          </View>
+          <StatTile
+            label="Spending"
+            value={formatCurrencyWhole(monthlyExpenses + monthlyFixedCosts)}
+            className="min-w-[30%] grow rounded-md border border-border bg-surfaceSoft p-md"
+            labelClassName="mb-1 text-textMuted"
+            valueClassName="text-base font-semibold text-danger"
+          />
 
-          <View className="min-w-[30%] grow rounded-md border border-border bg-surfaceSoft p-md">
-            <Text className="mb-1 text-textMuted">Fuel Budget</Text>
-            <Text className="text-base font-semibold text-text">{moneyFormat.format(monthlyFuelBudget)}</Text>
-          </View>
+          <StatTile
+            label="Fuel Budget"
+            value={formatCurrencyWhole(monthlyFuelBudget)}
+            className="min-w-[30%] grow rounded-md border border-border bg-surfaceSoft p-md"
+            labelClassName="mb-1 text-textMuted"
+            valueClassName="text-base font-semibold text-text"
+          />
         </View>
       </View>
 
@@ -174,7 +131,7 @@ export default function Home() {
       <Card padding="md" style={shadows.soft}>
         <Text className="text-base font-bold text-text">Tank Forecast</Text>
         <Text className="text-[22px] font-bold text-accent">{Math.max(projectedDaysUntilFillUp, 0).toFixed(1)} days until next fill-up</Text>
-        <Text className="text-sm leading-5 text-textMuted">Estimated refill cost: {moneyFormat.format(projectedFillUpCost)} based on your current fuel and mileage inputs.</Text>
+        <Text className="text-sm leading-5 text-textMuted">Estimated refill cost: {formatCurrencyWhole(projectedFillUpCost)} based on your current fuel and mileage inputs.</Text>
         <Text className="text-[13px] font-bold uppercase tracking-[0.5px] text-text">{fuelStatus}</Text>
       </Card>
 

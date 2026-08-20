@@ -1,10 +1,5 @@
+import { formatCurrencyWhole } from "./money-format";
 import { discretionaryShare, type SpendingBreakdown } from "./spending-categories";
-
-const moneyFormat = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
 
 // Discretionary spending above this share of logged costs gets called out.
 const HIGH_DISCRETIONARY_SHARE = 0.4;
@@ -38,7 +33,7 @@ export function getBudgetRecommendations(input: RecommendationInput): string[] {
 
   if (projectedBudgetAfterEssentials < 0) {
     recommendations.push(
-      `Your monthly plan runs ${moneyFormat.format(Math.abs(projectedBudgetAfterEssentials))} negative after essentials — tightening a fixed bill or two, or dialing back discretionary spending, would close most of that gap.`,
+      `Your monthly plan runs ${formatCurrencyWhole(Math.abs(projectedBudgetAfterEssentials))} negative after essentials — tightening a fixed bill or two, or dialing back discretionary spending, would close most of that gap.`,
     );
   }
 
@@ -52,7 +47,7 @@ export function getBudgetRecommendations(input: RecommendationInput): string[] {
 
   if (monthlyIncome > 0 && breakdown.essentialTotal / monthlyIncome > HIGH_FUEL_INCOME_SHARE) {
     recommendations.push(
-      `Fuel is running ${moneyFormat.format(breakdown.essentialTotal)} against your income — combining errands or checking tire pressure and maintenance can meaningfully improve efficiency.`,
+      `Fuel is running ${formatCurrencyWhole(breakdown.essentialTotal)} against your income — combining errands or checking tire pressure and maintenance can meaningfully improve efficiency.`,
     );
   }
 

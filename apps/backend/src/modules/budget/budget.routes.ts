@@ -5,8 +5,9 @@ import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
 import {
   parseRouteParam,
-  requireCurrentUser,
+  respondNotFound,
   respondWithValidationError,
+  withCurrentUser,
 } from "../../lib/route-helpers.js";
 import {
   createBudgetEntry,
@@ -34,14 +35,9 @@ const entryIdSchema = z.uuid();
 budgetRouter.use(requireAuth, syncCurrentUser);
 
 // Returns the authenticated user's most recent budget entries.
-budgetRouter.get("/", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
-
-  if (!currentUser) {
-    return;
-  }
-
-  try {
+budgetRouter.get(
+  "/",
+  withCurrentUser(async (currentUser, request, response) => {
     const entries = await listBudgetEntriesForUser(
       currentUser.id,
       MAX_ENTRIES_RETURNED,
@@ -50,33 +46,26 @@ budgetRouter.get("/", async (request, response, next) => {
     response.status(200).json({
       entries,
     });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);
 
 // Creates a budget entry owned by the authenticated user.
-budgetRouter.post("/", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
+budgetRouter.post(
+  "/",
+  withCurrentUser(async (currentUser, request, response) => {
+    const validationResult = createBudgetEntrySchema.safeParse(request.body);
 
-  if (!currentUser) {
-    return;
-  }
+    if (!validationResult.success) {
+      respondWithValidationError(
+        response,
+        validationResult.error,
+        "Invalid budget entry data",
+      );
+      return;
+    }
 
-  const validationResult = createBudgetEntrySchema.safeParse(request.body);
+    const input = validationResult.data;
 
-  if (!validationResult.success) {
-    respondWithValidationError(
-      response,
-      validationResult.error,
-      "Invalid budget entry data",
-    );
-    return;
-  }
-
-  const input = validationResult.data;
-
-  try {
     const entry = await createBudgetEntry({
       userId: currentUser.id,
       entryDate: input.entryDate,
@@ -89,40 +78,29 @@ budgetRouter.post("/", async (request, response, next) => {
     response.status(201).json({
       entry,
     });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);
 
 // Deletes a budget entry only when it belongs to the authenticated user.
-budgetRouter.delete("/:entryId", async (request, response, next) => {
-  const currentUser = requireCurrentUser(request, response);
+budgetRouter.delete(
+  "/:entryId",
+  withCurrentUser(async (currentUser, request, response) => {
+    const entryId = parseRouteParam(response, entryIdSchema, request.params.entryId, "budget entry ID");
 
-  if (!currentUser) {
-    return;
-  }
+    if (!entryId) {
+      return;
+    }
 
-  const entryId = parseRouteParam(response, entryIdSchema, request.params.entryId, "budget entry ID");
-
-  if (!entryId) {
-    return;
-  }
-
-  try {
     const deleted = await deleteBudgetEntryForUser(
       entryId,
       currentUser.id,
     );
 
     if (!deleted) {
-      response.status(404).json({
-        error: "Budget entry not found",
-      });
+      respondNotFound(response, "Budget entry");
       return;
     }
 
     response.status(204).send();
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);

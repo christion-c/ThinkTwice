@@ -10,6 +10,7 @@ import AuthTextField from "../../components/auth/AuthTextField";
 import PreviewModeNotice from "../../components/auth/PreviewModeNotice";
 import Card from "../../components/ui/Card";
 import StatusMessage from "../../components/ui/StatusMessage";
+import { getAuthErrorMessage } from "../../lib/auth-errors";
 import { auth, isFirebaseConfigured } from "../../lib/firebase";
 
 export default function Register() {
@@ -49,7 +50,7 @@ export default function Register() {
       await createUserWithEmailAndPassword(auth, email.trim(), password);
       router.replace("/");
     } catch (error) {
-      setErrorMessage(getAuthErrorMessage(error));
+      setErrorMessage(getAuthErrorMessage(error, "Unable to create account right now. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -116,19 +117,4 @@ export default function Register() {
       </Card>
     </PageScaffold>
   );
-}
-
-function getAuthErrorMessage(error: unknown) {
-  const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
-
-  switch (code) {
-    case "auth/invalid-email":
-      return "Please enter a valid email address.";
-    case "auth/email-already-in-use":
-      return "That email is already in use.";
-    case "auth/weak-password":
-      return "Password is too weak. Use a stronger one.";
-    default:
-      return "Unable to create account right now. Please try again.";
-  }
 }

@@ -4,7 +4,11 @@ import { z } from "zod";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { requireInternalService } from "../../middleware/require-internal-service.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
-import { requireCurrentUser } from "../../lib/route-helpers.js";
+import {
+  asyncHandler,
+  respondWithValidationError,
+  withCurrentUser,
+} from "../../lib/route-helpers.js";
 import {
   insertFillUpHistory,
   listFillUpHistoryByUserId,
@@ -30,37 +34,31 @@ export const entrySchema = z
   })
   .strict();
 
+// Query-param counterpart of entrySchema's body validation, for the
+// /internal route below - a non-empty string is the only requirement.
+const firebaseUidQuerySchema = z.string().min(1);
+
 // Saves a fill-up entry for the authenticated user.
 fillUpHistoryRouter.post(
   "/",
   requireAuth,
   syncCurrentUser,
-  async (request, response, next) => {
-    const currentUser = requireCurrentUser(request, response);
-
-    if (!currentUser) {
-      return;
-    }
-
+  withCurrentUser(async (currentUser, request, response) => {
     const result = entrySchema.safeParse(request.body);
 
     if (!result.success) {
-      response.status(400).json({ error: "Invalid fill-up data" });
+      respondWithValidationError(response, result.error, "Invalid fill-up data");
       return;
     }
 
-    try {
-      const { recordedAt, ...fillUpEntry } = result.data;
+    const { recordedAt, ...fillUpEntry } = result.data;
 
-      await insertFillUpHistory(currentUser.id, {
-        ...fillUpEntry,
-        ...(recordedAt ? { recordedAt: new Date(recordedAt) } : {}),
-      });
-      response.status(204).end();
-    } catch (error) {
-      next(error);
-    }
-  },
+    await insertFillUpHistory(currentUser.id, {
+      ...fillUpEntry,
+      ...(recordedAt ? { recordedAt: new Date(recordedAt) } : {}),
+    });
+    response.status(204).end();
+  }),
 );
 
 // Returns fill-up history for the authenticated user.
@@ -68,39 +66,32 @@ fillUpHistoryRouter.get(
   "/",
   requireAuth,
   syncCurrentUser,
-  async (request, response, next) => {
-    const currentUser = requireCurrentUser(request, response);
-
-    if (!currentUser) {
-      return;
-    }
-
-    try {
-      const entries = await listFillUpHistoryByUserId(currentUser.id);
-      response.status(200).json({ entries });
-    } catch (error) {
-      next(error);
-    }
-  },
+  withCurrentUser(async (currentUser, request, response) => {
+    const entries = await listFillUpHistoryByUserId(currentUser.id);
+    response.status(200).json({ entries });
+  }),
 );
 
 // Returns fill-up history for a Firebase UID. Internal-only - called
 // by the ML service on the Docker network.
-fillUpHistoryRouter.get("/internal", requireInternalService, async (request, response, next) => {
-  const firebaseUid =
-    typeof request.query["firebase_uid"] === "string"
-      ? request.query["firebase_uid"]
-      : null;
+fillUpHistoryRouter.get(
+  "/internal",
+  requireInternalService,
+  asyncHandler(async (request, response) => {
+    const result = firebaseUidQuerySchema.safeParse(
+      request.query["firebase_uid"],
+    );
 
-  if (!firebaseUid) {
-    response.status(400).json({ error: "firebase_uid query param required" });
-    return;
-  }
+    if (!result.success) {
+      respondWithValidationError(
+        response,
+        result.error,
+        "firebase_uid query param required",
+      );
+      return;
+    }
 
-  try {
-    const entries = await listFillUpHistoryByFirebaseUid(firebaseUid);
+    const entries = await listFillUpHistoryByFirebaseUid(result.data);
     response.status(200).json({ entries });
-  } catch (error) {
-    next(error);
-  }
-});
+  }),
+);
