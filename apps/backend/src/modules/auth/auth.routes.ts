@@ -2,7 +2,7 @@ import { Router } from "express";
 
 import { requireAuth } from "../../middleware/require-auth.js";
 import { syncCurrentUser } from "../../middleware/sync-current-user.js";
-import { requireCurrentUser } from "../../lib/route-helpers.js";
+import { withCurrentUser } from "../../lib/route-helpers.js";
 
 export const authRouter = Router();
 
@@ -11,15 +11,9 @@ authRouter.get(
   "/me",
   requireAuth,
   syncCurrentUser,
-  (request, response) => {
-    const currentUser = requireCurrentUser(request, response);
-
-    if (!currentUser) {
-      return;
-    }
-
+  withCurrentUser(async (currentUser, request, response) => {
     response.status(200).json({
       user: currentUser,
     });
-  },
+  }),
 );

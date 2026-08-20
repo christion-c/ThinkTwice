@@ -12,6 +12,7 @@ import Card from "../components/ui/Card";
 import CardTitle from "../components/ui/CardTitle";
 import { useMlPreview } from "../hooks/useMlPreview";
 import { fetchFillUpHistory, type SavedFillUpHistoryEntry } from "../lib/backend-api";
+import { formatCurrency } from "../lib/money-format";
 
 export default function MlPreviewPage() {
   const colors = useThemeColors();
@@ -67,8 +68,8 @@ export default function MlPreviewPage() {
         {data ? (
           <>
             <View className="flex-row gap-sm">
-              <MlMetricBox label="Projected fuel cost" value={`$${data.fuel_prediction.toFixed(2)}`} />
-              <MlMetricBox label="Budget total" value={`$${data.total_prediction.toFixed(2)}`} />
+              <MlMetricBox label="Projected fuel cost" value={formatCurrency(data.fuel_prediction)} />
+              <MlMetricBox label="Budget total" value={formatCurrency(data.total_prediction)} />
             </View>
 
             <View className="flex-row gap-sm">
@@ -102,9 +103,9 @@ export default function MlPreviewPage() {
                     <View key={`${entry.recordedAt ?? entry.observedCost}-${index}`} className="gap-0.5 rounded-md border border-border p-sm">
                       <Text className="text-[13px] text-textMuted">{entry.recordedAt ? new Date(entry.recordedAt).toLocaleDateString() : "Recorded date unavailable"}</Text>
                       <Text className="text-[13px] text-textMuted">Miles: {entry.milesDriven}</Text>
-                      <Text className="text-[13px] text-textMuted">Fuel price: ${entry.fuelPrice.toFixed(2)}</Text>
+                      <Text className="text-[13px] text-textMuted">Fuel price: {formatCurrency(entry.fuelPrice)}</Text>
                       <Text className="text-[13px] text-textMuted">Gallons: {entry.gallons.toFixed(2)}</Text>
-                      <Text className="text-[13px] text-textMuted">Observed cost: ${entry.observedCost.toFixed(2)}</Text>
+                      <Text className="text-[13px] text-textMuted">Observed cost: {formatCurrency(entry.observedCost)}</Text>
                     </View>
                   ))
               )}

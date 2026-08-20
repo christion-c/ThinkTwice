@@ -16,6 +16,7 @@
 #      mainly useful for local development, where docker compose gives
 #      the ML service a persistent volume and there's normally just one instance.
 
+import http.client
 import json
 import os
 import urllib.parse
@@ -91,15 +92,18 @@ def _fetch_backend_history(user_id: str) -> list[dict[str, Any]] | None:
                 for e in entries
                 if isinstance(e, dict)
             ]
-    except (OSError, ValueError, AttributeError):
+    except (OSError, ValueError, AttributeError, http.client.HTTPException):
         # OSError covers urllib.error.URLError/HTTPError and socket
         # timeouts (TimeoutError is an OSError subclass) - i.e. the
         # backend being unreachable or slow. ValueError covers
         # json.JSONDecodeError (a malformed response body) as well as a
         # malformed BACKEND_URL. AttributeError covers a response body
         # that parses as JSON but isn't a dict (e.g. `payload.get(...)`
-        # on a JSON array or string). Any other exception is a real bug
-        # and should surface rather than be swallowed here.
+        # on a JSON array or string). http.client.HTTPException covers a
+        # malformed/truncated response (e.g. IncompleteRead,
+        # BadStatusLine), which isn't an OSError or ValueError subclass.
+        # Any other exception is a real bug and should surface rather
+        # than be swallowed here.
         pass
 
     return None

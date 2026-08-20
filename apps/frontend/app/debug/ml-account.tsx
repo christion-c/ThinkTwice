@@ -9,6 +9,7 @@ import MlPreviewControls from "../../components/ml/MlPreviewControls";
 import Card from "../../components/ui/Card";
 import CardTitle from "../../components/ui/CardTitle";
 import { useMlPreview } from "../../hooks/useMlPreview";
+import { formatCurrency } from "../../lib/money-format";
 
 export default function PrivateMlAccountPage() {
   const colors = useThemeColors();
@@ -50,8 +51,8 @@ export default function PrivateMlAccountPage() {
             </View>
 
             <View className="flex-row gap-sm">
-              <MlMetricBox label="Fuel" value={`$${data.fuel_prediction.toFixed(2)}`} />
-              <MlMetricBox label="Total" value={`$${data.total_prediction.toFixed(2)}`} />
+              <MlMetricBox label="Fuel" value={formatCurrency(data.fuel_prediction)} />
+              <MlMetricBox label="Total" value={formatCurrency(data.total_prediction)} />
             </View>
 
             <View className="flex-row gap-sm">

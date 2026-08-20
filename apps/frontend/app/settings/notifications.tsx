@@ -8,6 +8,7 @@ import SettingToggleRow from "../../components/settings/SettingToggleRow";
 import Card from "../../components/ui/Card";
 import CardText from "../../components/ui/CardText";
 import CardTitle from "../../components/ui/CardTitle";
+import StatTile from "../../components/ui/StatTile";
 
 export default function DailyRhythmSettings() {
   const colors = useThemeColors();
@@ -39,14 +40,22 @@ export default function DailyRhythmSettings() {
         </View>
 
         <View className="flex-row gap-sm">
-          <View className="flex-1 items-center gap-0.5 rounded-md border border-border bg-surfaceSoft px-3 py-2.5">
-            <Text className="text-lg font-bold text-text">{activeCount}/3</Text>
-            <Text className="text-xs text-textMuted">active habits</Text>
-          </View>
-          <View className="flex-1 items-center gap-0.5 rounded-md border border-border bg-surfaceSoft px-3 py-2.5">
-            <Text className="text-lg font-bold text-text">{modeLabel}</Text>
-            <Text className="text-xs text-textMuted">focus mode</Text>
-          </View>
+          <StatTile
+            valueFirst
+            value={`${activeCount}/3`}
+            label="active habits"
+            className="flex-1 items-center gap-0.5 rounded-md border border-border bg-surfaceSoft px-3 py-2.5"
+            valueClassName="text-lg font-bold text-text"
+            labelClassName="text-xs text-textMuted"
+          />
+          <StatTile
+            valueFirst
+            value={modeLabel}
+            label="focus mode"
+            className="flex-1 items-center gap-0.5 rounded-md border border-border bg-surfaceSoft px-3 py-2.5"
+            valueClassName="text-lg font-bold text-text"
+            labelClassName="text-xs text-textMuted"
+          />
         </View>
       </Card>
 

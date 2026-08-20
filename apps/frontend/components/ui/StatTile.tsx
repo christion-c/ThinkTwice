@@ -14,6 +14,10 @@ interface StatTileProps {
   labelClassName?: string;
   valueClassName?: string;
   style?: StyleProp<ViewStyle>;
+  // Some call sites lead with the value and caption it below (e.g. "3/4"
+  // over "active habits") rather than labeling above the value - same
+  // tile concept, reversed reading order.
+  valueFirst?: boolean;
 }
 
 export default function StatTile({
@@ -23,11 +27,15 @@ export default function StatTile({
   labelClassName = "",
   valueClassName = "",
   style,
+  valueFirst = false,
 }: StatTileProps) {
+  const labelText = <Text className={labelClassName}>{label}</Text>;
+  const valueText = <Text className={valueClassName}>{value}</Text>;
+
   return (
     <View style={style} className={className}>
-      <Text className={labelClassName}>{label}</Text>
-      <Text className={valueClassName}>{value}</Text>
+      {valueFirst ? valueText : labelText}
+      {valueFirst ? labelText : valueText}
     </View>
   );
 }

@@ -1,11 +1,12 @@
 import type { RequestHandler } from "express";
 
+import { asyncHandler } from "../lib/route-helpers.js";
 import { upsertUserFromFirebase } from "../modules/users/user.repository.js";
 
 // Creates or updates the PostgreSQL profile belonging to the verified
 // Firebase user and attaches it to the current request. Must run after
 // requireAuth, since it reads request.auth.
-export const syncCurrentUser: RequestHandler = async (
+export const syncCurrentUser: RequestHandler = asyncHandler(async (
   request,
   response,
   next,
@@ -21,21 +22,16 @@ export const syncCurrentUser: RequestHandler = async (
     return;
   }
 
-  try {
-    // Insert on first sign-in, or update on every subsequent request -
-    // keeps the local profile in sync with whatever Firebase has now.
-    request.currentUser = await upsertUserFromFirebase({
-      firebaseUid: authenticatedUser.uid,
-      email: authenticatedUser.email ?? null,
-      displayName: authenticatedUser.name ?? null,
-      photoUrl: authenticatedUser.picture ?? null,
-      emailVerified: authenticatedUser.email_verified ?? false,
-    });
+  // Insert on first sign-in, or update on every subsequent request -
+  // keeps the local profile in sync with whatever Firebase has now.
+  request.currentUser = await upsertUserFromFirebase({
+    firebaseUid: authenticatedUser.uid,
+    email: authenticatedUser.email ?? null,
+    displayName: authenticatedUser.name ?? null,
+    photoUrl: authenticatedUser.picture ?? null,
+    emailVerified: authenticatedUser.email_verified ?? false,
+  });
 
-    // Profile synced - continue to the actual route handler.
-    next();
-  } catch (error) {
-    // Pass database errors to Express's error handler.
-    next(error);
-  }
-};
+  // Profile synced - continue to the actual route handler.
+  next();
+});

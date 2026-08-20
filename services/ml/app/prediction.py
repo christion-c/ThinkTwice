@@ -72,15 +72,19 @@ def _rates(
     cost_key: str,
     miles_key: str,
     miles_default: float = 0.0,
+    require_positive_cost: bool = True,
 ) -> list[float]:
     # Shared "cost / miles" rate extraction used for both the synthetic
     # dataset baseline and the user-history blend below: pulls cost_key
-    # and miles_key off each dict-like entry, dropping any entry whose
-    # cost or miles isn't a positive number. miles_default controls
+    # and miles_key off each dict-like entry. miles_default controls
     # what a *missing* miles_key falls back to before the positivity
     # check - 0 for dataset rows (which always carry a real
     # miles_driven anyway), the requested miles_driven for history
     # entries (so an entry missing that field isn't just discarded).
+    # require_positive_cost=False reproduces the dataset baseline's
+    # original behavior of not filtering on cost at all (a zero/negative
+    # fuel_cost still contributes its - equally zero/negative - rate to
+    # the average, rather than being dropped).
     #
     # predict_by_regression's cost-per-mile calc (below) is intentionally
     # separate: it operates on already-filtered BudgetEntry objects
@@ -90,8 +94,11 @@ def _rates(
     for entry in entries:
         miles = float(entry.get(miles_key, miles_default) or 0)
         cost = float(entry.get(cost_key, 0) or 0)
-        if miles > 0 and cost > 0:
-            rates.append(cost / miles)
+        if miles <= 0:
+            continue
+        if require_positive_cost and cost <= 0:
+            continue
+        rates.append(cost / miles)
     return rates
 
 
@@ -99,7 +106,7 @@ def _baseline_cost_per_mile(rows: list[dict[str, Any]]) -> float:
     # Derives a cost-per-mile baseline from the synthetic reference
     # dataset, falling back to a plausible flat rate if it has no
     # usable rows.
-    dataset_rates = _rates(rows, "fuel_cost", "miles_driven")
+    dataset_rates = _rates(rows, "fuel_cost", "miles_driven", require_positive_cost=False)
     return sum(dataset_rates) / len(dataset_rates) if dataset_rates else 0.29
 
 
