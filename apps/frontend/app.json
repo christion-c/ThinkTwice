@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ThinkTwice",
-    "slug": "frontend",
+    "slug": "thinktwice",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -47,8 +47,19 @@
         {
           "android": {
             "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableMinifyInReleaseBuilds": true
           }
+        }
+      ],
+      "expo-font",
+      "expo-status-bar",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#F0913D"
         }
       ]
     ],
@@ -59,7 +70,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "c127eecc-6cf2-4e8a-a027-4ac65c86ae33"
+        "projectId": "fe8d07cb-32c4-4722-98e8-3d6637f59df4"
       }
     },
     "owner": "ccallahan"

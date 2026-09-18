@@ -1,4 +1,4 @@
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef } from "react";
 import { AppState } from "react-native";
 
@@ -20,7 +20,6 @@ export function useRefetchOnFocus(refetch: () => void | Promise<void>): void {
       return () => {
         isScreenFocused.current = false;
       };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refetch]),
   );
 

@@ -13,10 +13,9 @@ const MAILTO_HREF = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(DELETE
 // Publicly reachable without signing in (see the isPublicLegalPage
 // exemption in app/_layout.tsx) - Google Play requires a deletion
 // request path that works even for someone who no longer has (or
-// never installed) the app, not just an in-app menu item. There's no
-// self-service delete endpoint yet (see AGENTS/backend notes), so
-// this routes the request to a real inbox rather than promising an
-// automated flow that doesn't exist.
+// never installed) the app, not just an in-app menu item, so this
+// email flow stays even though signed-in users now have a faster
+// self-service option (Settings > Account > Delete my account).
 export default function DeleteAccount() {
   return (
     <PageScaffold title="Delete Account" subtitle="Request removal of your account and all associated data.">
@@ -28,9 +27,10 @@ export default function DeleteAccount() {
         </LegalSection>
 
         <LegalSection title="How to request it">
-          Email us from the address on your account with the button below, or send it manually to{" "}
-          {CONTACT_EMAIL}. Include your account email so we can find the right account. We’ll confirm
-          by email once the deletion is complete.
+          If you can still sign in, deleting from Settings &gt; Account &gt; Delete my account is
+          instant. Otherwise, email us from the address on your account with the button below, or
+          send it manually to {CONTACT_EMAIL}. Include your account email so we can find the right
+          account. We’ll confirm by email once the deletion is complete.
         </LegalSection>
 
         <Pressable

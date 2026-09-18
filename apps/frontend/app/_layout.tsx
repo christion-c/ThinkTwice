@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/components/contexts/AuthProvider";
 import { FinanceProvider } from "@/components/contexts/FinanceProvider";
 import ThemeVarsRoot from "@/components/ThemeVarsRoot";
 import { VehicleProvider } from "@/components/contexts/VehicleProvider";
+import { useCheckinReminders } from "@/hooks/useCheckinReminders";
 
 // Expo Router wraps the whole app in a Try/catch boundary using this
 // export (the file-based convention any route or layout module can use)
@@ -102,6 +103,10 @@ function AuthGate({ children }: { children: ReactNode }) {
 
 function AppStack() {
   const colors = useThemeColors();
+  // Only mounted once signed in (AuthGate renders this as its
+  // authenticated branch), so this never prompts for notification
+  // permission before the user has an account to check in on.
+  useCheckinReminders();
 
   return (
     <Stack

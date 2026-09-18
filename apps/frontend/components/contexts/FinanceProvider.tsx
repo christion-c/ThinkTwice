@@ -64,13 +64,15 @@ type FinanceContextValue = {
   projectedDaysUntilFillUp: number;
   projectedBudgetAfterEssentials: number;
   weeklySpendTarget: number;
-  // Estimated miles driven since the last logged fill-up, derived from
-  // fill-up history (daily-miles average x days since the last entry) -
-  // null until there's enough history to estimate from. Lets the fuel
-  // check-in flow pre-fill its "miles since last fill-up" question
-  // instead of asking from a blank field every time, the same way MPG
-  // is already auto-calculated from history rather than asked for.
-  estimatedMilesSinceLastFillUp: number | null;
+  // Computes the estimated miles driven since the last logged fill-up,
+  // from fill-up history (daily-miles average x days since the last
+  // entry) - null until there's enough history to estimate from. Lets
+  // the fuel check-in flow pre-fill its "miles since last fill-up"
+  // question instead of asking from a blank field every time, the same
+  // way MPG is already auto-calculated from history rather than asked
+  // for. A function (evaluated when the flow opens) rather than a
+  // precomputed value since it depends on the current time.
+  getEstimatedMilesSinceLastFillUp: () => number | null;
   fillUpHistory: SavedFillUpHistoryEntry[];
   dailyDrivingLogs: DailyDrivingLog[];
   // Saves (or corrects) today's daily driving check-in for the
@@ -109,7 +111,15 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const storageKey = user?.uid ? `${FINANCE_STORAGE_KEY}.${user.uid}` : `${FINANCE_STORAGE_KEY}.guest`;
 
-  useEffect(() => {
+  // Blank every input and cached list the moment the signed-in account
+  // changes (adjusted during render, same pattern as the vehicle
+  // auto-fill below) so the previous account's numbers never flash on
+  // screen while loadCloudFinanceInputs/loadFillUpHistory/
+  // loadDailyDrivingLogs fetch the new account's values.
+  const [lastResetUserId, setLastResetUserId] = useState(user?.uid ?? null);
+
+  if ((user?.uid ?? null) !== lastResetUserId) {
+    setLastResetUserId(user?.uid ?? null);
     setIncomeInput("");
     setExpenseInput("");
     setMonthlyFixedCostsInput("");
@@ -119,7 +129,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setCombinedMpgInput("");
     setTankCapacityInput("");
     setCurrentTankPercentInput("");
-  }, [user?.uid]);
+    setFillUpHistory([]);
+    setDailyDrivingLogs([]);
+  }
 
   const loadCloudFinanceInputs = useCallback(async () => {
     if (!user) {
@@ -146,17 +158,16 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const loadFillUpHistory = useCallback(async () => {
     if (!user) {
-      setFillUpHistory([]);
       return;
     }
 
-    try {
-      const entries = await fetchFillUpHistory(user);
-      setFillUpHistory(entries);
-    } catch {
-      // Keep forecasting with manual inputs when history is unavailable.
-      setFillUpHistory([]);
-    }
+    // .catch() rather than try/catch: a catch block can run synchronously
+    // (if fetchFillUpHistory throws before returning a promise), so
+    // setState there would be just as much a synchronous-setState risk
+    // as an unguarded call at the top of the function.
+    const entries = await fetchFillUpHistory(user).catch(() => null);
+    // Keep forecasting with manual inputs when history is unavailable.
+    setFillUpHistory(entries ?? []);
   }, [user]);
 
   useEffect(() => {
@@ -230,24 +241,31 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const loadDailyDrivingLogs = useCallback(async () => {
     if (!user) {
-      setDailyDrivingLogs([]);
       return;
     }
 
-    try {
-      const logs = await fetchDailyDrivingLogs(user);
-      setDailyDrivingLogs(logs);
-    } catch {
-      // Keep forecasting with fill-up history alone when logs are unavailable.
-      setDailyDrivingLogs([]);
-    }
+    // .catch() rather than try/catch: a catch block can run synchronously
+    // (if fetchDailyDrivingLogs throws before returning a promise), so
+    // setState there is a synchronous-setState-in-effect risk the same
+    // way an unguarded call at the top of the function is.
+    const logs = await fetchDailyDrivingLogs(user).catch(() => null);
+    // Keep forecasting with fill-up history alone when logs are unavailable.
+    setDailyDrivingLogs(logs ?? []);
   }, [user]);
 
   useEffect(() => {
+    // loadFillUpHistory only ever calls setFillUpHistory after a real
+    // await (and never from a catch block - see its own comment), so
+    // this can't actually cascade a synchronous render the way the rule
+    // is guarding against; the linter can't see across the useCallback
+    // boundary to confirm that itself.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadFillUpHistory();
   }, [loadFillUpHistory]);
 
   useEffect(() => {
+    // Same reasoning as loadFillUpHistory's effect above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadDailyDrivingLogs();
   }, [loadDailyDrivingLogs]);
 
@@ -337,9 +355,22 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     ]);
   }, [loadCloudFinanceInputs, loadFillUpHistory, loadDailyDrivingLogs]);
 
+  // Scope the Tank Forecast to whichever vehicle is selected - see
+  // filterEntriesForVehicle's own comment for exactly what counts.
+  const selectedVehicleId = selectedVehicle?.id ?? null;
+
   // Auto-fill MPG/tank-capacity inputs from the selected vehicle's own
-  // saved specs, whenever the selection changes.
-  useEffect(() => {
+  // saved specs, whenever the selection changes. Adjusted during render
+  // (React's documented pattern for "state that depends on a changed
+  // prop") rather than in an effect, so the fill-in lands in the same
+  // render/commit as the selection change instead of one tick later.
+  const [lastAutoFilledVehicleId, setLastAutoFilledVehicleId] = useState<string | null>(
+    selectedVehicleId,
+  );
+
+  if (selectedVehicleId !== lastAutoFilledVehicleId) {
+    setLastAutoFilledVehicleId(selectedVehicleId);
+
     if (selectedVehicle?.combinedMpg !== null && selectedVehicle?.combinedMpg !== undefined) {
       setCombinedMpgInput(String(selectedVehicle.combinedMpg));
     }
@@ -350,11 +381,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     ) {
       setTankCapacityInput(String(selectedVehicle.tankCapacityGallons));
     }
-  }, [selectedVehicle]);
-
-  // Scope the Tank Forecast to whichever vehicle is selected - see
-  // filterEntriesForVehicle's own comment for exactly what counts.
-  const selectedVehicleId = selectedVehicle?.id ?? null;
+  }
   const visibleFillUpHistory = useMemo(
     () => filterEntriesForVehicle(fillUpHistory, selectedVehicleId),
     [fillUpHistory, selectedVehicleId],
@@ -369,7 +396,11 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     [visibleFillUpHistory, visibleDailyDrivingLogs],
   );
 
-  const estimatedMilesSinceLastFillUp = useMemo(() => {
+  // A function rather than a precomputed value: it reads Date.now(), so
+  // computing it during render (even memoized) isn't pure. Its only
+  // caller (useFuelCheckinFlow's startFuelFlow) already only needs it
+  // at the moment the check-in flow opens, not on every render.
+  const getEstimatedMilesSinceLastFillUp = useCallback(() => {
     if (stats.dailyMiles <= 0) {
       return null;
     }
@@ -491,7 +522,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       projectedDaysUntilFillUp,
       projectedBudgetAfterEssentials,
       weeklySpendTarget,
-      estimatedMilesSinceLastFillUp,
+      getEstimatedMilesSinceLastFillUp,
       fillUpHistory,
       dailyDrivingLogs,
       logTodaysMiles,
@@ -512,7 +543,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       combinedMpgInput,
       tankCapacityInput,
       currentTankPercentInput,
-      estimatedMilesSinceLastFillUp,
+      getEstimatedMilesSinceLastFillUp,
       fillUpHistory,
       dailyDrivingLogs,
       logTodaysMiles,

@@ -1,5 +1,5 @@
 import { database } from "../../db/pool.js";
-import { expectOneRow } from "../../lib/db-helpers.js";
+import { expectOneRow, withPostgresRetry } from "../../lib/db-helpers.js";
 
 // User information received from a verified Firebase ID token.
 export interface UpsertUserInput {
@@ -95,4 +95,16 @@ export async function upsertUserFromFirebase(
   const user = expectOneRow(result, "created user");
 
   return mapUserRow(user);
+}
+
+// Deletes a user's ThinkTwice profile - every other table (vehicles,
+// budget_entries, finance_inputs, fill_up_history, daily_driving_logs)
+// references users.id ON DELETE CASCADE, so this one statement removes
+// all of that user's data everywhere, not just this row. Wrapped in
+// withPostgresRetry for the same reason test-support/db-test-helpers.ts's
+// deleteTestUser is: a DELETE here can genuinely deadlock (Postgres
+// 40P01) against a concurrent CREATE TABLE ... REFERENCES users(id),
+// confirmed against a real Postgres instance, not theoretical.
+export async function deleteUserById(userId: string): Promise<void> {
+  await withPostgresRetry(() => database.query("DELETE FROM users WHERE id = $1", [userId]));
 }

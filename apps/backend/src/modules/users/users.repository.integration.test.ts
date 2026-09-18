@@ -3,10 +3,12 @@ import { randomUUID } from "node:crypto";
 import { before, test } from "node:test";
 
 import {
+  createTestUser,
   deleteTestUser,
   ensureSchemaReady,
 } from "../../test-support/db-test-helpers.js";
-import { upsertUserFromFirebase } from "./users.repository.js";
+import { createVehicle, listVehiclesForUser } from "../vehicles/vehicles.repository.js";
+import { deleteUserById, upsertUserFromFirebase } from "./users.repository.js";
 
 let dbAvailable = false;
 
@@ -64,4 +66,34 @@ test("upsertUserFromFirebase creates a new user, then updates it on conflict", a
       await deleteTestUser(createdId);
     }
   }
+});
+
+// The behavior that matters most here: account deletion is irreversible,
+// so this confirms a related row (a vehicle) actually disappears via the
+// ON DELETE CASCADE foreign keys, not just the users row itself.
+test("deleteUserById removes the user and cascades to their vehicles", async (t) => {
+  if (!dbAvailable) {
+    t.skip("DATABASE_URL is not reachable; skipping integration test.");
+    return;
+  }
+
+  const userId = await createTestUser();
+
+  await createVehicle({
+    userId,
+    nickname: "Soon To Be Deleted",
+    make: null,
+    model: null,
+    modelYear: null,
+    tankCapacityGallons: null,
+    combinedMpg: null,
+  });
+
+  await deleteUserById(userId);
+
+  const remainingVehicles = await listVehiclesForUser(userId);
+  assert.deepEqual(remainingVehicles, []);
+
+  // No deleteTestUser cleanup here - the row this test created is
+  // exactly what it just verified is already gone.
 });

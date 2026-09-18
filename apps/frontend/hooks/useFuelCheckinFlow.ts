@@ -46,7 +46,7 @@ export function useFuelCheckinFlow() {
     setTankCapacityInput,
     currentTankPercentInput,
     setCurrentTankPercentInput,
-    estimatedMilesSinceLastFillUp,
+    getEstimatedMilesSinceLastFillUp,
   } = useFinance();
 
   const [nicknameInput, setNicknameInput] = useState("");
@@ -168,7 +168,10 @@ export function useFuelCheckinFlow() {
       // the user can still overwrite it if today was different. Falls
       // back to whatever was last entered when there isn't enough
       // history yet (same as the other steps in this flow).
-      miles: estimatedMilesSinceLastFillUp !== null ? String(estimatedMilesSinceLastFillUp) : milesPerWeekInput,
+      miles: (() => {
+        const estimate = getEstimatedMilesSinceLastFillUp();
+        return estimate !== null ? String(estimate) : milesPerWeekInput;
+      })(),
       tankLevel: currentTankPercentInput,
     });
 

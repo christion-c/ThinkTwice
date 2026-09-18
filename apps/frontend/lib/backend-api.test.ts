@@ -11,7 +11,7 @@
 describe("requestBackend", () => {
   let requestBackend: typeof import("./backend-api").requestBackend;
   const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
 
   beforeAll(() => {
     process.env.EXPO_PUBLIC_API_URL = "https://api.example.test";
@@ -26,11 +26,11 @@ describe("requestBackend", () => {
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   function mockFetchOnce(response: Partial<Response> & { json?: () => Promise<unknown> }) {
-    global.fetch = jest.fn().mockResolvedValue(response as Response);
+    globalThis.fetch = jest.fn().mockResolvedValue(response as Response);
   }
 
   it("returns the parsed JSON body for a successful response", async () => {
@@ -39,7 +39,7 @@ describe("requestBackend", () => {
     const result = await requestBackend("/ping", { method: "GET" });
 
     expect(result).toEqual({ hello: "world" });
-    expect(global.fetch).toHaveBeenCalledWith("https://api.example.test/ping", { method: "GET" });
+    expect(globalThis.fetch).toHaveBeenCalledWith("https://api.example.test/ping", { method: "GET" });
   });
 
   it("returns undefined for a 204 No Content response without parsing a body", async () => {

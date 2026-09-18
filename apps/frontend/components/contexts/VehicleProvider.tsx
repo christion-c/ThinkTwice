@@ -58,12 +58,23 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
   const [syncing, setSyncing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Blank out the previous account's vehicle data the moment the
+  // signed-in account changes (adjusted during render - see
+  // FinanceProvider's identical pattern for why), rather than inside
+  // refreshVehicles itself, so refreshVehicles never needs to set state
+  // before its own fetch actually starts.
+  const [lastResetUserId, setLastResetUserId] = useState(user?.uid ?? null);
+
+  if ((user?.uid ?? null) !== lastResetUserId) {
+    setLastResetUserId(user?.uid ?? null);
+    setBackendUser(null);
+    setVehicles([]);
+    setSelectedVehicleId(null);
+    setErrorMessage("");
+  }
+
   const refreshVehicles = useCallback(async () => {
     if (!user) {
-      setBackendUser(null);
-      setVehicles([]);
-      setSelectedVehicleId(null);
-      setErrorMessage("");
       return;
     }
 
@@ -113,6 +124,13 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // refreshVehicles does still set loading/error state synchronously
+    // before its fetch resolves (setErrorMessage("") up front, plus its
+    // catch/finally) - deliberately, per its own comment, so this can't
+    // be restructured the same way loadFillUpHistory's effect was
+    // without losing that behavior. The linter can't see across the
+    // useCallback boundary to weigh that trade-off itself.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshVehicles();
   }, [initializing, refreshVehicles]);
 

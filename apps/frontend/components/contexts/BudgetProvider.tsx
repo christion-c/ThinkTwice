@@ -53,11 +53,22 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
   const [syncing, setSyncing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Blank out the previous account's entries the moment the signed-in
+  // account changes (adjusted during render - see FinanceProvider's
+  // identical pattern for why), rather than inside refresh itself, so
+  // refresh never needs to set state before its own fetch actually
+  // starts.
+  const [lastResetUserId, setLastResetUserId] = useState(user?.uid ?? null);
+
+  if ((user?.uid ?? null) !== lastResetUserId) {
+    setLastResetUserId(user?.uid ?? null);
+    setEntries([]);
+    setPrediction(null);
+    setErrorMessage("");
+  }
+
   const refresh = useCallback(async () => {
     if (!user) {
-      setEntries([]);
-      setPrediction(null);
-      setErrorMessage("");
       return;
     }
 
@@ -89,6 +100,12 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // refresh sets loading/error state synchronously before its fetch
+    // resolves (setLoading(true)/setErrorMessage("") up front, plus its
+    // catch/finally) - the linter can't see across the useCallback
+    // boundary to confirm that's the only remaining synchronous state,
+    // now that the account-reset branch has moved to render time above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [initializing, refresh]);
 

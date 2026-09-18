@@ -21,22 +21,25 @@ export default function MlPreviewPage() {
 
   const loadUserHistory = useCallback(async () => {
     if (!user) {
-      setHistoryEntries([]);
+      // historyEntries already starts as [] - nothing to reset.
       return;
     }
 
     setHistoryLoading(true);
-    try {
-      const entries = await fetchFillUpHistory(user);
-      setHistoryEntries(entries);
-    } catch {
-      setHistoryEntries([]);
-    } finally {
-      setHistoryLoading(false);
-    }
+    // .catch() rather than try/catch: a catch block can run
+    // synchronously (if fetchFillUpHistory throws before returning a
+    // promise), which would defeat the point of awaiting it here.
+    const entries = await fetchFillUpHistory(user).catch(() => null);
+    setHistoryEntries(entries ?? []);
+    setHistoryLoading(false);
   }, [user]);
 
   useEffect(() => {
+    // loadUserHistory sets historyLoading synchronously before its fetch
+    // resolves, same as the loading-indicator pattern in the other
+    // providers - the linter can't see across the useCallback boundary
+    // to confirm that's the only remaining synchronous state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadUserHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

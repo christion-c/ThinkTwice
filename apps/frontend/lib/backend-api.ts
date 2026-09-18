@@ -93,6 +93,19 @@ export async function fetchCurrentUserProfile(
   return response.user;
 }
 
+// Permanently deletes the signed-in user's account and every piece of
+// data tied to it (vehicles, budget entries, finance inputs, fill-up
+// history, daily driving logs, and their Firebase login) - see
+// DELETE /users/me on the backend. Irreversible; callers must confirm
+// with the user before calling this.
+export async function deleteCurrentUserAccount(user: User): Promise<void> {
+  const headers = await getAuthHeader(user);
+  await requestBackend<void>("/users/me", {
+    method: "DELETE",
+    headers,
+  });
+}
+
 export async function fetchVehicles(user: User): Promise<BackendVehicle[]> {
   const headers = await getAuthHeader(user);
   const response = await requestBackend<{ vehicles: BackendVehicle[] }>(

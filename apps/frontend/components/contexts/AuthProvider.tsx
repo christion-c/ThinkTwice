@@ -14,11 +14,13 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [initializing, setInitializing] = useState(true);
+  // isFirebaseConfigured/auth are module-level constants fixed at import
+  // time, so whether there's anything to wait on is already known before
+  // the first render - no need for an effect to flip this to false.
+  const [initializing, setInitializing] = useState(() => Boolean(isFirebaseConfigured && auth));
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
-      setInitializing(false);
       return;
     }
 

@@ -3,6 +3,7 @@ import { createContext, useContext, useMemo } from "react";
 
 import { useAuth } from "./AuthProvider";
 import { getColors, type ColorMode } from "@/components/theme";
+import { DEFAULT_REMINDER_TIME, isValidReminderTime } from "@/lib/checkin-reminders";
 import { usePersistedUserState, type FieldValidators } from "@/hooks/usePersistedUserState";
 
 const PREFERENCES_STORAGE_KEY = "thinktwice.app-preferences";
@@ -12,6 +13,8 @@ interface PersistedPreferences {
   compactCards: boolean;
   highContrast: boolean;
   remindersEnabled: boolean;
+  // "HH:mm" - see lib/checkin-reminders.ts for the format contract.
+  reminderTime: string;
 }
 
 // Stable module-level references - usePersistedUserState relies on
@@ -21,6 +24,7 @@ const DEFAULT_PREFERENCES: PersistedPreferences = {
   compactCards: false,
   highContrast: false,
   remindersEnabled: true,
+  reminderTime: DEFAULT_REMINDER_TIME,
 };
 
 const PREFERENCE_VALIDATORS: FieldValidators<PersistedPreferences> = {
@@ -28,6 +32,7 @@ const PREFERENCE_VALIDATORS: FieldValidators<PersistedPreferences> = {
   compactCards: (value): value is boolean => typeof value === "boolean",
   highContrast: (value): value is boolean => typeof value === "boolean",
   remindersEnabled: (value): value is boolean => typeof value === "boolean",
+  reminderTime: isValidReminderTime,
 };
 
 type AppPreferencesValue = {
@@ -39,6 +44,8 @@ type AppPreferencesValue = {
   setHighContrast: (value: boolean) => void;
   remindersEnabled: boolean;
   setRemindersEnabled: (value: boolean) => void;
+  reminderTime: string;
+  setReminderTime: (value: string) => void;
 };
 
 const AppPreferencesContext = createContext<AppPreferencesValue | undefined>(undefined);
@@ -62,6 +69,8 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
       setHighContrast: (value: boolean) => updatePreferences({ highContrast: value }),
       remindersEnabled: preferences.remindersEnabled,
       setRemindersEnabled: (value: boolean) => updatePreferences({ remindersEnabled: value }),
+      reminderTime: preferences.reminderTime,
+      setReminderTime: (value: string) => updatePreferences({ reminderTime: value }),
     }),
     [preferences, updatePreferences],
   );
