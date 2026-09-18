@@ -6,7 +6,7 @@ import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
 import { useFinance } from "@/components/contexts/FinanceProvider";
 import DailyCheckinCard from "@/components/home/DailyCheckinCard";
 import PageScaffold from "@/components/PageScaffold";
-import { AnimatedNumber, Card, CardTitle, DonutGauge, ListRow, LogoMark } from "@/components/ui";
+import { AnimatedNumber, Card, CardTitle, DonutGauge, ListRow } from "@/components/ui";
 import { useVehicle } from "@/components/contexts/VehicleProvider";
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { useSetupChecklist } from "@/hooks/useSetupChecklist";
@@ -88,7 +88,6 @@ export default function Home() {
     <PageScaffold
       title="Welcome back"
       subtitle="Your monthly plan updates from manual finance and fuel inputs as you go."
-      headerRight={<LogoMark />}
       showNav
       navActive="Home"
     >
