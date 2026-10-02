@@ -8,6 +8,7 @@ import { Redirect, Stack, useSegments, type ErrorBoundaryProps } from "expo-rout
 import { AppPreferencesProvider, useThemeColors } from "@/components/contexts/AppPreferencesProvider";
 import { AuthProvider, useAuth } from "@/components/contexts/AuthProvider";
 import { FinanceProvider } from "@/components/contexts/FinanceProvider";
+import { MoneyPlanProvider } from "@/components/contexts/MoneyPlanProvider";
 import ThemeVarsRoot from "@/components/ThemeVarsRoot";
 import { VehicleProvider } from "@/components/contexts/VehicleProvider";
 import { useCheckinReminders } from "@/hooks/useCheckinReminders";
@@ -46,7 +47,13 @@ export default function RootLayout() {
     // Android in particular: with edge-to-edge on, the OS no longer
     // resizes the app when the keyboard opens, so without this inputs
     // near the bottom of a screen end up hidden under the keyboard.
-    <KeyboardProvider>
+    // The translucent/edge-to-edge flags tell it the truth about this
+    // app's layout: it draws behind the status and navigation bars
+    // (edge-to-edge is mandatory on current Android). Left at their
+    // false defaults, the library offset the keyboard as if those bars
+    // took up their own space, so screens jittered by about a status
+    // bar's height whenever the keyboard opened.
+    <KeyboardProvider statusBarTranslucent navigationBarTranslucent preserveEdgeToEdge>
       <AuthProvider>
         <AppPreferencesProvider>
           <ThemeVarsRoot>
@@ -57,9 +64,11 @@ export default function RootLayout() {
                 nesting is reversed. */}
             <VehicleProvider>
               <FinanceProvider>
-                <AuthGate>
-                  <AppStack />
-                </AuthGate>
+                <MoneyPlanProvider>
+                  <AuthGate>
+                    <AppStack />
+                  </AuthGate>
+                </MoneyPlanProvider>
               </FinanceProvider>
             </VehicleProvider>
           </ThemeVarsRoot>
@@ -109,6 +118,13 @@ function AuthGate({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+// Tab screens switch instantly, like a real tab bar - no slide (which
+// read as opening a detail page) and no crossfade (which, combined with
+// the screen remounting, flashed the background on every switch). See
+// BottomNav's switchTab. Nested screens (settings, auth) keep the
+// default slide.
+const TAB_SCREEN_OPTIONS = { animation: "none" } as const;
+
 function AppStack() {
   const colors = useThemeColors();
   // Only mounted once signed in (AuthGate renders this as its
@@ -127,13 +143,13 @@ function AppStack() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Home" }} />
+      <Stack.Screen name="index" options={{ title: "Home", ...TAB_SCREEN_OPTIONS }} />
 
-      <Stack.Screen name="fuel" options={{ title: "Fuel" }} />
-      <Stack.Screen name="finance" options={{ title: "Finance" }} />
+      <Stack.Screen name="fuel" options={{ title: "Fuel", ...TAB_SCREEN_OPTIONS }} />
+      <Stack.Screen name="finance" options={{ title: "Finance", ...TAB_SCREEN_OPTIONS }} />
       <Stack.Screen name="nutrition" options={{ title: "Nutrition" }} />
 
-      <Stack.Screen name="profile" options={{ title: "Profile" }} />
+      <Stack.Screen name="profile" options={{ title: "Profile", ...TAB_SCREEN_OPTIONS }} />
 
       <Stack.Screen name="auth/login" options={{ title: "Login" }} />
       <Stack.Screen name="auth/register" options={{ title: "Register" }} />

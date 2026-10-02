@@ -15,6 +15,12 @@ export interface StepFlowStepConfig<K extends string> {
   // visual identity instead of reading as an undifferentiated list of
   // text fields - optional since not every flow needs it.
   icon?: ComponentProps<typeof Ionicons>["name"];
+  // Turns the step into a tap-to-pick question (rendered as chips
+  // instead of a text field); the picked choice's value is the answer.
+  choices?: { label: string; value: string }[];
+  // Checks the trimmed answer before moving on; returns a short message
+  // to show under the field, or null if it's fine.
+  validate?: (value: string) => string | null;
 }
 
 interface UseStepFlowOptions<K extends string> {
@@ -36,7 +42,14 @@ interface UseStepFlowOptions<K extends string> {
 // step definitions and what to do with the answers.
 export function useStepFlow<K extends string>({ steps, onStepConfirmed, onComplete }: UseStepFlowOptions<K>) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [draft, setDraft] = useState("");
+  const [draft, setDraftState] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  // Typing (or picking) again clears the last validation message.
+  const setDraft = (value: string) => {
+    setDraftState(value);
+    setError(null);
+  };
   // Tracked in a ref rather than component state so the values handed
   // to onComplete are never stale: reading state you just set with
   // setState in the same synchronous handler would see the pre-update
@@ -54,6 +67,7 @@ export function useStepFlow<K extends string>({ steps, onStepConfirmed, onComple
     setDraft("");
   };
 
+
   const confirmStep = async () => {
     if (activeIndex === null) {
       return;
@@ -61,6 +75,13 @@ export function useStepFlow<K extends string>({ steps, onStepConfirmed, onComple
 
     const currentKey = steps[activeIndex].key;
     const trimmedDraft = draft.trim();
+    const validationError = steps[activeIndex].validate?.(trimmedDraft) ?? null;
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     valuesRef.current[currentKey] = trimmedDraft;
     onStepConfirmed?.(currentKey, trimmedDraft);
 
@@ -84,6 +105,8 @@ export function useStepFlow<K extends string>({ steps, onStepConfirmed, onComple
     totalSteps: steps.length,
     draft,
     setDraft,
+    // The current step's validation message, if its answer was rejected.
+    error,
     start,
     close,
     confirmStep,

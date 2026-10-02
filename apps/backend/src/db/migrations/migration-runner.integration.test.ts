@@ -5,6 +5,7 @@ import { database } from "../pool.js";
 import { isDatabaseAvailable } from "../../test-support/db-test-helpers.js";
 import { migrations } from "./index.js";
 import { runMigrations } from "./migration-runner.js";
+import type { Migration } from "./migration.types.js";
 
 let dbAvailable = false;
 
@@ -50,35 +51,53 @@ test("runMigrations is idempotent", async (t) => {
   assert.equal(Number(result.rows[0]?.count), migrations.length);
 });
 
+// A test-only migration with its own throwaway table. The "existing
+// table" test below used to drop and hand-recreate the real
+// finance_inputs table with only some of its columns - which broke the
+// finance tests running concurrently in other files, and left that
+// stripped-down table behind in whatever database the tests ran against
+// (by default the local Docker dev database). This probe exercises the
+// same runner behavior without touching any real table. Its id sorts
+// after every real migration, as runMigrations requires.
+const PROBE_TABLE = "migration_runner_probe";
+const probeMigration: Migration = {
+  id: "zzz_migration_runner_probe",
+  description: "Test-only probe table",
+  async up(client) {
+    await client.query(`CREATE TABLE ${PROBE_TABLE} (id INTEGER PRIMARY KEY)`);
+  },
+};
+
+async function removeProbe(): Promise<void> {
+  await database.query(`DROP TABLE IF EXISTS ${PROBE_TABLE}`);
+  await database.query("DELETE FROM schema_migrations WHERE id = $1", [probeMigration.id]);
+}
+
 test("runMigrations marks an existing table as applied when migration history is incomplete", async (t) => {
   if (!dbAvailable) {
     t.skip("DATABASE_URL is not reachable; skipping integration test.");
     return;
   }
 
-  await database.query("DROP TABLE IF EXISTS finance_inputs CASCADE");
-  await database.query(
-    "DELETE FROM schema_migrations WHERE id = '004_create_finance_inputs'",
-  );
-
-  await database.query(`
-    CREATE TABLE finance_inputs (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user_id UUID NOT NULL UNIQUE,
-      income_input TEXT NOT NULL DEFAULT '',
-      expense_input TEXT NOT NULL DEFAULT '',
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
   await runMigrations(migrations);
+  await removeProbe();
 
-  const result = await database.query<{ id: string }>(
-    "SELECT id FROM schema_migrations WHERE id = '004_create_finance_inputs'",
-  );
+  // The table exists but its migration isn't recorded - as if it had
+  // been created by hand before migrations tracked it.
+  await database.query(`CREATE TABLE ${PROBE_TABLE} (id INTEGER PRIMARY KEY)`);
 
-  assert.equal(result.rows.length, 1);
-  assert.equal(result.rows[0]?.id, "004_create_finance_inputs");
+  try {
+    await runMigrations([...migrations, probeMigration]);
+
+    const result = await database.query<{ id: string }>(
+      "SELECT id FROM schema_migrations WHERE id = $1",
+      [probeMigration.id],
+    );
+
+    assert.equal(result.rows.length, 1);
+  } finally {
+    await removeProbe();
+  }
 });
 
 test("runMigrations rejects duplicate migration IDs", async (t) => {

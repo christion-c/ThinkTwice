@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 
 import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
 import { useFinance } from "@/components/contexts/FinanceProvider";
+import { useMoneyPlan } from "@/components/contexts/MoneyPlanProvider";
 import DailyCheckinCard from "@/components/home/DailyCheckinCard";
 import PageScaffold from "@/components/PageScaffold";
 import {
@@ -25,41 +26,43 @@ import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { useSetupChecklist } from "@/hooks/useSetupChecklist";
 import { dailyMilesSeries, percentOf } from "@/lib/chart-series";
 import { withAlpha } from "@/lib/color";
+import { monthKeyOf, summarizeMonth } from "@/lib/money-plan";
 import { formatCurrencyWhole } from "@/lib/money-format";
 
 export default function Home() {
   const colors = useThemeColors();
   const {
-    monthlyIncome,
-    monthlyExpenses,
-    monthlyFixedCosts,
     monthlyFuelBudget,
     projectedFillUpCost,
     projectedDaysUntilFillUp,
-    projectedBudgetAfterEssentials,
     dailyDrivingLogs,
     refresh: refreshFinance,
   } = useFinance();
+  const { pay, items, refresh: refreshPlan } = useMoneyPlan();
   const { vehicles, refreshVehicles } = useVehicle();
 
   useRefetchOnFocus(
     useCallback(async () => {
-      await Promise.all([refreshFinance(), refreshVehicles()]);
-    }, [refreshFinance, refreshVehicles]),
+      await Promise.all([refreshFinance(), refreshPlan(), refreshVehicles()]);
+    }, [refreshFinance, refreshPlan, refreshVehicles]),
   );
 
-  const isBudgetHealthy = projectedBudgetAfterEssentials >= 0;
-  const budgetStatus = isBudgetHealthy ? "Plan looks stable" : "Budget risk detected";
-  // How much of take-home income is still free after essentials - a
-  // second, differently-framed number alongside the dollar figure.
+  // This month from the money plan - the same numbers the Finance tab shows.
+  const summary = useMemo(
+    () => summarizeMonth(pay, items, monthKeyOf(new Date()), monthlyFuelBudget),
+    [pay, items, monthlyFuelBudget],
+  );
+  const isBudgetHealthy = summary.leftOver >= 0;
+  const budgetStatus = isBudgetHealthy ? "Plan looks stable" : "Short this month";
+  // Share of take-home still free after bills, debt, and fuel.
   const remainingIncomeSharePercent =
-    monthlyIncome > 0 ? Math.round((projectedBudgetAfterEssentials / monthlyIncome) * 100) : null;
+    summary.takeHome > 0 ? Math.round((summary.leftOver / summary.takeHome) * 100) : null;
 
   const setupSteps: { label: string; description: string; complete: boolean; path: "/finance" | "/fuel" }[] = [
     {
-      label: "Budget baseline",
-      description: "Log your income, bills, and monthly spending.",
-      complete: monthlyIncome > 0 || monthlyExpenses > 0 || monthlyFixedCosts > 0,
+      label: "Pay and bills",
+      description: "4 quick questions about your pay, then add bills.",
+      complete: pay !== null,
       path: "/finance",
     },
     {
@@ -85,14 +88,13 @@ export default function Home() {
         ? "Monitor this week"
         : "On track";
 
-  // Where this month's income actually goes - the same three cost
-  // fields projectedBudgetAfterEssentials is computed from
-  // (finance-projections.ts), plus whatever's left over.
+  // Where this month's take-home goes - the same split as the Finance
+  // tab's "Where it goes" card.
   const incomeSegments = [
-    { label: "Fixed costs", value: monthlyFixedCosts, color: colors.blue },
-    { label: "Fuel", value: monthlyFuelBudget, color: colors.accent },
-    { label: "Spending", value: monthlyExpenses, color: colors.berry },
-    { label: "Remaining", value: Math.max(projectedBudgetAfterEssentials, 0), color: colors.success },
+    { label: "Debt payments", value: summary.debtPayments, color: colors.blue },
+    { label: "Bills", value: summary.bills, color: colors.berry },
+    { label: "Fuel", value: summary.fuel, color: colors.accent },
+    { label: "Left over", value: Math.max(summary.leftOver, 0), color: colors.success },
   ];
   const incomeSegmentsTotal = incomeSegments.reduce((sum, segment) => sum + segment.value, 0);
 
@@ -115,7 +117,7 @@ export default function Home() {
         <View className="gap-xs">
           <Text className="text-sm font-semibold text-accentDeep">Free cash flow this month</Text>
           <AnimatedNumber
-            value={projectedBudgetAfterEssentials}
+            value={summary.leftOver}
             formatValue={formatCurrencyWhole}
             numberOfLines={1}
             adjustsFontSizeToFit
@@ -130,7 +132,7 @@ export default function Home() {
               trackColor={withAlpha(colors.accentDeep, 0.2)}
             />
             <Text className="text-caption font-semibold text-accentDeep">
-              {remainingIncomeSharePercent}% of income free after essentials
+              {remainingIncomeSharePercent}% of take-home left after bills and debt
             </Text>
           </View>
         ) : null}
@@ -138,7 +140,7 @@ export default function Home() {
 
       <CardRow>
         <DashCard
-          title="Where your income goes"
+          title="Where your money goes"
           subtitle="This month's budget, by category"
           icon="pie-chart-outline"
           tint={colors.blue}
@@ -151,9 +153,9 @@ export default function Home() {
               trackColor={colors.surfaceSoft}
             >
               <View className="items-center">
-                <Text className="text-[11px] text-textMuted">Income</Text>
+                <Text className="text-[11px] text-textMuted">Take-home</Text>
                 <Text numberOfLines={1} adjustsFontSizeToFit className="max-w-[84px] text-lg font-bold text-text">
-                  {formatCurrencyWhole(monthlyIncome)}
+                  {formatCurrencyWhole(summary.takeHome)}
                 </Text>
               </View>
             </DonutGauge>
@@ -236,7 +238,7 @@ export default function Home() {
         <View className="flex-row flex-wrap gap-sm">
           <ActionTile
             title="Update budget"
-            description="Adjust income, bills, and spending."
+            description="Pay, bills, and debts."
             icon="wallet-outline"
             tint={colors.blue}
             onPress={() => router.push("/finance")}

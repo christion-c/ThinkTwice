@@ -13,6 +13,7 @@ import { dailyDrivingLogRouter } from "./modules/daily-driving-log/daily-driving
 import { fillUpHistoryRouter } from "./modules/fill-up-history/fill-up-history.routes.js";
 import { financeRouter } from "./modules/finance/finance.routes.js";
 import { healthRouter } from "./modules/health/health.routes.js";
+import { moneyPlanRouter } from "./modules/money-plan/money-plan.routes.js";
 import { predictionsRouter } from "./modules/predictions/predictions.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { vehicleRouter } from "./modules/vehicles/vehicles.routes.js";
@@ -88,6 +89,7 @@ export function createApp() {
   app.use("/finance", financeRouter);
   app.use("/fill-up-history", fillUpHistoryRouter);
   app.use("/daily-driving-log", dailyDrivingLogRouter);
+  app.use("/money-plan", moneyPlanRouter);
   app.use("/users", usersRouter);
 
   // Catches any request that didn't match a route above.

@@ -6,6 +6,30 @@ import { useAppPreferences, useThemeColors } from "@/components/contexts/AppPref
 import { navTabs, type NavTabLabel } from "./nav-tabs";
 import { shadows } from "./theme";
 
+// Keeps tab history shallow, like a real tab bar: Home stays at the
+// bottom of the stack and at most one other tab sits on top of it.
+// Pushing on every tap (the old behavior) grew the stack without limit,
+// so Android's back button walked through every tab ever visited.
+// - To Home: drop back down to it.
+// - From Home: push the tab (back returns Home).
+// - Tab to tab: swap the current tab for the new one.
+function switchTab(path: (typeof navTabs)[number]["path"], active: NavTabLabel | undefined) {
+  if (path === "/") {
+    if (router.canDismiss()) {
+      router.dismissTo("/");
+    } else {
+      router.replace("/");
+    }
+    return;
+  }
+
+  if (active === "Home" || active === undefined) {
+    router.push(path);
+  } else {
+    router.replace(path);
+  }
+}
+
 export default function BottomNav({ active }: { active?: NavTabLabel }) {
   const colors = useThemeColors();
   const { compactCards } = useAppPreferences();
@@ -26,7 +50,7 @@ export default function BottomNav({ active }: { active?: NavTabLabel }) {
               }`}
               onPress={() => {
                 if (!isActive) {
-                  router.push(tab.path);
+                  switchTab(tab.path, active);
                 }
               }}
             >

@@ -27,7 +27,10 @@ export default function PageScaffoldBody({
 }) {
   return (
     <Animated.View
-      entering={FadeInDown.duration(380).easing(entranceEasing)}
+      // Tab dashboards appear instantly: switching tabs remounts the
+      // screen, and fading its content in on every switch read as a
+      // flash. Other screens (settings, auth) keep the gentle entrance.
+      entering={dashboard ? undefined : FadeInDown.duration(380).easing(entranceEasing)}
       className={
         dashboard
           ? compactCards

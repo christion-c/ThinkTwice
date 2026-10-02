@@ -6,6 +6,14 @@
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
 
+  // Publishes Expo's dev server (Metro) straight to the host, bound to
+  // localhost only. VS Code's own port forwarding relays every byte
+  // through its remote connection, which made the ~12 MB development
+  // bundle load very slowly on a phone connected over USB
+  // (adb reverse tcp:8081 tcp:8081). Localhost-only so Metro, which
+  // serves the app's source, isn't exposed to the rest of the network.
+  "runArgs": ["--publish", "127.0.0.1:8081:8081"],
+
   "features": {
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.12"
@@ -24,8 +32,7 @@
   "forwardPorts": [
     3000,
     5433,
-    8000,
-    8081
+    8000
   ],
 
   "portsAttributes": {
@@ -42,8 +49,8 @@
       "onAutoForward": "silent"
     },
     "8081": {
-      "label": "Expo",
-      "onAutoForward": "notify"
+      "label": "Expo (published directly via runArgs)",
+      "onAutoForward": "ignore"
     }
   },
 

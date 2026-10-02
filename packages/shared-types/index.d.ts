@@ -121,3 +121,50 @@ export interface BudgetPrediction {
 export type PredictionResult =
   | { available: true; prediction: BudgetPrediction }
   | { available: false; message: string };
+
+export type PayFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
+export type MoneyItemKind = "bill" | "loan" | "card" | "collection" | "asset";
+export type DebtKind = "loan" | "card" | "collection";
+
+export interface PayProfile {
+  hourlyRate: number;
+  hoursPerWeek: number;
+  payFrequency: PayFrequency;
+  takeHomePerCheck: number;
+}
+
+export interface MoneyItem {
+  id: string;
+  kind: MoneyItemKind;
+  name: string;
+  /** A bill's monthly cost or a debt's monthly payment; 0 for assets. */
+  monthlyAmount: number;
+  /** A debt's balance owed or an asset's value; null for bills. */
+  balance: number | null;
+  /** YYYY-MM-DD the balance was entered; payment schedules run from this month. */
+  balanceAsOf: string | null;
+  aprPercent: number | null;
+  /** YYYY-MM-01 of a deferred debt's first payment month, else null. */
+  startsOn: string | null;
+  /** Deducted from the paycheck (already reflected in take-home). */
+  fromPaycheck: boolean;
+}
+
+export type MoneyItemInput =
+  | { kind: "bill"; name: string; monthlyAmount: number }
+  | {
+      kind: DebtKind;
+      name: string;
+      monthlyAmount: number;
+      balance: number;
+      balanceAsOf: string;
+      aprPercent?: number | null;
+      startsOn?: string | null;
+      fromPaycheck?: boolean;
+    }
+  | { kind: "asset"; name: string; balance: number; balanceAsOf: string };
+
+export interface MoneyPlan {
+  pay: PayProfile | null;
+  items: MoneyItem[];
+}

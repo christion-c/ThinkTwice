@@ -22,6 +22,8 @@ interface StepFlowModalProps<K extends string> {
   onCancel: () => void;
   onConfirm: () => void;
   webKeyboardInset: number;
+  // Validation message for the current answer (from useStepFlow).
+  error?: string | null;
   // Defaults match fuel.tsx's tuning (iOS: "position"/24). finance.tsx
   // passes its own ("padding"/0 - Android's default is "padding" too)
   // instead - predates this component and
@@ -48,6 +50,7 @@ export default function StepFlowModal<K extends string>({
   onCancel,
   onConfirm,
   webKeyboardInset,
+  error = null,
   // Android uses "padding": keyboard-controller's KeyboardAvoidingView
   // (unlike React Native's own) tracks the keyboard inside a Modal even
   // with edge-to-edge on, and padding the bottom-anchored sheet up by
@@ -95,17 +98,46 @@ export default function StepFlowModal<K extends string>({
             </View>
 
             <Text className="text-sm leading-5 text-textMuted">{step?.hint}</Text>
-            <TextInput
-              value={draft}
-              onChangeText={onChangeDraft}
-              keyboardType={step?.keyboardType ?? "default"}
-              autoCapitalize={step?.autoCapitalize ?? "sentences"}
-              autoCorrect={step?.autoCorrect ?? true}
-              className="rounded-md border border-border bg-surfaceSoft px-md py-3 text-base text-text"
-              placeholder={step?.placeholder}
-              placeholderTextColor={colors.textMuted}
-              autoFocus
-            />
+            {step?.choices ? (
+              <View className="flex-row flex-wrap gap-sm">
+                {step.choices.map((choice) => {
+                  const selected = draft === choice.value;
+                  return (
+                    <Pressable
+                      key={choice.value}
+                      onPress={() => onChangeDraft(choice.value)}
+                      className={`min-w-[45%] flex-1 items-center rounded-md border px-md py-3 ${
+                        selected ? "border-accent" : "border-border bg-surfaceSoft"
+                      }`}
+                      style={selected ? { backgroundColor: withAlpha(colors.accent, 0.16) } : undefined}
+                    >
+                      <Text className={`text-body font-semibold ${selected ? "text-accent" : "text-text"}`}>
+                        {choice.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <TextInput
+                value={draft}
+                onChangeText={onChangeDraft}
+                keyboardType={step?.keyboardType ?? "default"}
+                autoCapitalize={step?.autoCapitalize ?? "sentences"}
+                autoCorrect={step?.autoCorrect ?? true}
+                className="rounded-md border border-border bg-surfaceSoft px-md py-3 text-base text-text"
+                placeholder={step?.placeholder}
+                placeholderTextColor={colors.textMuted}
+                onSubmitEditing={onConfirm}
+                // Keep focus (and the keyboard) on submit: the same field
+                // is reused for the next step, so blurring would drop and
+                // re-raise the keyboard between every question.
+                submitBehavior="submit"
+                returnKeyType={isLastStep ? "done" : "next"}
+                autoFocus
+              />
+            )}
+            {error ? <Text className="text-sm text-danger">{error}</Text> : null}
             <View className="mt-xs flex-row justify-end gap-sm">
               <Pressable onPress={onCancel} className="rounded-md border border-border px-md py-2.5">
                 <Text className="text-sm font-semibold text-text">Cancel</Text>

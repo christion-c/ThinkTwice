@@ -102,7 +102,13 @@ export default function PageScaffold({
             alwaysBounceVertical={false}
             overScrollMode="never"
             scrollEventThrottle={16}
-            onScroll={handleScroll}
+            // The overscroll guard is for web (Safari rubber-banding);
+            // native already disables overscroll via bounces/overScrollMode.
+            // On native it also fought KeyboardAwareScrollView: while the
+            // keyboard opened and the view briefly scrolled into its added
+            // bottom space, the guard snapped it back each frame - visible
+            // as jitter when focusing an input like Home's daily check-in.
+            onScroll={Platform.OS === "web" ? handleScroll : undefined}
           >
             {body}
           </PageScrollView>
