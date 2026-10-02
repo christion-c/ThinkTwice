@@ -53,6 +53,13 @@ dailyDrivingLogRouter.post(
     }
 
     const log = await upsertDailyDrivingLog(currentUser.id, result.data);
+
+    // Nothing written means vehicleId named a vehicle this user doesn't own.
+    if (!log) {
+      respondNotFound(response, "Vehicle");
+      return;
+    }
+
     response.status(200).json({ log });
   }),
 );

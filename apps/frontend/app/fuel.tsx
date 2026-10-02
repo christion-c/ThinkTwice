@@ -8,13 +8,24 @@ import StepFlowModal from "@/components/StepFlowModal";
 import { useFinance } from "@/components/contexts/FinanceProvider";
 import PageScaffold from "@/components/PageScaffold";
 import { useVehicle } from "@/components/contexts/VehicleProvider";
-import { Card, CardTitle, MetricRow, PrimaryButton, RadialGauge, StatTile, StatusMessage } from "@/components/ui";
+import {
+  BarChart,
+  CardRow,
+  DashCard,
+  HeroCard,
+  HeroPill,
+  KpiTile,
+  PrimaryButton,
+  RadialGauge,
+  StatusMessage,
+} from "@/components/ui";
 import VehicleSelector from "@/components/fuel/VehicleSelector";
 import { useWebKeyboardInset } from "@/hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { useFuelCheckinFlow } from "@/hooks/useFuelCheckinFlow";
+import { fillUpCostSeries } from "@/lib/chart-series";
 import { withAlpha } from "@/lib/color";
-import { formatCurrency } from "@/lib/money-format";
+import { formatCurrency, formatCurrencyWhole } from "@/lib/money-format";
 
 export default function Fuel() {
   const colors = useThemeColors();
@@ -55,114 +66,166 @@ export default function Fuel() {
   const { fuelFlow, vehicleFlow, startFuelFlow, startVehicleFlow, saveMessage } = useFuelCheckinFlow();
   const hasExistingVehicle = Boolean(vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0]);
 
+  const fuelStatus =
+    projectedDaysUntilFillUp <= 3
+      ? "Refill soon"
+      : projectedDaysUntilFillUp <= 7
+        ? "Monitor this week"
+        : "On track";
+
+  const costSeries = useMemo(() => fillUpCostSeries(fillUpHistory, 6), [fillUpHistory]);
+  const averageFillUpCost =
+    recentFillUps.length > 0
+      ? recentFillUps.reduce((sum, entry) => sum + entry.observedCost, 0) / recentFillUps.length
+      : 0;
+  const averageMpg =
+    recentFillUps.length > 0
+      ? recentFillUps.reduce((sum, entry) => sum + entry.combinedMpg, 0) / recentFillUps.length
+      : 0;
+
   return (
     <PageScaffold
       title="Fuel"
       subtitle="Track your driving inputs so budget and refill predictions stay realistic."
       showNav
       navActive="Fuel"
+      dashboard
     >
-      <Card>
-        <CardTitle>Forecast</CardTitle>
-        <View className="flex-row items-center gap-md">
+      <HeroCard>
+        <View className="flex-row items-center gap-xl">
           <RadialGauge
             percent={tankPercent}
-            trackColor={colors.surfaceSoft}
-            fillColor={colors.accent}
+            size={112}
+            strokeWidth={11}
+            trackColor={withAlpha(colors.accentDeep, 0.2)}
+            fillColor={colors.accentDeep}
             label="Tank"
             valueLabel={`${Math.round(tankPercent)}%`}
-            labelColor={colors.textMuted}
-            valueColor={colors.text}
+            labelColor={colors.accentDeep}
+            valueColor={colors.accentDeep}
           />
           <View className="flex-1 gap-xs">
-            <MetricRow icon="cash-outline" label="Next refill cost" value={formatCurrency(projectedFillUpCost)} iconColor={colors.textMuted} />
-            <MetricRow icon="time-outline" label="Days remaining" value={Math.max(projectedDaysUntilFillUp, 0).toFixed(1)} iconColor={colors.textMuted} />
-            <MetricRow icon="wallet-outline" label="Monthly reserve" value={formatCurrency(monthlyFuelBudget)} iconColor={colors.textMuted} />
+            <HeroPill label={fuelStatus} />
+            <Text className="mt-xs text-sm font-semibold text-accentDeep">Next fill-up in</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit className="text-[34px] font-bold leading-[40px] text-accentDeep">
+              {Math.max(projectedDaysUntilFillUp, 0).toFixed(1)} days
+            </Text>
+            <Text className="text-caption font-semibold text-accentDeep">
+              About {formatCurrency(projectedFillUpCost)} to refill
+            </Text>
           </View>
         </View>
+      </HeroCard>
 
-        <View className="mt-xs flex-row gap-sm">
-          <StatTile
-            label="Fill-Up Gallons"
-            value={fuelGallonsInput || "0"}
-            className="flex-1 gap-xs rounded-md bg-surfaceSoft p-md"
-            labelClassName="text-caption uppercase tracking-[0.4px] text-textMuted"
-            valueClassName="text-[26px] font-bold text-text"
-          />
-          <StatTile
-            label="Current MPG"
-            value={combinedMpgInput || "0"}
-            className="flex-1 gap-xs rounded-md bg-surfaceSoft p-md"
-            labelClassName="text-caption uppercase tracking-[0.4px] text-textMuted"
-            valueClassName="text-[26px] font-bold text-text"
-          />
-        </View>
-      </Card>
-
-      <Card>
-        <View className="flex-row items-center justify-between gap-sm">
-          <View>
-            <CardTitle>Vehicle</CardTitle>
-            <Text className="text-sm text-textMuted">Choose or add a vehicle.</Text>
+      <CardRow>
+        <DashCard title="Driving stats" icon="speedometer-outline" tint={colors.teal}>
+          <View className="flex-row flex-wrap gap-sm">
+            <KpiTile icon="water-outline" label="Fill-up gallons" value={fuelGallonsInput || "0"} tint={colors.teal} />
+            <KpiTile icon="leaf-outline" label="Current MPG" value={combinedMpgInput || "0"} tint={colors.blue} />
+            <KpiTile
+              icon="wallet-outline"
+              label="Monthly fuel reserve"
+              value={formatCurrency(monthlyFuelBudget)}
+              tint={colors.gold}
+            />
           </View>
+        </DashCard>
 
-          <Pressable
-            onPress={() => {
-              void refreshVehicles();
-            }}
-            disabled={loading}
-            className="rounded-sm bg-surfaceSoft px-sm py-2 active:opacity-85 disabled:opacity-85"
-          >
-            <Text className="text-caption font-semibold text-text">{loading ? "Loading..." : "Refresh"}</Text>
-          </Pressable>
-        </View>
+        <DashCard
+          title="Fill-up costs"
+          subtitle={costSeries.length > 0 ? `Your last ${costSeries.length} fill-ups` : "No fill-ups logged yet"}
+          icon="bar-chart-outline"
+          tint={colors.accent}
+        >
+          {costSeries.length > 0 ? (
+            <>
+              <BarChart data={costSeries} color={colors.accent} height={110} formatValue={formatCurrencyWhole} />
+              <View className="flex-row gap-sm">
+                <View className="flex-1 gap-0.5 rounded-sm bg-surfaceSoft px-md py-sm">
+                  <Text className="text-xs text-textMuted">Avg. fill-up</Text>
+                  <Text className="text-body font-bold text-text">{formatCurrency(averageFillUpCost)}</Text>
+                </View>
+                <View className="flex-1 gap-0.5 rounded-sm bg-surfaceSoft px-md py-sm">
+                  <Text className="text-xs text-textMuted">Avg. MPG</Text>
+                  <Text className="text-body font-bold text-text">{averageMpg.toFixed(1)}</Text>
+                </View>
+              </View>
+            </>
+          ) : (
+            <Text className="text-sm leading-5 text-textMuted">
+              Your fill-up costs will chart here after your first fuel check-in.
+            </Text>
+          )}
+        </DashCard>
+      </CardRow>
 
-        {loading ? (
-          <View className="flex-row items-center gap-xs">
-            <ActivityIndicator color={colors.accent} size="small" />
-            <Text className="text-sm text-textMuted">Refreshing vehicles...</Text>
-          </View>
-        ) : null}
+      <CardRow>
+        <DashCard
+          title="Vehicle"
+          subtitle="Choose or add a vehicle."
+          icon="car-outline"
+          tint={colors.blue}
+          action={
+            <Pressable
+              onPress={() => {
+                void refreshVehicles();
+              }}
+              disabled={loading}
+              accessibilityLabel="Refresh vehicles"
+              className="h-9 w-9 items-center justify-center rounded-round bg-surfaceSoft active:opacity-70 disabled:opacity-60"
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.accent} size="small" />
+              ) : (
+                <Ionicons name="refresh" size={18} color={colors.text} />
+              )}
+            </Pressable>
+          }
+        >
+          <VehicleSelector vehicles={vehicles} selectedVehicleId={selectedVehicleId} onSelect={selectVehicle} />
 
-        <VehicleSelector vehicles={vehicles} selectedVehicleId={selectedVehicleId} onSelect={selectVehicle} />
-
-        <View className="gap-sm">
           <PrimaryButton
             onPress={startVehicleFlow}
             label={hasExistingVehicle ? "Update vehicle details" : "Add vehicle details"}
             textClassName="text-body"
           />
-        </View>
 
-        <StatusMessage message={errorMessage} tone="error" />
-        <StatusMessage message={saveMessage} tone="success" />
-      </Card>
+          <StatusMessage message={errorMessage} tone="error" />
+          <StatusMessage message={saveMessage} tone="success" />
+        </DashCard>
 
-      <Card>
-        <CardTitle>Fuel Check-In</CardTitle>
-        <Text className="text-sm text-textMuted">Check in after every fill-up.</Text>
-
-        <View className="gap-sm">
+        <DashCard
+          title="Fuel check-in"
+          subtitle="Check in after every fill-up."
+          icon="water-outline"
+          tint={colors.teal}
+        >
           <PrimaryButton onPress={startFuelFlow} label="Start fuel check-in" textClassName="text-body" />
-        </View>
-      </Card>
+        </DashCard>
+      </CardRow>
 
       {recentFillUps.length > 0 ? (
-        <Card>
-          <View className="flex-row items-center justify-between gap-sm">
-            <CardTitle>Fill-Up History</CardTitle>
+        <DashCard
+          title="Recent fill-ups"
+          icon="time-outline"
+          tint={colors.gold}
+          action={
             <Pressable onPress={() => router.push("/history")} className="active:opacity-70">
               <Text className="text-caption font-semibold text-accent">View all</Text>
             </Pressable>
-          </View>
-          <View className="gap-sm">
-            {recentFillUps.map((entry) => (
-              <View key={entry.id} className="flex-row items-center gap-sm">
+          }
+        >
+          <View>
+            {recentFillUps.map((entry, index) => (
+              <View
+                key={entry.id}
+                className={`flex-row items-center gap-md py-md ${index > 0 ? "border-t border-border" : ""}`}
+              >
                 <View
-                  className="h-9 w-9 items-center justify-center rounded-round"
-                  style={{ backgroundColor: withAlpha(colors.accent, 0.16) }}
+                  className="h-10 w-10 items-center justify-center rounded-sm"
+                  style={{ backgroundColor: withAlpha(colors.gold, 0.16) }}
                 >
-                  <Ionicons name="water-outline" size={16} color={colors.accent} />
+                  <Ionicons name="water" size={18} color={colors.gold} />
                 </View>
                 <View className="flex-1 gap-0.5">
                   <Text className="text-[14px] font-semibold text-text">{entry.gallons.toFixed(1)} gal</Text>
@@ -175,7 +238,7 @@ export default function Fuel() {
               </View>
             ))}
           </View>
-        </Card>
+        </DashCard>
       ) : null}
 
       <StepFlowModal

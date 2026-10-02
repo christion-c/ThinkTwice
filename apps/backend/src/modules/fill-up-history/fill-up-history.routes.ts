@@ -71,10 +71,17 @@ fillUpHistoryRouter.post(
 
     const { recordedAt, ...fillUpEntry } = result.data;
 
-    await insertFillUpHistory(currentUser.id, {
+    const saved = await insertFillUpHistory(currentUser.id, {
       ...fillUpEntry,
       ...(recordedAt ? { recordedAt: new Date(recordedAt) } : {}),
     });
+
+    // Nothing inserted means vehicleId named a vehicle this user doesn't own.
+    if (!saved) {
+      respondNotFound(response, "Vehicle");
+      return;
+    }
+
     response.status(204).end();
   }),
 );

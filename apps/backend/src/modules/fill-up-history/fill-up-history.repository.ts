@@ -55,21 +55,32 @@ function mapRow(row: FillUpRow): FillUpEntry {
   };
 }
 
-// Saves one fill-up entry for the given user.
+// Saves one fill-up entry for the given user. When a vehicleId is
+// given, it must belong to that same user - checked in the same
+// statement as the insert (like updateFillUpHistoryVehicle below), so a
+// client can't attach its history to someone else's vehicle. Returns
+// false, inserting nothing, when the vehicle isn't the user's.
 export async function insertFillUpHistory(
   userId: string,
   entry: FillUpEntryInput,
-): Promise<void> {
+): Promise<boolean> {
   // Default to now when the caller didn't send an explicit timestamp.
   const recordedAt = entry.recordedAt ? new Date(entry.recordedAt) : new Date();
 
-  await database.query(
+  const result = await database.query(
     `
       INSERT INTO fill_up_history (
         user_id, miles_driven, fuel_price, combined_mpg,
         tank_capacity, gallons, observed_cost, recorded_at, vehicle_id
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      SELECT
+        $1::uuid, $2::numeric, $3::numeric, $4::numeric,
+        $5::numeric, $6::numeric, $7::numeric, $8::timestamptz, $9::uuid
+      WHERE
+        $9::uuid IS NULL
+        OR EXISTS (
+          SELECT 1 FROM vehicles v WHERE v.id = $9::uuid AND v.user_id = $1::uuid
+        )
     `,
     [
       userId,
@@ -83,6 +94,8 @@ export async function insertFillUpHistory(
       entry.vehicleId ?? null,
     ],
   );
+
+  return result.rowCount === 1;
 }
 
 // Same data as listFillUpHistoryByUserId, keyed by Firebase UID instead

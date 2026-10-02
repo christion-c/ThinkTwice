@@ -33,6 +33,10 @@ export default function ThemeVarsRoot({ children }: { children: ReactNode }) {
       "--color-accent-deep": colors.accentDeep,
       "--color-success": colors.success,
       "--color-danger": colors.danger,
+      "--color-teal": colors.teal,
+      "--color-blue": colors.blue,
+      "--color-berry": colors.berry,
+      "--color-gold": colors.gold,
     });
   }, [colorMode, highContrast]);
 

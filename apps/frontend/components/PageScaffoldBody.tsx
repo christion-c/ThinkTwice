@@ -14,6 +14,7 @@ export default function PageScaffoldBody({
   headerLeft,
   headerRight,
   compactCards,
+  dashboard = false,
   children,
 }: {
   title: string;
@@ -21,12 +22,21 @@ export default function PageScaffoldBody({
   headerLeft?: ReactNode;
   headerRight?: ReactNode;
   compactCards: boolean;
+  dashboard?: boolean;
   children: ReactNode;
 }) {
   return (
     <Animated.View
       entering={FadeInDown.duration(380).easing(entranceEasing)}
-      className={compactCards ? "gap-xl px-lg pt-md" : "gap-2xl px-lg pt-lg"}
+      className={
+        dashboard
+          ? compactCards
+            ? "gap-lg px-lg pt-md"
+            : "gap-xl px-lg pt-lg"
+          : compactCards
+            ? "gap-xl px-lg pt-md"
+            : "gap-2xl px-lg pt-lg"
+      }
     >
       <View className={compactCards ? "gap-1.5" : "gap-2"}>
         <View className="flex-row items-center justify-between gap-sm">

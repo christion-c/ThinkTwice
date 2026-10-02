@@ -1,10 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { cssInterop } from "nativewind";
+import { Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import type { KeyboardAvoidingViewProps } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
 import type { StepFlowStepConfig } from "@/hooks/useStepFlow";
 import { withAlpha } from "@/lib/color";
+
+// Lets NativeWind's className reach keyboard-controller's
+// KeyboardAvoidingView the way it reaches React Native's own.
+cssInterop(KeyboardAvoidingView, { className: "style" });
 
 interface StepFlowModalProps<K extends string> {
   step: StepFlowStepConfig<K> | null;
@@ -17,7 +23,8 @@ interface StepFlowModalProps<K extends string> {
   onConfirm: () => void;
   webKeyboardInset: number;
   // Defaults match fuel.tsx's tuning (iOS: "position"/24). finance.tsx
-  // passes its own ("padding"/0) instead - predates this component and
+  // passes its own ("padding"/0 - Android's default is "padding" too)
+  // instead - predates this component and
   // the commit history that changed it has no more specific reasoning
   // than "demo day" fixes, so the actual on-device iOS difference this
   // was tuned for isn't recoverable from history. Left as two different
@@ -41,7 +48,12 @@ export default function StepFlowModal<K extends string>({
   onCancel,
   onConfirm,
   webKeyboardInset,
-  keyboardBehavior = Platform.OS === "ios" ? "position" : "height",
+  // Android uses "padding": keyboard-controller's KeyboardAvoidingView
+  // (unlike React Native's own) tracks the keyboard inside a Modal even
+  // with edge-to-edge on, and padding the bottom-anchored sheet up by
+  // the keyboard height is what keeps the input visible. React Native's
+  // "height" behavior did nothing there - the window never resizes.
+  keyboardBehavior = Platform.OS === "ios" ? "position" : "padding",
   keyboardVerticalOffset = Platform.OS === "ios" ? 24 : 0,
 }: StepFlowModalProps<K>) {
   const colors = useThemeColors();

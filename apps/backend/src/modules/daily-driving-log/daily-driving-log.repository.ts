@@ -1,5 +1,5 @@
 import { database } from "../../db/pool.js";
-import { expectOneRow, numericOrNull } from "../../lib/db-helpers.js";
+import { numericOrNull } from "../../lib/db-helpers.js";
 
 export interface DailyDrivingLog {
   id: string;
@@ -35,15 +35,22 @@ function mapRow(row: DailyDrivingLogRow): DailyDrivingLog {
 // Creates or corrects the given user's log for one day - re-checking in
 // on the same day overwrites that day's number rather than creating a
 // duplicate row, enforced by the daily_driving_logs (user_id, log_date)
-// unique constraint.
+// unique constraint. A given vehicleId must belong to the same user,
+// checked in the same statement; returns null (writing nothing) when it
+// doesn't.
 export async function upsertDailyDrivingLog(
   userId: string,
   input: CreateDailyDrivingLogInput,
-): Promise<DailyDrivingLog> {
+): Promise<DailyDrivingLog | null> {
   const result = await database.query<DailyDrivingLogRow>(
     `
       INSERT INTO daily_driving_logs (user_id, log_date, miles_driven, vehicle_id)
-      VALUES ($1, $2, $3, $4)
+      SELECT $1::uuid, $2::date, $3::numeric, $4::uuid
+      WHERE
+        $4::uuid IS NULL
+        OR EXISTS (
+          SELECT 1 FROM vehicles v WHERE v.id = $4::uuid AND v.user_id = $1::uuid
+        )
 
       ON CONFLICT (user_id, log_date)
       DO UPDATE SET
@@ -56,7 +63,9 @@ export async function upsertDailyDrivingLog(
     [userId, input.logDate, input.milesDriven, input.vehicleId ?? null],
   );
 
-  return mapRow(expectOneRow(result, "daily driving log"));
+  const log = result.rows[0];
+
+  return log ? mapRow(log) : null;
 }
 
 // Returns the given user's most recent daily driving logs, newest first.

@@ -1,15 +1,27 @@
 import { useCallback } from "react";
-import { Platform, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
 import StepFlowModal from "@/components/StepFlowModal";
 import { useFinance } from "@/components/contexts/FinanceProvider";
 import PageScaffold from "@/components/PageScaffold";
-import { Card, CardTitle, MetricRow, PrimaryButton, RadialGauge, StatTile } from "@/components/ui";
+import {
+  AnimatedNumber,
+  CardRow,
+  DashCard,
+  HeroCard,
+  HeroPill,
+  KpiTile,
+  PrimaryButton,
+  ProgressBar,
+  StackedBar,
+} from "@/components/ui";
 import { useWebKeyboardInset } from "@/hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { useStepFlow, type StepFlowStepConfig } from "@/hooks/useStepFlow";
-import { formatCurrency } from "@/lib/money-format";
+import { percentOf } from "@/lib/chart-series";
+import { withAlpha } from "@/lib/color";
+import { formatCurrency, formatCurrencyWhole } from "@/lib/money-format";
 
 type FinanceCheckinStepKey = "income" | "expense" | "bills";
 
@@ -65,65 +77,84 @@ export default function Finance() {
     });
 
   const isHealthy = projectedBudgetAfterEssentials >= 0;
-  const spendingHabitRatio =
-    monthlyIncome > 0 ? (monthlyExpenses + monthlyFixedCosts + monthlyFuelBudget) / monthlyIncome : 0;
+  const committedPercent = percentOf(monthlyExpenses + monthlyFixedCosts + monthlyFuelBudget, monthlyIncome);
+
+  const budgetSegments = [
+    { label: "Fixed costs", value: monthlyFixedCosts, color: colors.blue },
+    { label: "Spending", value: monthlyExpenses, color: colors.berry },
+    { label: "Fuel", value: monthlyFuelBudget, color: colors.accent },
+    { label: "Available", value: Math.max(projectedBudgetAfterEssentials, 0), color: colors.success },
+  ];
 
   return (
     <PageScaffold
       title="Finances"
-      subtitle="Build your monthly budget and reserve room for fuel before surprises hit."
+      subtitle="Your monthly budget, with room reserved for fuel before surprises hit."
       showNav
       navActive="Finance"
+      dashboard
     >
-      <Card>
-        <CardTitle>Budget Snapshot</CardTitle>
-        <View className="flex-row items-center gap-md">
-          <RadialGauge
-            percent={spendingHabitRatio * 100}
-            trackColor={colors.surfaceSoft}
-            fillColor={isHealthy ? colors.success : colors.danger}
-            label="Spent"
-            valueLabel={`${Math.round(spendingHabitRatio * 100)}%`}
-            labelColor={colors.textMuted}
-            valueColor={colors.text}
+      <HeroCard>
+        <HeroPill label={isHealthy ? "Healthy" : "Needs attention"} />
+        <View className="gap-xs">
+          <Text className="text-sm font-semibold text-accentDeep">Available after essentials</Text>
+          <AnimatedNumber
+            value={projectedBudgetAfterEssentials}
+            formatValue={formatCurrency}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            className="text-[40px] font-bold leading-[46px] text-accentDeep"
           />
-          <View className="flex-1 gap-xs">
-            <MetricRow icon="cash-outline" label="Income" value={formatCurrency(monthlyIncome)} iconColor={colors.textMuted} />
-            <MetricRow icon="cart-outline" label="Spending" value={formatCurrency(monthlyExpenses)} iconColor={colors.textMuted} />
-            <MetricRow icon="receipt-outline" label="Fixed costs" value={formatCurrency(monthlyFixedCosts)} iconColor={colors.textMuted} />
-            <MetricRow icon="water-outline" label="Fuel cost" value={formatCurrency(monthlyFuelBudget)} iconColor={colors.textMuted} />
+        </View>
+        <View className="gap-sm">
+          <ProgressBar
+            percent={committedPercent}
+            color={colors.accentDeep}
+            trackColor={withAlpha(colors.accentDeep, 0.2)}
+          />
+          <View className="flex-row flex-wrap justify-between gap-sm">
+            <Text className="text-caption font-semibold text-accentDeep">{committedPercent}% of income committed</Text>
+            <Text className="text-caption font-semibold text-accentDeep">
+              {formatCurrency(weeklySpendTarget)} / week to spend
+            </Text>
           </View>
         </View>
-        <Text className={`text-sm font-bold ${isHealthy ? "text-success" : "text-danger"}`}>
-          {isHealthy ? "Healthy" : "Needs attention"} · Available: {formatCurrency(projectedBudgetAfterEssentials)}
-        </Text>
+      </HeroCard>
 
-        <View className="mt-xs flex-row flex-wrap gap-sm">
-          <StatTile
-            label="Weekly Budget"
-            value={formatCurrency(weeklySpendTarget)}
-            className="min-w-[30%] flex-1 gap-xs rounded-md bg-surfaceSoft p-md"
-            labelClassName="text-caption uppercase tracking-[0.5px] text-textMuted"
-            valueClassName="text-[22px] font-bold text-text"
-          />
-          <StatTile
-            label="Fuel share"
-            value={monthlyIncome > 0 ? `${Math.round((monthlyFuelBudget / monthlyIncome) * 100)}%` : "0%"}
-            className="min-w-[30%] flex-1 gap-xs rounded-md bg-surfaceSoft p-md"
-            labelClassName="text-caption uppercase tracking-[0.5px] text-textMuted"
-            valueClassName="text-[22px] font-bold text-text"
-          />
-        </View>
-      </Card>
+      <CardRow>
+        <DashCard
+          title="Budget breakdown"
+          subtitle="Where each month's income is going"
+          icon="pie-chart-outline"
+          tint={colors.blue}
+        >
+          <StackedBar segments={budgetSegments} formatValue={formatCurrencyWhole} />
+        </DashCard>
 
-      <Card>
-        <CardTitle>Budget Check-In</CardTitle>
+        <DashCard title="Monthly numbers" icon="stats-chart-outline" tint={colors.teal}>
+          <View className="flex-row flex-wrap gap-sm">
+            <KpiTile icon="cash-outline" label="Income" value={formatCurrency(monthlyIncome)} tint={colors.success} />
+            <KpiTile icon="cart-outline" label="Spending" value={formatCurrency(monthlyExpenses)} tint={colors.berry} />
+            <KpiTile icon="receipt-outline" label="Fixed costs" value={formatCurrency(monthlyFixedCosts)} tint={colors.blue} />
+            <KpiTile
+              icon="water-outline"
+              label="Fuel"
+              value={formatCurrency(monthlyFuelBudget)}
+              caption={`${percentOf(monthlyFuelBudget, monthlyIncome)}% of income`}
+              tint={colors.accent}
+            />
+          </View>
+        </DashCard>
+      </CardRow>
 
-        <View className="gap-sm">
-          <PrimaryButton onPress={startFinanceFlow} label="Start monthly check-in" textClassName="text-body" />
-          <Text className="text-sm text-textMuted">Enter your monthly income, spending, and recurring bills one step at a time.</Text>
-        </View>
-      </Card>
+      <DashCard
+        title="Budget check-in"
+        subtitle="Enter your monthly income, spending, and recurring bills one step at a time."
+        icon="create-outline"
+        tint={colors.gold}
+      >
+        <PrimaryButton onPress={startFinanceFlow} label="Start monthly check-in" textClassName="text-body" />
+      </DashCard>
 
       <StepFlowModal
         step={financeFlow.activeStep}
@@ -135,7 +166,7 @@ export default function Finance() {
         onCancel={financeFlow.close}
         onConfirm={() => void financeFlow.confirmStep()}
         webKeyboardInset={webKeyboardInset}
-        keyboardBehavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardBehavior="padding"
         keyboardVerticalOffset={0}
       />
     </PageScaffold>

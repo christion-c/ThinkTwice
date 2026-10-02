@@ -13,6 +13,7 @@ import {
   reassignDailyDrivingLogVehicle,
   reassignFillUpVehicle,
   saveDailyDrivingLog,
+  type BackendFinanceInputs,
   type DailyDrivingLog,
   type SavedFillUpHistoryEntry,
   upsertFinanceInputs,
@@ -36,6 +37,23 @@ const FINANCE_STORAGE_KEY = "thinktwice.finance-inputs";
 // of truth (loadCloudFinanceInputs), with its own debounced remote
 // save. That cloud round trip is a genuinely different shape the
 // shared hook doesn't cover, not an oversight.
+
+// The nine planner inputs serialized in a fixed key order, so a
+// snapshot built from component state and one returned by the API
+// compare equal whenever their values do.
+function financeInputsJson(inputs: BackendFinanceInputs): string {
+  return JSON.stringify([
+    inputs.incomeInput,
+    inputs.expenseInput,
+    inputs.monthlyFixedCostsInput,
+    inputs.fuelGallonsInput,
+    inputs.fuelPriceInput,
+    inputs.milesPerWeekInput,
+    inputs.combinedMpgInput,
+    inputs.tankCapacityInput,
+    inputs.currentTankPercentInput,
+  ]);
+}
 
 type FinanceContextValue = {
   incomeInput: string;
@@ -111,6 +129,18 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const storageKey = user?.uid ? `${FINANCE_STORAGE_KEY}.${user.uid}` : `${FINANCE_STORAGE_KEY}.guest`;
 
+  // The account whose server copy of the inputs has loaded on this
+  // device. Cloud saves wait for it: before that, the inputs on screen
+  // are blank defaults or a possibly-stale local cache, and uploading
+  // them would overwrite the account's real values on the server - e.g.
+  // signing in on a new phone, where the first save fired before a slow
+  // (cold-start) fetch returned and wiped the budget entered elsewhere.
+  const [cloudReadyUid, setCloudReadyUid] = useState<string | null>(null);
+  // JSON of the inputs as last loaded from / saved to the server, so an
+  // unchanged snapshot (like the one right after loading) isn't re-sent.
+  const lastSyncedJson = useRef<string | null>(null);
+  const cloudSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Blank every input and cached list the moment the signed-in account
   // changes (adjusted during render, same pattern as the vehicle
   // auto-fill below) so the previous account's numbers never flash on
@@ -120,6 +150,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   if ((user?.uid ?? null) !== lastResetUserId) {
     setLastResetUserId(user?.uid ?? null);
+    setCloudReadyUid(null);
     setIncomeInput("");
     setExpenseInput("");
     setMonthlyFixedCostsInput("");
@@ -140,19 +171,29 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
     try {
       const cloud = await fetchFinanceInputs(user);
-      setIncomeInput(cloud.incomeInput);
-      setExpenseInput(cloud.expenseInput);
-      setMonthlyFixedCostsInput(cloud.monthlyFixedCostsInput);
-      setFuelGallonsInput(cloud.fuelGallonsInput);
-      setFuelPriceInput(cloud.fuelPriceInput);
-      setMilesPerWeekInput(cloud.milesPerWeekInput);
-      setCombinedMpgInput(cloud.combinedMpgInput);
-      setTankCapacityInput(cloud.tankCapacityInput);
-      setCurrentTankPercentInput(cloud.currentTankPercentInput);
 
-      await AsyncStorage.setItem(storageKey, JSON.stringify(cloud));
+      // A save still waiting on its debounce means the user just edited
+      // something - keep those edits (they upload shortly) rather than
+      // replacing them with the server's older copy.
+      if (cloudSaveTimer.current === null) {
+        setIncomeInput(cloud.incomeInput);
+        setExpenseInput(cloud.expenseInput);
+        setMonthlyFixedCostsInput(cloud.monthlyFixedCostsInput);
+        setFuelGallonsInput(cloud.fuelGallonsInput);
+        setFuelPriceInput(cloud.fuelPriceInput);
+        setMilesPerWeekInput(cloud.milesPerWeekInput);
+        setCombinedMpgInput(cloud.combinedMpgInput);
+        setTankCapacityInput(cloud.tankCapacityInput);
+        setCurrentTankPercentInput(cloud.currentTankPercentInput);
+        lastSyncedJson.current = financeInputsJson(cloud);
+
+        await AsyncStorage.setItem(storageKey, JSON.stringify(cloud));
+      }
+
+      setCloudReadyUid(user.uid);
     } catch {
       // Keep the locally cached values if the backend is unavailable.
+      // Cloud saves stay off until a later refresh loads successfully.
     }
   }, [user, storageKey]);
 
@@ -447,8 +488,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     stats,
   );
 
-  const cloudSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Persists every input change locally right away, and to the backend
   // after a short debounce (so rapid keystrokes don't each trigger a
   // network call).
@@ -467,7 +506,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
     void AsyncStorage.setItem(storageKey, JSON.stringify(snapshot));
 
-    if (!user) {
+    // See cloudReadyUid: never upload before this account's server copy
+    // has loaded, and skip snapshots the server already has.
+    const snapshotJson = financeInputsJson(snapshot);
+    if (!user || cloudReadyUid !== user.uid || snapshotJson === lastSyncedJson.current) {
       return;
     }
 
@@ -476,11 +518,17 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
 
     cloudSaveTimer.current = setTimeout(() => {
-      void upsertFinanceInputs(user, snapshot).catch(() => {
-        // Ignore transient network errors; the next save will retry.
-      });
+      cloudSaveTimer.current = null;
+      void upsertFinanceInputs(user, snapshot)
+        .then(() => {
+          lastSyncedJson.current = snapshotJson;
+        })
+        .catch(() => {
+          // Ignore transient network errors; the next save will retry.
+        });
     }, 1500);
   }, [
+    cloudReadyUid,
     incomeInput,
     expenseInput,
     monthlyFixedCostsInput,

@@ -13,6 +13,7 @@ import {
   listDailyDrivingLogsForUser,
   updateDailyDrivingLogVehicle,
   upsertDailyDrivingLog,
+  type DailyDrivingLog,
 } from "./daily-driving-log.repository.js";
 
 let dbAvailable = false;
@@ -34,6 +35,18 @@ after(async () => {
     await deleteTestUser(otherUserId);
   }
 });
+
+// upsertDailyDrivingLog returns null only when vehicleId names someone
+// else's vehicle; the tests that never pass one use this to get a
+// non-null log back.
+async function upsertOwnLog(
+  ownerId: string,
+  input: Parameters<typeof upsertDailyDrivingLog>[1],
+): Promise<DailyDrivingLog> {
+  const log = await upsertDailyDrivingLog(ownerId, input);
+  assert.ok(log, "expected the log to be written");
+  return log;
+}
 
 test("upsertDailyDrivingLog then listDailyDrivingLogsForUser returns the log, newest first", async (t) => {
   if (!dbAvailable) {
@@ -88,7 +101,7 @@ test("upsertDailyDrivingLog returns an id and defaults vehicleId to null", async
     return;
   }
 
-  const log = await upsertDailyDrivingLog(userId, { logDate: "2026-05-01", milesDriven: 12 });
+  const log = await upsertOwnLog(userId, { logDate: "2026-05-01", milesDriven: 12 });
 
   assert.equal(typeof log.id, "string");
   assert.ok(log.id.length > 0);
@@ -111,7 +124,7 @@ test("upsertDailyDrivingLog accepts an explicit vehicleId and updates it on re-c
     combinedMpg: null,
   });
 
-  const created = await upsertDailyDrivingLog(userId, {
+  const created = await upsertOwnLog(userId, {
     logDate: "2026-05-02",
     milesDriven: 14,
     vehicleId: vehicle.id,
@@ -120,7 +133,7 @@ test("upsertDailyDrivingLog accepts an explicit vehicleId and updates it on re-c
 
   // Re-checking in on the same day without a vehicleId should clear it,
   // since the upsert's SET clause always writes vehicle_id = EXCLUDED.
-  const corrected = await upsertDailyDrivingLog(userId, {
+  const corrected = await upsertOwnLog(userId, {
     logDate: "2026-05-02",
     milesDriven: 16,
   });
@@ -143,7 +156,7 @@ test("updateDailyDrivingLogVehicle reassigns a log to another vehicle owned by t
     combinedMpg: null,
   });
 
-  const log = await upsertDailyDrivingLog(userId, { logDate: "2026-05-03", milesDriven: 18 });
+  const log = await upsertOwnLog(userId, { logDate: "2026-05-03", milesDriven: 18 });
 
   const updated = await updateDailyDrivingLogVehicle(log.id, userId, vehicle.id);
 
@@ -167,7 +180,7 @@ test("updateDailyDrivingLogVehicle refuses to assign a vehicle owned by a differ
     combinedMpg: null,
   });
 
-  const log = await upsertDailyDrivingLog(userId, { logDate: "2026-05-04", milesDriven: 22 });
+  const log = await upsertOwnLog(userId, { logDate: "2026-05-04", milesDriven: 22 });
 
   const result = await updateDailyDrivingLogVehicle(log.id, userId, othersVehicle.id);
 
@@ -180,7 +193,7 @@ test("deleteDailyDrivingLog removes only the log owned by the given user", async
     return;
   }
 
-  const log = await upsertDailyDrivingLog(userId, { logDate: "2026-05-05", milesDriven: 24 });
+  const log = await upsertOwnLog(userId, { logDate: "2026-05-05", milesDriven: 24 });
 
   const deleted = await deleteDailyDrivingLog(log.id, userId);
   assert.equal(deleted, true);
@@ -195,7 +208,7 @@ test("deleteDailyDrivingLog refuses to delete another user's log", async (t) => 
     return;
   }
 
-  const othersLog = await upsertDailyDrivingLog(otherUserId, {
+  const othersLog = await upsertOwnLog(otherUserId, {
     logDate: "2026-05-06",
     milesDriven: 26,
   });
@@ -233,4 +246,62 @@ test("deleteAllDailyDrivingLogsForUser removes every log for that user and none 
     await deleteTestUser(bulkUserId);
     await deleteTestUser(untouchedUserId);
   }
+});
+
+test("upsertDailyDrivingLog refuses a vehicle owned by a different user", async (t) => {
+  if (!dbAvailable) {
+    t.skip("DATABASE_URL is not reachable; skipping integration test.");
+    return;
+  }
+
+  const othersVehicle = await createVehicle({
+    userId: otherUserId,
+    nickname: "Not Yours Upsert",
+    make: null,
+    model: null,
+    modelYear: null,
+    tankCapacityGallons: null,
+    combinedMpg: null,
+  });
+
+  const result = await upsertDailyDrivingLog(userId, {
+    logDate: "2026-07-01",
+    milesDriven: 30,
+    vehicleId: othersVehicle.id,
+  });
+
+  assert.equal(result, null);
+  const logs = await listDailyDrivingLogsForUser(userId);
+  assert.ok(!logs.some((log) => log.logDate === "2026-07-01"));
+});
+
+test("upsertDailyDrivingLog with another user's vehicle leaves an existing log for that day untouched", async (t) => {
+  if (!dbAvailable) {
+    t.skip("DATABASE_URL is not reachable; skipping integration test.");
+    return;
+  }
+
+  const othersVehicle = await createVehicle({
+    userId: otherUserId,
+    nickname: "Not Yours Conflict",
+    make: null,
+    model: null,
+    modelYear: null,
+    tankCapacityGallons: null,
+    combinedMpg: null,
+  });
+
+  await upsertOwnLog(userId, { logDate: "2026-07-02", milesDriven: 11 });
+
+  const result = await upsertDailyDrivingLog(userId, {
+    logDate: "2026-07-02",
+    milesDriven: 99,
+    vehicleId: othersVehicle.id,
+  });
+
+  assert.equal(result, null);
+  const logs = await listDailyDrivingLogsForUser(userId);
+  const day = logs.find((log) => log.logDate === "2026-07-02");
+  assert.equal(day?.milesDriven, 11);
+  assert.equal(day?.vehicleId, null);
 });

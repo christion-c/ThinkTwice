@@ -450,3 +450,65 @@ test("deleteAllFillUpHistoryForUser removes every entry for that user and none o
     await deleteTestUser(untouchedUserId);
   }
 });
+
+test("insertFillUpHistory accepts the user's own vehicle", async (t) => {
+  if (!dbAvailable) {
+    t.skip("DATABASE_URL is not reachable; skipping integration test.");
+    return;
+  }
+
+  const vehicle = await createVehicle({
+    userId,
+    nickname: "Own Insert Vehicle",
+    make: null,
+    model: null,
+    modelYear: null,
+    tankCapacityGallons: null,
+    combinedMpg: null,
+  });
+
+  const saved = await insertFillUpHistory(userId, {
+    milesDriven: 120,
+    fuelPrice: 3.4,
+    combinedMpg: 29,
+    tankCapacity: 13,
+    gallons: 4.25,
+    observedCost: 14.45,
+    vehicleId: vehicle.id,
+  });
+
+  assert.equal(saved, true);
+  const entries = await listFillUpHistoryByUserId(userId);
+  assert.ok(entries.some((entry) => entry.vehicleId === vehicle.id && entry.gallons === 4.25));
+});
+
+test("insertFillUpHistory refuses a vehicle owned by a different user", async (t) => {
+  if (!dbAvailable) {
+    t.skip("DATABASE_URL is not reachable; skipping integration test.");
+    return;
+  }
+
+  const othersVehicle = await createVehicle({
+    userId: otherUserId,
+    nickname: "Not Yours Insert",
+    make: null,
+    model: null,
+    modelYear: null,
+    tankCapacityGallons: null,
+    combinedMpg: null,
+  });
+
+  const saved = await insertFillUpHistory(userId, {
+    milesDriven: 1,
+    fuelPrice: 1,
+    combinedMpg: 1,
+    tankCapacity: 1,
+    gallons: 7.7777,
+    observedCost: 1,
+    vehicleId: othersVehicle.id,
+  });
+
+  assert.equal(saved, false);
+  const entries = await listFillUpHistoryByUserId(userId);
+  assert.ok(!entries.some((entry) => entry.gallons === 7.7777));
+});

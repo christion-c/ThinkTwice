@@ -13,6 +13,15 @@ export interface ThemeColors {
   accentDeep: string;
   success: string;
   danger: string;
+  // Chart/category hues for the card dashboards - extra colors beyond
+  // the accent/success/danger trio so a chart with four series doesn't
+  // have to reuse status colors (which would read as good/bad). Each
+  // clears 4.5:1 against both this mode's background and surface, so
+  // they're safe as text color too, not just fills.
+  teal: string;
+  blue: string;
+  berry: string;
+  gold: string;
 }
 
 // A fall/harvest palette: warm espresso-brown neutrals (not the plum
@@ -41,6 +50,10 @@ export const palettes: Record<ColorMode, ThemeColors> = {
     accentDeep: "#241608",
     success: "#A9C15E",
     danger: "#E2673F",
+    teal: "#4FBFAE",
+    blue: "#74A9E0",
+    berry: "#D184C8",
+    gold: "#E9BC4F",
   },
   light: {
     background: "#FBF2E4",
@@ -57,6 +70,10 @@ export const palettes: Record<ColorMode, ThemeColors> = {
     accentDeep: "#FFF8EE",
     success: "#55731F",
     danger: "#B23A1E",
+    teal: "#0F7A6B",
+    blue: "#2E68AE",
+    berry: "#9A3D8E",
+    gold: "#8F6508",
   },
 };
 

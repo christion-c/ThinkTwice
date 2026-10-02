@@ -26,6 +26,10 @@ module.exports = {
         accentDeep: "var(--color-accent-deep)",
         success: "var(--color-success)",
         danger: "var(--color-danger)",
+        teal: "var(--color-teal)",
+        blue: "var(--color-blue)",
+        berry: "var(--color-berry)",
+        gold: "var(--color-gold)",
       },
       // xs-xl: tightened twice now (originally 6/10/16/24/32, then
       // 4/8/12/16/24) for compact spacing *within* a component - icon-

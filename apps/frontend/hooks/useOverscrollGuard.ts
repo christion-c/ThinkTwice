@@ -8,8 +8,11 @@ import type { ScrollView } from "react-native";
 // regardless). This manually snaps back to the last valid offset as a
 // final catch, rather than trusting any single native/CSS flag alone.
 // Used by PageScaffold.tsx.
-export function useOverscrollGuard() {
-  const scrollRef = useRef<ScrollView>(null);
+// Generic over the ref type so PageScaffold can hand the same ref to
+// either a plain ScrollView or keyboard-controller's
+// KeyboardAwareScrollView (whose ref type extends ScrollView).
+export function useOverscrollGuard<T extends Pick<ScrollView, "scrollTo"> = ScrollView>() {
+  const scrollRef = useRef<T>(null);
 
   const handleScroll = ({
     nativeEvent,
