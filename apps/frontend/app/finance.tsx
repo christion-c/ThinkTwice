@@ -2,12 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import { useFinance } from "@/components/contexts/FinanceProvider";
-import { useMoneyPlan } from "@/components/contexts/MoneyPlanProvider";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { useFuel } from "@/contexts/FuelProvider";
+import { useMoneyPlan } from "@/contexts/MoneyPlanProvider";
 import MoneyItemSheet, { type MoneySheetTarget } from "@/components/money/MoneyItemSheet";
-import PageScaffold from "@/components/PageScaffold";
-import StepFlowModal from "@/components/StepFlowModal";
+import PaycheckSheet, { paydayLabel, type PaycheckSheetTarget } from "@/components/money/PaycheckSheet";
+import PageScaffold from "@/components/layout/PageScaffold";
+import StepFlowModal from "@/components/ui/StepFlowModal";
 import {
   AnimatedNumber,
   BarChart,
@@ -23,9 +24,9 @@ import {
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { useStepFlow, type StepFlowStepConfig } from "@/hooks/useStepFlow";
 import { useWebKeyboardInset } from "@/hooks/useWebKeyboardInset";
-import { percentOf } from "@/lib/chart-series";
+import { percentOf } from "@/lib/fuel/chart-series";
 import { withAlpha } from "@/lib/color";
-import { amountToInput, parseAmount, parseDecimal } from "@/lib/money-input";
+import { amountToInput, parseAmount, parseDecimal } from "@/lib/money/input";
 import {
   addMonths,
   debtFreeMonth,
@@ -34,8 +35,8 @@ import {
   monthLabel,
   type MonthKey,
   summarizeMonth,
-} from "@/lib/money-plan";
-import { formatCurrency, formatCurrencyWhole } from "@/lib/money-format";
+} from "@/lib/money/plan";
+import { formatCurrency, formatCurrencyWhole } from "@/lib/money/format";
 import type { PayFrequency } from "@thinktwice/shared-types";
 
 type PayStepKey = "hourlyRate" | "hoursPerWeek" | "payFrequency" | "takeHomePerCheck";
@@ -106,15 +107,16 @@ const formatPercent = (ratio: number | null) => (ratio === null ? "—" : `${(ra
 export default function Finance() {
   const colors = useThemeColors();
   const webKeyboardInset = useWebKeyboardInset();
-  const { monthlyFuelBudget, refresh: refreshFinance } = useFinance();
-  const { pay, items, loaded, loadError, refresh: refreshPlan, savePay } = useMoneyPlan();
+  const { monthlyFuelBudget, refresh: refreshFuel } = useFuel();
+  const { pay, items, paychecks, loaded, loadError, refresh: refreshPlan, savePay } = useMoneyPlan();
   const [sheetTarget, setSheetTarget] = useState<MoneySheetTarget | null>(null);
+  const [paycheckTarget, setPaycheckTarget] = useState<PaycheckSheetTarget | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
 
   useRefetchOnFocus(
     useCallback(async () => {
-      await Promise.all([refreshFinance(), refreshPlan()]);
-    }, [refreshFinance, refreshPlan]),
+      await Promise.all([refreshFuel(), refreshPlan()]);
+    }, [refreshFuel, refreshPlan]),
   );
 
   const thisMonth = monthKeyOf(new Date());
@@ -122,8 +124,8 @@ export default function Finance() {
   const months = useMemo(() => Array.from({ length: MONTHS_SHOWN }, (_, index) => addMonths(thisMonth, index)), [thisMonth]);
 
   const summary = useMemo(
-    () => summarizeMonth(pay, items, selectedMonth, monthlyFuelBudget),
-    [pay, items, selectedMonth, monthlyFuelBudget],
+    () => summarizeMonth(pay, items, selectedMonth, monthlyFuelBudget, { paychecks, currentMonth: thisMonth }),
+    [pay, items, selectedMonth, monthlyFuelBudget, paychecks, thisMonth],
   );
   const debtPaymentsByMonth = useMemo(
     () =>
@@ -165,6 +167,18 @@ export default function Finance() {
   const monthName = isThisMonth ? "this month" : `in ${monthLabel(selectedMonth, selectedMonth.slice(0, 4) !== thisMonth.slice(0, 4))}`;
   const committedPercent = percentOf(summary.totalOut, summary.takeHome);
   const bills = items.filter((item) => item.kind === "bill");
+  const monthPaychecks = paychecks.filter((check) => check.paidOn.startsWith(`${selectedMonth}-`));
+  const estimatedChecks = Math.round(summary.estimatedChecks * 100) / 100;
+  // What the month's pay is built from, e.g. "2 logged + 3 estimated at $600.00".
+  const payBasis = !pay
+    ? summary.loggedChecks > 0
+      ? `${summary.loggedChecks} logged`
+      : null
+    : summary.loggedChecks === 0
+      ? `Estimated: ${estimatedChecks} checks at ${formatCurrency(pay.takeHomePerCheck)}. Log each check for exact numbers.`
+      : estimatedChecks > 0
+        ? `${summary.loggedChecks} logged + ${estimatedChecks} estimated at ${formatCurrency(pay.takeHomePerCheck)}`
+        : `${summary.loggedChecks} logged`;
   const assets = items.filter((item) => item.kind === "asset");
   const dtiColor = (ratio: number | null) =>
     ratio === null ? colors.textMuted : ratio <= 0.36 ? colors.success : ratio <= 0.43 ? colors.gold : colors.danger;
@@ -274,11 +288,30 @@ export default function Finance() {
                 <KpiTile icon="trending-up-outline" label="Gross / month" value={formatCurrency(summary.gross)} tint={colors.success} />
                 <KpiTile icon="wallet-outline" label="Take-home / month" value={formatCurrency(summary.takeHome)} tint={colors.teal} />
               </View>
+              {payBasis ? <Text className="text-caption text-textMuted">{payBasis}</Text> : null}
               {summary.paycheckDebtPayments > 0 ? (
                 <Text className="text-caption text-textMuted">
                   Includes {formatCurrency(summary.paycheckDebtPayments)} of debt taken from your paycheck.
                 </Text>
               ) : null}
+              <View>
+                {monthPaychecks.map((check) => (
+                  <ItemRow
+                    key={check.id}
+                    title={paydayLabel(check.paidOn)}
+                    subtitle={check.gross !== null ? `${formatCurrency(check.gross)} gross` : undefined}
+                    value={formatCurrency(check.takeHome)}
+                    onPress={() => setPaycheckTarget({ paycheck: check })}
+                  />
+                ))}
+              </View>
+              <Pressable
+                onPress={() => setPaycheckTarget({ paycheck: null })}
+                className="flex-row items-center gap-xs self-start py-xs active:opacity-60"
+              >
+                <Ionicons name="add" size={16} color={colors.accent} />
+                <Text className="text-caption font-semibold text-accent">Log a paycheck</Text>
+              </Pressable>
             </DashCard>
 
             <DashCard title="Where it goes" subtitle={isThisMonth ? "This month" : monthName} icon="pie-chart-outline" tint={colors.blue}>
@@ -395,6 +428,14 @@ export default function Finance() {
                   />
                 ))}
                 <ItemRow title="Assets" value={formatCurrency(summary.assets)} bold />
+                {!isThisMonth ? (
+                  <ItemRow
+                    title={summary.projectedSavings >= 0 ? "Left over until then" : "Short until then"}
+                    subtitle="Pay in minus bills, debt, and fuel out, from this month on"
+                    value={`${summary.projectedSavings < 0 ? "-" : ""}${formatCurrency(Math.abs(summary.projectedSavings))}`}
+                    bold
+                  />
+                ) : null}
                 <ItemRow title="Owed" value={`-${formatCurrency(summary.totalOwed)}`} bold />
               </View>
             </DashCard>
@@ -423,6 +464,7 @@ export default function Finance() {
         keyboardVerticalOffset={0}
       />
       <MoneyItemSheet target={sheetTarget} onClose={() => setSheetTarget(null)} />
+      <PaycheckSheet target={paycheckTarget} onClose={() => setPaycheckTarget(null)} />
     </PageScaffold>
   );
 }

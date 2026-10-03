@@ -1,4 +1,4 @@
-import { getBudgetRecommendations, type RecommendationInput } from "./budget-recommendations";
+import { getBudgetRecommendations, type RecommendationInput } from "./recommendations";
 import type { SpendingBreakdown } from "./spending-categories";
 
 function breakdown(overrides: Partial<SpendingBreakdown> = {}): SpendingBreakdown {

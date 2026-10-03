@@ -1,5 +1,5 @@
-import type { DailyDrivingLog, SavedFillUpHistoryEntry } from "./backend-api";
-import { getLocalDateString } from "./local-date";
+import type { DailyDrivingLog, SavedFillUpHistoryEntry } from "@/lib/api/backend";
+import { getLocalDateString } from "@/lib/local-date";
 
 export interface ChartPoint {
   label: string;

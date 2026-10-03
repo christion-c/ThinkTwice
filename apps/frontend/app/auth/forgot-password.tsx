@@ -3,7 +3,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { useState } from "react";
 import { Pressable, Text } from "react-native";
 
-import PageScaffold from "@/components/PageScaffold";
+import PageScaffold from "@/components/layout/PageScaffold";
 import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
 import AuthTextField from "@/components/auth/AuthTextField";
 import PreviewModeNotice from "@/components/auth/PreviewModeNotice";

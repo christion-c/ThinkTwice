@@ -1,5 +1,5 @@
 import { categorizeSpending, discretionaryShare } from "./spending-categories";
-import type { BackendBudgetEntry } from "./backend-api";
+import type { BackendBudgetEntry } from "@/lib/api/backend";
 
 function entry(overrides: Partial<BackendBudgetEntry> = {}): BackendBudgetEntry {
   return {

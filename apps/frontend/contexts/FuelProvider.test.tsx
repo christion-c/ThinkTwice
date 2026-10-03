@@ -1,8 +1,8 @@
 import { act, render } from "@testing-library/react-native";
 import { useEffect } from "react";
 
-import { FinanceProvider, useFinance } from "./FinanceProvider";
-import * as backendApi from "@/lib/backend-api";
+import { FuelProvider, useFuel } from "./FuelProvider";
+import * as backendApi from "@/lib/api/backend";
 
 jest.mock("@react-native-async-storage/async-storage", () =>
   jest.requireActual("@react-native-async-storage/async-storage/jest/async-storage-mock"),
@@ -12,7 +12,7 @@ const mockUser = { uid: "user-1" };
 jest.mock("./AuthProvider", () => ({ useAuth: () => ({ user: mockUser }) }));
 jest.mock("./VehicleProvider", () => ({ useVehicle: () => ({ selectedVehicle: null }) }));
 
-jest.mock("@/lib/backend-api", () => ({
+jest.mock("@/lib/api/backend", () => ({
   fetchFinanceInputs: jest.fn(),
   upsertFinanceInputs: jest.fn(() => Promise.resolve()),
   fetchFillUpHistory: jest.fn(() => Promise.resolve([])),
@@ -33,18 +33,18 @@ const savedInputs = {
   currentTankPercentInput: "50",
 };
 
-let finance: ReturnType<typeof useFinance> | null = null;
+let finance: ReturnType<typeof useFuel> | null = null;
 
 // Hands the latest context value to the test after each render.
-function Capture({ onValue }: { onValue: (value: ReturnType<typeof useFinance>) => void }) {
-  const value = useFinance();
+function Capture({ onValue }: { onValue: (value: ReturnType<typeof useFuel>) => void }) {
+  const value = useFuel();
   useEffect(() => {
     onValue(value);
   });
   return null;
 }
 
-const capture = (value: ReturnType<typeof useFinance>) => {
+const capture = (value: ReturnType<typeof useFuel>) => {
   finance = value;
 };
 
@@ -67,9 +67,9 @@ test("does not upload blank inputs while the server copy is still loading", asyn
   api.fetchFinanceInputs.mockReturnValue(new Promise((resolve) => (resolveFetch = resolve)));
 
   await render(
-    <FinanceProvider>
+    <FuelProvider>
       <Capture onValue={capture} />
-    </FinanceProvider>,
+    </FuelProvider>,
   );
 
   await act(async () => {
@@ -93,9 +93,9 @@ test("uploads the user's edits once the server copy has loaded", async () => {
   api.fetchFinanceInputs.mockResolvedValue(savedInputs);
 
   await render(
-    <FinanceProvider>
+    <FuelProvider>
       <Capture onValue={capture} />
-    </FinanceProvider>,
+    </FuelProvider>,
   );
   await act(async () => {});
 
@@ -117,9 +117,9 @@ test("never uploads when the server copy fails to load", async () => {
   api.fetchFinanceInputs.mockRejectedValue(new Error("offline"));
 
   await render(
-    <FinanceProvider>
+    <FuelProvider>
       <Capture onValue={capture} />
-    </FinanceProvider>,
+    </FuelProvider>,
   );
   await act(async () => {});
 

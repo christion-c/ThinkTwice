@@ -1,17 +1,16 @@
-import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
-import { useAppPreferences, useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import { useAuth } from "@/components/contexts/AuthProvider";
-import { useFinance } from "@/components/contexts/FinanceProvider";
-import PageScaffold from "@/components/PageScaffold";
-import { useVehicle } from "@/components/contexts/VehicleProvider";
+import { useAppPreferences, useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { useAuth } from "@/contexts/AuthProvider";
+import { useFuel } from "@/contexts/FuelProvider";
+import PageScaffold from "@/components/layout/PageScaffold";
+import { useVehicle } from "@/contexts/VehicleProvider";
 import { ActionTile, CardRow, DashCard, HeroCard, HeroPill, KpiTile, MetricRow } from "@/components/ui";
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { withAlpha } from "@/lib/color";
-import { formatCurrencyWhole } from "@/lib/money-format";
+import { formatCurrencyWhole } from "@/lib/money/format";
 
 function initialsFor(label: string): string {
   const words = label.trim().split(/\s+/).filter(Boolean);
@@ -29,13 +28,13 @@ export default function Profile() {
   const colors = useThemeColors();
   const { colorMode, highContrast, remindersEnabled } = useAppPreferences();
   const { user } = useAuth();
-  const { monthlyFuelBudget, fillUpHistory, dailyDrivingLogs, refresh: refreshFinance } = useFinance();
+  const { monthlyFuelBudget, fillUpHistory, dailyDrivingLogs, refresh: refreshFuel } = useFuel();
   const { backendUser, selectedVehicle, loading, refreshVehicles } = useVehicle();
 
   useRefetchOnFocus(
     useCallback(async () => {
-      await Promise.all([refreshFinance(), refreshVehicles()]);
-    }, [refreshFinance, refreshVehicles]),
+      await Promise.all([refreshFuel(), refreshVehicles()]);
+    }, [refreshFuel, refreshVehicles]),
   );
 
   const accountLabel = user?.displayName || user?.email || "Account owner";
@@ -49,15 +48,6 @@ export default function Profile() {
     <PageScaffold
       title="Profile"
       subtitle="Manage account settings and verify your planner baseline."
-      headerRight={
-        <Pressable
-          onPress={() => router.push("/settings/preferences")}
-          accessibilityLabel="Open preferences"
-          className="h-10 w-10 items-center justify-center rounded-round border border-border bg-surface"
-        >
-          <Ionicons name="settings-outline" size={20} color={colors.text} />
-        </Pressable>
-      }
       showNav
       navActive="Profile"
       dashboard

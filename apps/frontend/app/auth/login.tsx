@@ -11,8 +11,8 @@ import { useEffect, useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-import { useAppPreferences } from "@/components/contexts/AppPreferencesProvider";
-import PageScaffold from "@/components/PageScaffold";
+import { useAppPreferences } from "@/contexts/AppPreferencesProvider";
+import PageScaffold from "@/components/layout/PageScaffold";
 import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
 import AuthTextField from "@/components/auth/AuthTextField";
 import PreviewModeNotice from "@/components/auth/PreviewModeNotice";

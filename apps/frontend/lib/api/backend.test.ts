@@ -7,9 +7,9 @@
 // project's babel-jest setup transforms to CommonJS, and a dynamic
 // import() here doesn't survive that transform) keeps that setup
 // contained to this file instead of leaking into every other test file
-// that imports backend-api.ts for its (unrelated) types.
+// that imports lib/api/backend.ts for its (unrelated) types.
 describe("requestBackend", () => {
-  let requestBackend: typeof import("./backend-api").requestBackend;
+  let requestBackend: typeof import("./backend").requestBackend;
   const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
   const originalFetch = globalThis.fetch;
 
@@ -17,7 +17,7 @@ describe("requestBackend", () => {
     process.env.EXPO_PUBLIC_API_URL = "https://api.example.test";
     jest.isolateModules(() => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      ({ requestBackend } = require("./backend-api"));
+      ({ requestBackend } = require("./backend"));
     });
   });
 

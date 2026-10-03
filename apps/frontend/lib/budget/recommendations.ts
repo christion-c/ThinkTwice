@@ -1,4 +1,4 @@
-import { formatCurrencyWhole } from "./money-format";
+import { formatCurrencyWhole } from "@/lib/money/format";
 import { discretionaryShare, type SpendingBreakdown } from "./spending-categories";
 
 // Discretionary spending above this share of logged costs gets called out.

@@ -153,7 +153,7 @@ def save_user_history(payload: dict[str, Any]) -> dict[str, Any]:
     # user_id. This only writes the local file - it does not also
     # write through to the backend. The real, durable write path for a
     # fill-up is the frontend calling the backend's POST
-    # /fill-up-history directly (see lib/backend-api.ts's
+    # /fill-up-history directly (see apps/frontend/lib/api/backend.ts's
     # saveFillUpHistory); this function backs the ML service's own
     # /fill-up-history endpoint, used by the /ml-preview debug flow specifically.
     user_id = payload.get("user_id")

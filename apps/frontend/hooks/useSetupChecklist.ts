@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useAuth } from "@/components/contexts/AuthProvider";
+import { useAuth } from "@/contexts/AuthProvider";
 import { usePersistedUserState, type FieldValidators } from "@/hooks/usePersistedUserState";
 
 interface ChecklistStep {

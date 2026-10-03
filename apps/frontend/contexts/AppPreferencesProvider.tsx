@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { createContext, useContext, useMemo } from "react";
 
 import { useAuth } from "./AuthProvider";
-import { getColors, type ColorMode } from "@/components/theme";
+import { getColors, type ColorMode } from "@/lib/theme";
 import { DEFAULT_REMINDER_TIME, isValidReminderTime } from "@/lib/checkin-reminders";
 import { usePersistedUserState, type FieldValidators } from "@/hooks/usePersistedUserState";
 

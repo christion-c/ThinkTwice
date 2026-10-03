@@ -234,3 +234,116 @@ export async function deleteMoneyItemForUser(itemId: string, userId: string): Pr
 
   return result.rowCount === 1;
 }
+
+// ---- Paychecks ----------------------------------------------------
+
+export interface Paycheck {
+  id: string;
+  // YYYY-MM-DD the check was paid.
+  paidOn: string;
+  takeHome: number;
+  // From the pay stub; null when not entered.
+  gross: number | null;
+}
+
+// Everything but the id - what a create or full replace writes.
+export type PaycheckInput = Omit<Paycheck, "id">;
+
+interface PaycheckRow {
+  id: string;
+  paid_on: string;
+  take_home: string;
+  gross: string | null;
+}
+
+function mapPaycheckRow(row: PaycheckRow): Paycheck {
+  return {
+    id: row.id,
+    paidOn: row.paid_on,
+    takeHome: numericOrNull(row.take_home),
+    gross: numericOrNull(row.gross),
+  };
+}
+
+// paid_on as ::text for the same time-zone reason as ITEM_COLUMNS.
+const PAYCHECK_COLUMNS = "id, paid_on::text AS paid_on, take_home, gross";
+
+// Returns only the given user's paychecks, newest first.
+export async function listPaychecksForUser(userId: string): Promise<Paycheck[]> {
+  const result = await database.query<PaycheckRow>(
+    `
+      SELECT ${PAYCHECK_COLUMNS}
+      FROM paychecks
+      WHERE user_id = $1
+      ORDER BY paid_on DESC, created_at DESC, id DESC
+    `,
+    [userId],
+  );
+
+  return result.rows.map(mapPaycheckRow);
+}
+
+// Counts the user's paychecks - used to cap how many one account can log.
+export async function countPaychecksForUser(userId: string): Promise<number> {
+  const result = await database.query<{ count: string }>(
+    "SELECT COUNT(*)::text AS count FROM paychecks WHERE user_id = $1",
+    [userId],
+  );
+
+  return Number(result.rows[0]?.count ?? 0);
+}
+
+// Logs a paycheck owned by the given user.
+export async function createPaycheck(userId: string, input: PaycheckInput): Promise<Paycheck> {
+  const result = await database.query<PaycheckRow>(
+    `
+      INSERT INTO paychecks (user_id, paid_on, take_home, gross)
+      VALUES ($1, $2, $3, $4)
+      RETURNING ${PAYCHECK_COLUMNS}
+    `,
+    [userId, input.paidOn, input.takeHome, input.gross],
+  );
+
+  return mapPaycheckRow(expectOneRow(result, "created paycheck"));
+}
+
+// Replaces a paycheck's fields - only when it belongs to the given
+// user. Returns null when it doesn't exist or isn't theirs.
+export async function replacePaycheckForUser(
+  paycheckId: string,
+  userId: string,
+  input: PaycheckInput,
+): Promise<Paycheck | null> {
+  const result = await database.query<PaycheckRow>(
+    `
+      UPDATE paychecks
+      SET
+        paid_on    = $3,
+        take_home  = $4,
+        gross      = $5,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+        AND user_id = $2
+      RETURNING ${PAYCHECK_COLUMNS}
+    `,
+    [paycheckId, userId, input.paidOn, input.takeHome, input.gross],
+  );
+
+  const paycheck = result.rows[0];
+
+  return paycheck ? mapPaycheckRow(paycheck) : null;
+}
+
+// Deletes a paycheck only when it belongs to the given user.
+export async function deletePaycheckForUser(paycheckId: string, userId: string): Promise<boolean> {
+  const result = await database.query(
+    `
+      DELETE FROM paychecks
+      WHERE id = $1
+        AND user_id = $2
+    `,
+    [paycheckId, userId],
+  );
+
+  return result.rowCount === 1;
+}

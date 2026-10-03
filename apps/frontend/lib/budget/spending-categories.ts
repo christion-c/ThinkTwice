@@ -1,4 +1,4 @@
-import type { BackendBudgetEntry } from "./backend-api";
+import type { BackendBudgetEntry } from "@/lib/api/backend";
 
 // Categorizes logged spending the way the project's own pitch does:
 // fuel is essential (you need it to get to work/school), food
@@ -10,7 +10,7 @@ import type { BackendBudgetEntry } from "./backend-api";
 // from "gas for a road trip" today.
 //
 // Not currently called from any screen - it's the categorization half
-// of the budget-recommendations engine (see budget-recommendations.ts),
+// of the budget-recommendations engine (see recommendations.ts),
 // built for the nutrition/budget check-in flow that's paused (see
 // app/nutrition.tsx and BudgetContext.tsx). No runtime cost while
 // unused, so it's kept rather than deleted.

@@ -5,12 +5,12 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { Redirect, Stack, useSegments, type ErrorBoundaryProps } from "expo-router";
 
-import { AppPreferencesProvider, useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import { AuthProvider, useAuth } from "@/components/contexts/AuthProvider";
-import { FinanceProvider } from "@/components/contexts/FinanceProvider";
-import { MoneyPlanProvider } from "@/components/contexts/MoneyPlanProvider";
-import ThemeVarsRoot from "@/components/ThemeVarsRoot";
-import { VehicleProvider } from "@/components/contexts/VehicleProvider";
+import { AppPreferencesProvider, useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { AuthProvider, useAuth } from "@/contexts/AuthProvider";
+import { FuelProvider } from "@/contexts/FuelProvider";
+import { MoneyPlanProvider } from "@/contexts/MoneyPlanProvider";
+import ThemeVarsRoot from "@/components/layout/ThemeVarsRoot";
+import { VehicleProvider } from "@/contexts/VehicleProvider";
 import { useCheckinReminders } from "@/hooks/useCheckinReminders";
 
 // Expo Router wraps the whole app in a Try/catch boundary using this
@@ -57,19 +57,19 @@ export default function RootLayout() {
       <AuthProvider>
         <AppPreferencesProvider>
           <ThemeVarsRoot>
-            {/* VehicleProvider must stay above FinanceProvider: FinanceContext
+            {/* VehicleProvider must stay above FuelProvider: FuelContext
                 calls useVehicle() internally to auto-fill combinedMpg/
                 tankCapacityGallons from the selected vehicle, which throws
                 ("useVehicle must be used inside VehicleProvider") if the
                 nesting is reversed. */}
             <VehicleProvider>
-              <FinanceProvider>
+              <FuelProvider>
                 <MoneyPlanProvider>
                   <AuthGate>
                     <AppStack />
                   </AuthGate>
                 </MoneyPlanProvider>
-              </FinanceProvider>
+              </FuelProvider>
             </VehicleProvider>
           </ThemeVarsRoot>
         </AppPreferencesProvider>

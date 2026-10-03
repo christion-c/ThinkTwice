@@ -1,6 +1,6 @@
 import { Switch, Text, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
 
 interface SettingToggleRowProps {
   title: string;

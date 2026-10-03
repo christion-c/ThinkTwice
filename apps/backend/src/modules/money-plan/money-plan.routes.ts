@@ -11,12 +11,17 @@ import {
 } from "../../lib/route-helpers.js";
 import {
   countMoneyItemsForUser,
+  countPaychecksForUser,
   createMoneyItem,
+  createPaycheck,
   deleteMoneyItemForUser,
+  deletePaycheckForUser,
   getPayProfileForUser,
   listMoneyItemsForUser,
+  listPaychecksForUser,
   type MoneyItemInput,
   replaceMoneyItemForUser,
+  replacePaycheckForUser,
   upsertPayProfileForUser,
 } from "./money-plan.repository.js";
 
@@ -24,6 +29,8 @@ export const moneyPlanRouter = Router();
 
 // Generous for any real budget, but bounds what one account can store.
 export const MAX_MONEY_ITEMS_PER_USER = 200;
+// About 20 years of weekly checks.
+export const MAX_PAYCHECKS_PER_USER = 1_000;
 
 // Cents precision, matching the NUMERIC columns.
 const money = (max: number) =>
@@ -84,6 +91,14 @@ const assetSchema = z
 
 export const moneyItemSchema = z.union([billSchema, debtSchema, assetSchema]);
 
+export const paycheckSchema = z
+  .object({
+    paidOn: isoDate,
+    takeHome: money(1_000_000),
+    gross: money(1_000_000).nullable().optional(),
+  })
+  .strict();
+
 const itemIdSchema = z.uuid();
 
 // Normalizes any valid item body into the full row shape, nulling out
@@ -134,12 +149,13 @@ moneyPlanRouter.use(requireAuth, syncCurrentUser);
 moneyPlanRouter.get(
   "/",
   withCurrentUser(async (currentUser, request, response) => {
-    const [pay, items] = await Promise.all([
+    const [pay, items, paychecks] = await Promise.all([
       getPayProfileForUser(currentUser.id),
       listMoneyItemsForUser(currentUser.id),
+      listPaychecksForUser(currentUser.id),
     ]);
 
-    response.status(200).json({ pay, items });
+    response.status(200).json({ pay, items, paychecks });
   }),
 );
 
@@ -222,6 +238,84 @@ moneyPlanRouter.delete(
 
     if (!deleted) {
       respondNotFound(response, "Item");
+      return;
+    }
+
+    response.status(204).send();
+  }),
+);
+
+// Logs a paycheck as actually received.
+moneyPlanRouter.post(
+  "/paychecks",
+  withCurrentUser(async (currentUser, request, response) => {
+    const result = paycheckSchema.safeParse(request.body);
+
+    if (!result.success) {
+      respondWithValidationError(response, result.error, "Invalid paycheck");
+      return;
+    }
+
+    if ((await countPaychecksForUser(currentUser.id)) >= MAX_PAYCHECKS_PER_USER) {
+      response.status(409).json({ error: `You can log up to ${MAX_PAYCHECKS_PER_USER} paychecks` });
+      return;
+    }
+
+    const paycheck = await createPaycheck(currentUser.id, {
+      paidOn: result.data.paidOn,
+      takeHome: result.data.takeHome,
+      gross: result.data.gross ?? null,
+    });
+    response.status(201).json({ paycheck });
+  }),
+);
+
+// Replaces a paycheck's fields - only when it belongs to the user.
+moneyPlanRouter.put(
+  "/paychecks/:paycheckId",
+  withCurrentUser(async (currentUser, request, response) => {
+    const paycheckId = parseRouteParam(response, itemIdSchema, request.params.paycheckId, "paycheck ID");
+
+    if (!paycheckId) {
+      return;
+    }
+
+    const result = paycheckSchema.safeParse(request.body);
+
+    if (!result.success) {
+      respondWithValidationError(response, result.error, "Invalid paycheck");
+      return;
+    }
+
+    const paycheck = await replacePaycheckForUser(paycheckId, currentUser.id, {
+      paidOn: result.data.paidOn,
+      takeHome: result.data.takeHome,
+      gross: result.data.gross ?? null,
+    });
+
+    if (!paycheck) {
+      respondNotFound(response, "Paycheck");
+      return;
+    }
+
+    response.status(200).json({ paycheck });
+  }),
+);
+
+// Deletes a paycheck - only when it belongs to the user.
+moneyPlanRouter.delete(
+  "/paychecks/:paycheckId",
+  withCurrentUser(async (currentUser, request, response) => {
+    const paycheckId = parseRouteParam(response, itemIdSchema, request.params.paycheckId, "paycheck ID");
+
+    if (!paycheckId) {
+      return;
+    }
+
+    const deleted = await deletePaycheckForUser(paycheckId, currentUser.id);
+
+    if (!deleted) {
+      respondNotFound(response, "Paycheck");
       return;
     }
 

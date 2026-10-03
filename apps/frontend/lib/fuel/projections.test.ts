@@ -9,8 +9,8 @@ import {
   DAILY_MILES_EVIDENCE_CAP_DAYS,
   type FillUpStats,
   type FinanceRawInputs,
-} from "./finance-projections";
-import type { DailyDrivingLog, SavedFillUpHistoryEntry } from "./backend-api";
+} from "./projections";
+import type { DailyDrivingLog, SavedFillUpHistoryEntry } from "@/lib/api/backend";
 
 // Base set of raw inputs so each test only needs to override the fields
 // it cares about, rather than restating every field every time.

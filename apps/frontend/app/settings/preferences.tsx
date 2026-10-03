@@ -4,8 +4,8 @@ import { signOut } from "firebase/auth";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { useAppPreferences, useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import PageScaffold from "@/components/PageScaffold";
+import { useAppPreferences, useThemeColors } from "@/contexts/AppPreferencesProvider";
+import PageScaffold from "@/components/layout/PageScaffold";
 import SettingsBackButton from "@/components/settings/SettingsBackButton";
 import SettingToggleRow from "@/components/settings/SettingToggleRow";
 import { Card, CardText, CardTitle, StatusMessage } from "@/components/ui";

@@ -1,7 +1,7 @@
 import { Children, type ReactNode } from "react";
 import { View } from "react-native";
 
-import { useAppPreferences } from "@/components/contexts/AppPreferencesProvider";
+import { useAppPreferences } from "@/contexts/AppPreferencesProvider";
 import { useWideLayout } from "@/hooks/useWideLayout";
 
 // Lays sibling cards out side by side (equal-width flex columns,

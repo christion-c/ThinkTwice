@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import { percentOf } from "@/lib/chart-series";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { percentOf } from "@/lib/fuel/chart-series";
 
 export interface StackedBarSegment {
   label: string;

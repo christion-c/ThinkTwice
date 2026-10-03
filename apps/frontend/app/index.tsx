@@ -2,11 +2,11 @@ import { router } from "expo-router";
 import { useCallback, useMemo } from "react";
 import { Text, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import { useFinance } from "@/components/contexts/FinanceProvider";
-import { useMoneyPlan } from "@/components/contexts/MoneyPlanProvider";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { useFuel } from "@/contexts/FuelProvider";
+import { useMoneyPlan } from "@/contexts/MoneyPlanProvider";
 import DailyCheckinCard from "@/components/home/DailyCheckinCard";
-import PageScaffold from "@/components/PageScaffold";
+import PageScaffold from "@/components/layout/PageScaffold";
 import {
   ActionTile,
   AnimatedNumber,
@@ -21,13 +21,13 @@ import {
   ListRow,
   ProgressBar,
 } from "@/components/ui";
-import { useVehicle } from "@/components/contexts/VehicleProvider";
+import { useVehicle } from "@/contexts/VehicleProvider";
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { useSetupChecklist } from "@/hooks/useSetupChecklist";
-import { dailyMilesSeries, percentOf } from "@/lib/chart-series";
+import { dailyMilesSeries, percentOf } from "@/lib/fuel/chart-series";
 import { withAlpha } from "@/lib/color";
-import { monthKeyOf, summarizeMonth } from "@/lib/money-plan";
-import { formatCurrencyWhole } from "@/lib/money-format";
+import { monthKeyOf, summarizeMonth } from "@/lib/money/plan";
+import { formatCurrencyWhole } from "@/lib/money/format";
 
 export default function Home() {
   const colors = useThemeColors();
@@ -36,21 +36,21 @@ export default function Home() {
     projectedFillUpCost,
     projectedDaysUntilFillUp,
     dailyDrivingLogs,
-    refresh: refreshFinance,
-  } = useFinance();
-  const { pay, items, refresh: refreshPlan } = useMoneyPlan();
+    refresh: refreshFuel,
+  } = useFuel();
+  const { pay, items, paychecks, refresh: refreshPlan } = useMoneyPlan();
   const { vehicles, refreshVehicles } = useVehicle();
 
   useRefetchOnFocus(
     useCallback(async () => {
-      await Promise.all([refreshFinance(), refreshPlan(), refreshVehicles()]);
-    }, [refreshFinance, refreshPlan, refreshVehicles]),
+      await Promise.all([refreshFuel(), refreshPlan(), refreshVehicles()]);
+    }, [refreshFuel, refreshPlan, refreshVehicles]),
   );
 
   // This month from the money plan - the same numbers the Finance tab shows.
   const summary = useMemo(
-    () => summarizeMonth(pay, items, monthKeyOf(new Date()), monthlyFuelBudget),
-    [pay, items, monthlyFuelBudget],
+    () => summarizeMonth(pay, items, monthKeyOf(new Date()), monthlyFuelBudget, { paychecks }),
+    [pay, items, monthlyFuelBudget, paychecks],
   );
   const isBudgetHealthy = summary.leftOver >= 0;
   const budgetStatus = isBudgetHealthy ? "Plan looks stable" : "Short this month";

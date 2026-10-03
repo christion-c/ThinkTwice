@@ -5,7 +5,7 @@ import { Platform, ScrollView, View } from "react-native";
 import { KeyboardAwareScrollView, type KeyboardAwareScrollViewRef } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useAppPreferences, useThemeColors } from "@/components/contexts/AppPreferencesProvider";
+import { useAppPreferences, useThemeColors } from "@/contexts/AppPreferencesProvider";
 import BottomNav from "./BottomNav";
 import type { NavTabLabel } from "./nav-tabs";
 import PageScaffoldBody from "./PageScaffoldBody";

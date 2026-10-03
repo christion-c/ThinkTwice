@@ -44,7 +44,7 @@ export async function getAuthHeader(user: User) {
   };
 }
 
-// Exported so other lib/*-api.ts files (e.g. ml-preview-api.ts) can make
+// Exported so other lib/api/*.ts files (e.g. ml-preview.ts) can make
 // authenticated backend calls with the same base-URL resolution, error
 // unwrapping, and 204-handling as every call in this file.
 export async function requestBackend<T>(

@@ -3,11 +3,11 @@ import { router } from "expo-router";
 import { useCallback, useMemo } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import StepFlowModal from "@/components/StepFlowModal";
-import { useFinance } from "@/components/contexts/FinanceProvider";
-import PageScaffold from "@/components/PageScaffold";
-import { useVehicle } from "@/components/contexts/VehicleProvider";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import StepFlowModal from "@/components/ui/StepFlowModal";
+import { useFuel } from "@/contexts/FuelProvider";
+import PageScaffold from "@/components/layout/PageScaffold";
+import { useVehicle } from "@/contexts/VehicleProvider";
 import {
   BarChart,
   CardRow,
@@ -23,9 +23,9 @@ import VehicleSelector from "@/components/fuel/VehicleSelector";
 import { useWebKeyboardInset } from "@/hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { useFuelCheckinFlow } from "@/hooks/useFuelCheckinFlow";
-import { fillUpCostSeries } from "@/lib/chart-series";
+import { fillUpCostSeries } from "@/lib/fuel/chart-series";
 import { withAlpha } from "@/lib/color";
-import { formatCurrency, formatCurrencyWhole } from "@/lib/money-format";
+import { formatCurrency, formatCurrencyWhole } from "@/lib/money/format";
 
 export default function Fuel() {
   const colors = useThemeColors();
@@ -45,8 +45,8 @@ export default function Fuel() {
     projectedDaysUntilFillUp,
     monthlyFuelBudget,
     fillUpHistory,
-    refresh: refreshFinance,
-  } = useFinance();
+    refresh: refreshFuel,
+  } = useFuel();
   const tankPercent = Number.parseFloat(currentTankPercentInput) || 0;
   const recentFillUps = useMemo(
     () =>
@@ -58,8 +58,8 @@ export default function Fuel() {
 
   useRefetchOnFocus(
     useCallback(async () => {
-      await Promise.all([refreshFinance(), refreshVehicles()]);
-    }, [refreshFinance, refreshVehicles]),
+      await Promise.all([refreshFuel(), refreshVehicles()]);
+    }, [refreshFuel, refreshVehicles]),
   );
 
   const webKeyboardInset = useWebKeyboardInset();

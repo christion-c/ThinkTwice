@@ -2,9 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
-import { useAppPreferences, useThemeColors } from "@/components/contexts/AppPreferencesProvider";
+import { useAppPreferences, useThemeColors } from "@/contexts/AppPreferencesProvider";
 import { navTabs, type NavTabLabel } from "./nav-tabs";
-import { shadows } from "./theme";
+import { shadows } from "@/lib/theme";
 
 // Keeps tab history shallow, like a real tab bar: Home stays at the
 // bottom of the stack and at most one other tab sits on top of it.

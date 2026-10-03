@@ -1,21 +1,51 @@
 import { router } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useState } from "react";
-import { Alert } from "react-native";
+import { Alert, TextInput, View } from "react-native";
 
-import { useAuth } from "@/components/contexts/AuthProvider";
-import PageScaffold from "@/components/PageScaffold";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { useAuth } from "@/contexts/AuthProvider";
+import PageScaffold from "@/components/layout/PageScaffold";
 import SettingsBackButton from "@/components/settings/SettingsBackButton";
-import { useVehicle } from "@/components/contexts/VehicleProvider";
-import { Card, CardText, CardTitle, ListRow, StatusMessage } from "@/components/ui";
-import { deleteCurrentUserAccount } from "@/lib/backend-api";
+import { useVehicle } from "@/contexts/VehicleProvider";
+import { Card, CardText, CardTitle, ListRow, PrimaryButton, StatusMessage } from "@/components/ui";
+import { deleteCurrentUserAccount } from "@/lib/api/backend";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 
+const MAX_DISPLAY_NAME_LENGTH = 60;
+
 export default function Account() {
-  const { user } = useAuth();
+  const colors = useThemeColors();
+  const { user, updateDisplayName } = useAuth();
   const { backendUser, vehicles, selectedVehicle } = useVehicle();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [nameDraft, setNameDraft] = useState(user?.displayName ?? "");
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [nameStatus, setNameStatus] = useState<{ message: string; tone: "error" | "success" } | null>(null);
+
+  const trimmedName = nameDraft.trim();
+  const nameChanged = trimmedName !== (user?.displayName ?? "");
+
+  const saveDisplayName = async () => {
+    if (!trimmedName) {
+      setNameStatus({ message: "Enter a name.", tone: "error" });
+      return;
+    }
+
+    setNameStatus(null);
+    setIsSavingName(true);
+
+    try {
+      await updateDisplayName(trimmedName);
+      setNameDraft(trimmedName);
+      setNameStatus({ message: "Name saved.", tone: "success" });
+    } catch (error) {
+      setNameStatus({ message: error instanceof Error ? error.message : "Couldn't save your name. Try again.", tone: "error" });
+    } finally {
+      setIsSavingName(false);
+    }
+  };
 
   // Actually deletes the account (backend, then signs out locally) -
   // separated from the confirmation prompt below so the Alert.alert
@@ -66,12 +96,41 @@ export default function Account() {
     <PageScaffold
       title="Account"
       subtitle="Manage your personal details and account preferences."
-      headerLeft={<SettingsBackButton onPress={() => router.replace("/settings/preferences")} />}
+      // Reached from both Profile and Preferences, so go back to
+      // whichever opened it; a direct web load has no history.
+      headerLeft={
+        <SettingsBackButton onPress={() => (router.canGoBack() ? router.back() : router.replace("/profile"))} />
+      }
     >
       <Card surface>
         <CardTitle>Identity</CardTitle>
+        <View className="gap-1.5">
+          <CardText>Display name</CardText>
+          <TextInput
+            value={nameDraft}
+            onChangeText={(value) => {
+              setNameDraft(value);
+              setNameStatus(null);
+            }}
+            maxLength={MAX_DISPLAY_NAME_LENGTH}
+            autoCapitalize="words"
+            autoComplete="name"
+            textContentType="name"
+            returnKeyType="done"
+            onSubmitEditing={() => void saveDisplayName()}
+            accessibilityLabel="Display name"
+            className="rounded-sm border border-border bg-surfaceSoft px-sm py-3 text-base text-text"
+            placeholder="Your name"
+            placeholderTextColor={colors.textMuted}
+          />
+        </View>
+        <PrimaryButton
+          label={isSavingName ? "Saving..." : "Save name"}
+          disabled={!nameChanged || isSavingName}
+          onPress={() => void saveDisplayName()}
+        />
+        <StatusMessage message={nameStatus?.message ?? ""} tone={nameStatus?.tone ?? "error"} />
         <CardText>Email: {user?.email ?? "Not available"}</CardText>
-        <CardText>Display name: {user?.displayName ?? "Not set"}</CardText>
         <CardText>Email verified: {user?.emailVerified ? "Yes" : "No"}</CardText>
       </Card>
 

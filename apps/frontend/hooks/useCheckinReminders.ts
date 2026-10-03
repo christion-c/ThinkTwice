@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useAppPreferences } from "@/components/contexts/AppPreferencesProvider";
+import { useAppPreferences } from "@/contexts/AppPreferencesProvider";
 import {
   cancelDailyReminder,
   requestReminderPermission,
@@ -20,7 +20,7 @@ export function useCheckinReminders() {
 
   useEffect(() => {
     // Defined inline (not as an outer useCallback) so this effect's own
-    // async work stays inside this one function - see FinanceProvider's
+    // async work stays inside this one function - see FuelProvider's
     // and VehicleProvider's similar effects earlier in this project for
     // why that structure matters here.
     void (async () => {

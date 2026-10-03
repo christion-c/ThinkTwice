@@ -1,6 +1,6 @@
 import type { User } from "firebase/auth";
 
-import { getAuthHeader, requestBackend } from "./backend-api";
+import { getAuthHeader, requestBackend } from "./backend";
 
 // Client for the backend's authenticated GET /predictions/preview route,
 // which proxies to the ML service's debug-only /ml-preview endpoint. This

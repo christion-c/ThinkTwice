@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { Pressable, Text } from "react-native";
 
-import PageScaffold from "@/components/PageScaffold";
+import PageScaffold from "@/components/layout/PageScaffold";
 import LegalSection from "@/components/legal/LegalSection";
 import { Card } from "@/components/ui";
 

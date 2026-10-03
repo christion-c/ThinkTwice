@@ -1,14 +1,16 @@
-import type { MoneyItem, PayProfile } from "@thinktwice/shared-types";
+import type { MoneyItem, Paycheck, PayProfile } from "@thinktwice/shared-types";
 
 import {
   addMonths,
+  checksInMonth,
   debtFreeMonth,
   debtSchedule,
   monthLabel,
   monthlyPay,
+  payForMonth,
   summarizeMonth,
   WEEKS_PER_MONTH,
-} from "./money-plan";
+} from "./plan";
 
 let nextId = 0;
 function item(fields: Partial<MoneyItem> & Pick<MoneyItem, "kind" | "name">): MoneyItem {
@@ -191,6 +193,106 @@ describe("summarizeMonth", () => {
     expect(summary.takeHome).toBe(0);
     expect(summary.grossDti).toBeNull();
     expect(summary.takeHomeDebtShare).toBeNull();
+  });
+});
+
+function check(paidOn: string, takeHome: number, gross: number | null = null): Paycheck {
+  nextId += 1;
+  return { id: `check-${nextId}`, paidOn, takeHome, gross };
+}
+
+describe("checksInMonth", () => {
+  it("uses the average until a payday pins down the cycle", () => {
+    expect(checksInMonth("biweekly", "2026-10", null)).toBeCloseTo(26 / 12, 10);
+    expect(checksInMonth("weekly", "2026-10", null)).toBeCloseTo(52 / 12, 10);
+  });
+
+  it("counts the real paydays from any known one, earlier or later", () => {
+    // Fridays: Oct 2, 16, 30 / Nov 13, 27.
+    expect(checksInMonth("biweekly", "2026-10", "2026-10-02")).toBe(3);
+    expect(checksInMonth("biweekly", "2026-11", "2026-10-02")).toBe(2);
+    expect(checksInMonth("biweekly", "2026-10", "2026-12-25")).toBe(3);
+    expect(checksInMonth("weekly", "2026-10", "2026-10-02")).toBe(5);
+    expect(checksInMonth("weekly", "2027-02", "2026-10-02")).toBe(4);
+  });
+
+  it("is a fixed count for semimonthly and monthly pay", () => {
+    expect(checksInMonth("semimonthly", "2026-10", "2026-10-15")).toBe(2);
+    expect(checksInMonth("monthly", "2026-10", "2026-10-01")).toBe(1);
+  });
+});
+
+describe("payForMonth", () => {
+  // $20/hr x 40 hrs weekly = $800 gross and $600 take-home per check.
+  it("uses logged checks as paid and estimates only the paydays left", () => {
+    // October 2026 has five Friday paydays; one logged short week.
+    const pay = payForMonth(weeklyPay, [check("2026-10-02", 450)], "2026-10");
+
+    expect(pay.loggedChecks).toBe(1);
+    expect(pay.estimatedChecks).toBe(4);
+    expect(pay.takeHome).toBe(450 + 4 * 600);
+    // No gross on the stub: scaled from take-home (450 x 800/600 = 600).
+    expect(pay.gross).toBeCloseTo(600 + 4 * 800, 10);
+  });
+
+  it("uses a logged gross as entered", () => {
+    const pay = payForMonth(weeklyPay, [check("2026-10-02", 450, 610.25)], "2026-10");
+
+    expect(pay.gross).toBeCloseTo(610.25 + 4 * 800, 10);
+  });
+
+  it("never estimates below zero when extra checks are logged", () => {
+    const checks = ["2026-10-02", "2026-10-09", "2026-10-16", "2026-10-23", "2026-10-30", "2026-10-31"].map((day) =>
+      check(day, 500),
+    );
+    const pay = payForMonth(weeklyPay, checks, "2026-10");
+
+    expect(pay.estimatedChecks).toBe(0);
+    expect(pay.takeHome).toBe(3000);
+  });
+
+  it("counts logged checks with no pay profile, and ignores other months", () => {
+    const pay = payForMonth(null, [check("2026-10-02", 700.1), check("2026-09-25", 999)], "2026-10");
+
+    expect(pay.takeHome).toBe(700.1);
+    expect(pay.gross).toBe(700.1);
+    expect(pay.estimatedChecks).toBe(0);
+  });
+});
+
+describe("summarizeMonth net worth over time", () => {
+  // Weekly pay averages $2,600/month take-home with no logged checks.
+  const rent = item({ kind: "bill", name: "Rent", monthlyAmount: 3000 });
+  const savings = item({ kind: "asset", name: "Savings", balance: 5000, balanceAsOf: "2026-10-03" });
+  const card = item({ kind: "card", name: "Card", balance: 1000, monthlyAmount: 100, balanceAsOf: "2026-10-03" });
+
+  it("is assets minus what's owed for the current month", () => {
+    const october = summarizeMonth(weeklyPay, [rent, savings, card], "2026-10", 0, { currentMonth: "2026-10" });
+
+    expect(october.projectedSavings).toBe(0);
+    expect(october.netWorth).toBe(4000);
+  });
+
+  it("carries each month's shortfall forward instead of only counting debt paydown", () => {
+    // Each month: 2600 in, 3000 rent + 100 card out = 500 short. The
+    // card balance drops by 100 a month, but the cash to pay it (and
+    // the rent) came out of savings too.
+    const december = summarizeMonth(weeklyPay, [rent, savings, card], "2026-12", 0, { currentMonth: "2026-10" });
+
+    expect(december.totalOwed).toBe(800);
+    expect(december.projectedSavings).toBeCloseTo(-1000, 10);
+    expect(december.netWorth).toBeCloseTo(5000 - 1000 - 800, 10);
+  });
+
+  it("uses logged paychecks for the months they fall in", () => {
+    const checks = [check("2026-10-02", 650), check("2026-10-09", 650)];
+    const november = summarizeMonth(weeklyPay, [savings], "2026-11", 0, { paychecks: checks, currentMonth: "2026-10" });
+
+    // October: 2 logged at 650 + 3 estimated at 600 = 3100, no bills.
+    expect(november.projectedSavings).toBe(3100);
+    // November has 4 Friday paydays once the cycle is known.
+    expect(november.estimatedChecks).toBe(4);
+    expect(november.takeHome).toBe(2400);
   });
 });
 

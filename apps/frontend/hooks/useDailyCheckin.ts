@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { useFinance } from "@/components/contexts/FinanceProvider";
+import { useFuel } from "@/contexts/FuelProvider";
 import { getLocalDateString } from "@/lib/local-date";
 import { parseOptionalNumber } from "@/lib/optional-input";
 
@@ -10,7 +10,7 @@ import { parseOptionalNumber } from "@/lib/optional-input";
 // inline input is a faster daily habit than wizard chrome built for
 // longer flows like useFuelCheckinFlow.
 export function useDailyCheckin() {
-  const { dailyDrivingLogs, logTodaysMiles } = useFinance();
+  const { dailyDrivingLogs, logTodaysMiles } = useFuel();
   const [milesInput, setMilesInput] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);

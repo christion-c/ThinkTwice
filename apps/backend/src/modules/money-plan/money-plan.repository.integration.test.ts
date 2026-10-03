@@ -8,11 +8,15 @@ import {
 } from "../../test-support/db-test-helpers.js";
 import {
   createMoneyItem,
+  createPaycheck,
   deleteMoneyItemForUser,
+  deletePaycheckForUser,
   getPayProfileForUser,
   listMoneyItemsForUser,
+  listPaychecksForUser,
   type MoneyItemInput,
   replaceMoneyItemForUser,
+  replacePaycheckForUser,
   upsertPayProfileForUser,
 } from "./money-plan.repository.js";
 
@@ -161,4 +165,46 @@ test("deleting the user removes their pay profile and items", async (t) => {
 
   assert.equal(await getPayProfileForUser(throwaway), null);
   assert.deepEqual(await listMoneyItemsForUser(throwaway), []);
+});
+
+test("paychecks round-trip exactly, list newest first, and stay with their owner", async (t) => {
+  if (!dbAvailable) {
+    t.skip("DATABASE_URL is not reachable; skipping integration test.");
+    return;
+  }
+
+  const older = await createPaycheck(userId, { paidOn: "2026-09-19", takeHome: 598.12, gross: null });
+  const newer = await createPaycheck(userId, { paidOn: "2026-10-03", takeHome: 612.4, gross: 801.55 });
+  const theirs = await createPaycheck(otherUserId, { paidOn: "2026-10-03", takeHome: 1, gross: null });
+
+  assert.deepEqual(newer, { id: newer.id, paidOn: "2026-10-03", takeHome: 612.4, gross: 801.55 });
+
+  const mine = await listPaychecksForUser(userId);
+  assert.deepEqual(
+    mine.filter((check) => check.id === older.id || check.id === newer.id).map((check) => check.id),
+    [newer.id, older.id],
+  );
+  assert.ok(!mine.some((check) => check.id === theirs.id));
+
+  const updated = await replacePaycheckForUser(older.id, userId, { paidOn: "2026-09-20", takeHome: 600, gross: 790 });
+  assert.deepEqual(updated, { id: older.id, paidOn: "2026-09-20", takeHome: 600, gross: 790 });
+  assert.equal(await replacePaycheckForUser(theirs.id, userId, { paidOn: "2026-10-03", takeHome: 5, gross: null }), null);
+
+  assert.equal(await deletePaycheckForUser(theirs.id, userId), false);
+  assert.equal(await deletePaycheckForUser(older.id, userId), true);
+  assert.ok((await listPaychecksForUser(otherUserId)).some((check) => check.id === theirs.id && check.takeHome === 1));
+});
+
+test("deleting the user removes their paychecks", async (t) => {
+  if (!dbAvailable) {
+    t.skip("DATABASE_URL is not reachable; skipping integration test.");
+    return;
+  }
+
+  const throwaway = await createTestUser();
+  await createPaycheck(throwaway, { paidOn: "2026-10-03", takeHome: 100, gross: null });
+
+  await deleteTestUser(throwaway);
+
+  assert.deepEqual(await listPaychecksForUser(throwaway), []);
 });

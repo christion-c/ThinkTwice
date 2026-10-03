@@ -3,8 +3,8 @@ import { useMemo } from "react";
 import { View } from "react-native";
 import { vars } from "nativewind";
 
-import { useAppPreferences } from "@/components/contexts/AppPreferencesProvider";
-import { getColors } from "./theme";
+import { useAppPreferences } from "@/contexts/AppPreferencesProvider";
+import { getColors } from "@/lib/theme";
 
 // Bridges the app's runtime theme (colorMode x highContrast, four
 // palettes total - see theme.ts's getColors()) into Tailwind/NativeWind

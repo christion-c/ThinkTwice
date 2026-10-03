@@ -1,7 +1,7 @@
 import type { User } from "firebase/auth";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { fetchMlPreview, type MlPreviewResponse } from "@/lib/ml-preview-api";
+import { fetchMlPreview, type MlPreviewResponse } from "@/lib/api/ml-preview";
 
 // Cloud Run cold starts can take a while to answer the first request, so
 // this doesn't surface an error immediately - only if nothing has come

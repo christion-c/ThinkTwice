@@ -4,7 +4,7 @@ import { Modal, Platform, Pressable, Text, TextInput, View } from "react-native"
 import type { KeyboardAvoidingViewProps } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
 import type { StepFlowStepConfig } from "@/hooks/useStepFlow";
 import { withAlpha } from "@/lib/color";
 

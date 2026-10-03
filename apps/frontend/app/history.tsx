@@ -3,15 +3,15 @@ import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import { useFinance } from "@/components/contexts/FinanceProvider";
-import { useVehicle } from "@/components/contexts/VehicleProvider";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { useFuel } from "@/contexts/FuelProvider";
+import { useVehicle } from "@/contexts/VehicleProvider";
 import VehicleSelector from "@/components/fuel/VehicleSelector";
-import PageScaffold from "@/components/PageScaffold";
+import PageScaffold from "@/components/layout/PageScaffold";
 import SettingsBackButton from "@/components/settings/SettingsBackButton";
 import { Card, CardTitle } from "@/components/ui";
 import { withAlpha } from "@/lib/color";
-import { formatCurrency } from "@/lib/money-format";
+import { formatCurrency } from "@/lib/money/format";
 
 // Every fill-up and check-in merged into one newest-first list, sharing
 // just enough shape to render one row style regardless of source.
@@ -36,7 +36,7 @@ export default function History() {
     deleteDailyDrivingLogEntry,
     reassignDailyDrivingLogEntryVehicle,
     clearAllHistory,
-  } = useFinance();
+  } = useFuel();
 
   // Which single row's vehicle-reassignment picker is expanded, if any.
   const [reassigning, setReassigning] = useState<{ type: HistoryItem["type"]; id: string } | null>(null);

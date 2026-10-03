@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { useAuth } from "@/components/contexts/AuthProvider";
-import { useFinance } from "@/components/contexts/FinanceProvider";
-import { useVehicle } from "@/components/contexts/VehicleProvider";
-import { saveFillUpHistory } from "@/lib/backend-api";
+import { useAuth } from "@/contexts/AuthProvider";
+import { useFuel } from "@/contexts/FuelProvider";
+import { useVehicle } from "@/contexts/VehicleProvider";
+import { saveFillUpHistory } from "@/lib/api/backend";
 import { parseOptionalInt, parseOptionalNumber } from "@/lib/optional-input";
 import { useStepFlow, type StepFlowStepConfig } from "./useStepFlow";
 
@@ -47,7 +47,7 @@ export function useFuelCheckinFlow() {
     currentTankPercentInput,
     setCurrentTankPercentInput,
     getEstimatedMilesSinceLastFillUp,
-  } = useFinance();
+  } = useFuel();
 
   const [nicknameInput, setNicknameInput] = useState("");
   const [makeInput, setMakeInput] = useState("");

@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
 
 interface MlPreviewControlsProps {
   milesInput: string;

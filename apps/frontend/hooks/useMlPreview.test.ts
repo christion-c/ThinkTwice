@@ -2,9 +2,9 @@ import { act, renderHook } from "@testing-library/react-native";
 import type { User } from "firebase/auth";
 
 import { useMlPreview } from "./useMlPreview";
-import { fetchMlPreview, type MlPreviewResponse } from "@/lib/ml-preview-api";
+import { fetchMlPreview, type MlPreviewResponse } from "@/lib/api/ml-preview";
 
-jest.mock("@/lib/ml-preview-api", () => ({
+jest.mock("@/lib/api/ml-preview", () => ({
   fetchMlPreview: jest.fn(),
 }));
 

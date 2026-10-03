@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import type { ChartPoint } from "@/lib/chart-series";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import type { ChartPoint } from "@/lib/fuel/chart-series";
 import { withAlpha } from "@/lib/color";
 
 interface BarChartProps {

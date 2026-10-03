@@ -1,9 +1,9 @@
 // Pure math behind the Finance/Fuel screens' budget and refill
-// forecasts. Separated from FinanceContext.tsx so these formulas can
+// forecasts. Separated from FuelContext so these formulas can
 // be unit tested and reasoned about independently of React
 // state/persistence concerns.
 
-import type { DailyDrivingLog, SavedFillUpHistoryEntry } from "./backend-api";
+import type { DailyDrivingLog, SavedFillUpHistoryEntry } from "@/lib/api/backend";
 
 export interface FinanceRawInputs {
   incomeInput: string;

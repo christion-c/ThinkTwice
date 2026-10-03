@@ -17,7 +17,7 @@ import {
   type BackendBudgetEntry,
   type CreateBackendBudgetEntryInput,
   type PredictionResult,
-} from "@/lib/backend-api";
+} from "@/lib/api/backend";
 
 // No screen currently calls useBudget() - app/nutrition.tsx (its
 // intended consumer) is a stub because daily nutrition check-ins are
@@ -54,7 +54,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
   const [errorMessage, setErrorMessage] = useState("");
 
   // Blank out the previous account's entries the moment the signed-in
-  // account changes (adjusted during render - see FinanceProvider's
+  // account changes (adjusted during render - see FuelProvider's
   // identical pattern for why), rather than inside refresh itself, so
   // refresh never needs to set state before its own fetch actually
   // starts.

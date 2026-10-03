@@ -164,7 +164,26 @@ export type MoneyItemInput =
     }
   | { kind: "asset"; name: string; balance: number; balanceAsOf: string };
 
+/** One actual paycheck, as received - overrides the pay profile's estimate for its month. */
+export interface Paycheck {
+  id: string;
+  /** YYYY-MM-DD the check was paid. */
+  paidOn: string;
+  /** What actually hit the bank. */
+  takeHome: number;
+  /** Before deductions, from the pay stub; null when not entered. */
+  gross: number | null;
+}
+
+export interface PaycheckInput {
+  paidOn: string;
+  takeHome: number;
+  gross?: number | null;
+}
+
 export interface MoneyPlan {
   pay: PayProfile | null;
   items: MoneyItem[];
+  /** Logged paychecks, newest first. */
+  paychecks: Paycheck[];
 }

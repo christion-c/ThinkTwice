@@ -2,8 +2,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { useAppPreferences, useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import { shadows } from "@/components/theme";
+import { useAppPreferences, useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { shadows } from "@/lib/theme";
 import { withAlpha } from "@/lib/color";
 
 // The headline card at the top of each dashboard tab: a full-bleed

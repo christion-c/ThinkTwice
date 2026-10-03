@@ -1,4 +1,4 @@
-import PageScaffold from "@/components/PageScaffold";
+import PageScaffold from "@/components/layout/PageScaffold";
 import { Card, CardText, CardTitle } from "@/components/ui";
 
 // Nutrition daily check-ins are paused (not this screen's decision -

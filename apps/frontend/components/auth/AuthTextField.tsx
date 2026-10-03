@@ -1,7 +1,7 @@
 import { Text, TextInput, View } from "react-native";
 import type { KeyboardTypeOptions, TextInputProps } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
 
 interface AuthTextFieldProps {
   label: string;

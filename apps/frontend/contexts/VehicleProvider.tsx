@@ -16,7 +16,7 @@ import {
   type BackendUserProfile,
   type BackendVehicle,
   updateVehicle,
-} from "@/lib/backend-api";
+} from "@/lib/api/backend";
 
 interface SyncVehicleInput {
   nickname: string;
@@ -60,7 +60,7 @@ export function VehicleProvider({ children }: { children: ReactNode }) {
 
   // Blank out the previous account's vehicle data the moment the
   // signed-in account changes (adjusted during render - see
-  // FinanceProvider's identical pattern for why), rather than inside
+  // FuelProvider's identical pattern for why), rather than inside
   // refreshVehicles itself, so refreshVehicles never needs to set state
   // before its own fetch actually starts.
   const [lastResetUserId, setLastResetUserId] = useState(user?.uid ?? null);

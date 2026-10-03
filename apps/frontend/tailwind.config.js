@@ -1,8 +1,8 @@
 /**
- * Tailwind tokens mirror apps/frontend/components/theme.ts exactly, so
+ * Tailwind tokens mirror apps/frontend/lib/theme.ts exactly, so
  * migrating a screen from StyleSheet to className produces the same
  * pixel values as before. Colors are CSS custom properties (see
- * components/ThemeVarsRoot.tsx) rather than fixed hex values, because
+ * components/layout/ThemeVarsRoot.tsx) rather than fixed hex values, because
  * this app's theme isn't just light/dark - colorMode and highContrast
  * combine into four palettes chosen at runtime (see theme.ts's
  * getColors()), which a static Tailwind theme can't express on its own.

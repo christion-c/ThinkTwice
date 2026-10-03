@@ -11,8 +11,10 @@
 //   balance was entered, so a balance typed in October is still right
 //   when viewed in January, last payments are partial, and deferred
 //   debts start on time.
+// - Logged paychecks are what was actually paid; the pay profile only
+//   fills in the checks a month is still expected to have.
 
-import type { DebtKind, MoneyItem, PayFrequency, PayProfile } from "@thinktwice/shared-types";
+import type { DebtKind, MoneyItem, Paycheck, PayFrequency, PayProfile } from "@thinktwice/shared-types";
 
 export const WEEKS_PER_MONTH = 52 / 12;
 
@@ -85,6 +87,81 @@ export function monthlyPay(pay: PayProfile): MonthlyPay {
   return {
     gross: pay.hourlyRate * pay.hoursPerWeek * WEEKS_PER_MONTH,
     takeHome: pay.takeHomePerCheck * CHECKS_PER_MONTH[pay.payFrequency],
+  };
+}
+
+const DAY_MS = 86_400_000;
+
+// Whole days since the epoch, in UTC so daylight saving never shifts a day.
+function dayNumber(isoDate: string): number {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return Math.round(Date.UTC(year, month - 1, day) / DAY_MS);
+}
+
+function daysInMonth(month: MonthKey): number {
+  const [year, monthNumber] = month.split("-").map(Number);
+  return new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+}
+
+const PAY_PERIOD_DAYS: Partial<Record<PayFrequency, number>> = { weekly: 7, biweekly: 14 };
+
+// How many paydays fall in a month. Weekly and biweekly pay land on a
+// fixed cycle, so some months get 5 (or 3) checks instead of 4 (or 2);
+// any one known payday (`anchorPaidOn`) pins that cycle down exactly.
+// Without one, it's the average from CHECKS_PER_MONTH.
+export function checksInMonth(frequency: PayFrequency, month: MonthKey, anchorPaidOn: string | null): number {
+  const period = PAY_PERIOD_DAYS[frequency];
+
+  if (!period || !anchorPaidOn) {
+    return CHECKS_PER_MONTH[frequency];
+  }
+
+  const firstDay = dayNumber(`${month}-01`);
+  const lastOffset = daysInMonth(month) - 1;
+  // Days from the 1st to the first payday on or after it.
+  const firstPayday = (((dayNumber(anchorPaidOn) - firstDay) % period) + period) % period;
+
+  return firstPayday > lastOffset ? 0 : Math.floor((lastOffset - firstPayday) / period) + 1;
+}
+
+export interface MonthPay extends MonthlyPay {
+  // Paychecks logged in this month, at their actual amounts.
+  loggedChecks: number;
+  // Checks still expected this month, at the pay profile's amount. Can
+  // be fractional when the pay cycle isn't known yet (no logged check).
+  estimatedChecks: number;
+}
+
+// One month's pay: every paycheck logged in the month, plus the pay
+// profile's normal check for each payday not logged yet. A logged
+// check without a gross amount gets one in proportion to its take-home
+// (a short week's smaller check also had smaller gross pay).
+export function payForMonth(pay: PayProfile | null, paychecks: Paycheck[], month: MonthKey): MonthPay {
+  const logged = paychecks.filter((check) => monthKeyFromIsoDate(check.paidOn) === month);
+  const latestPaidOn = paychecks.reduce<string | null>(
+    (latest, check) => (latest === null || check.paidOn > latest ? check.paidOn : latest),
+    null,
+  );
+
+  const expected = pay ? checksInMonth(pay.payFrequency, month, latestPaidOn) : 0;
+  const estimatedChecks = Math.max(0, expected - logged.length);
+  const normal = pay ? monthlyPay(pay) : { gross: 0, takeHome: 0 };
+  const checksPerMonth = pay ? CHECKS_PER_MONTH[pay.payFrequency] : 1;
+  const grossPerCheck = normal.gross / checksPerMonth;
+  const grossPerTakeHome = pay && pay.takeHomePerCheck > 0 ? grossPerCheck / pay.takeHomePerCheck : 1;
+
+  let loggedTakeHomeCents = 0;
+  let loggedGrossCents = 0;
+  for (const check of logged) {
+    loggedTakeHomeCents += toCents(check.takeHome);
+    loggedGrossCents += toCents(check.gross ?? check.takeHome * grossPerTakeHome);
+  }
+
+  return {
+    gross: fromCents(loggedGrossCents) + grossPerCheck * estimatedChecks,
+    takeHome: fromCents(loggedTakeHomeCents) + (pay?.takeHomePerCheck ?? 0) * estimatedChecks,
+    loggedChecks: logged.length,
+    estimatedChecks,
   };
 }
 
@@ -170,6 +247,8 @@ export interface MonthSummary {
   month: MonthKey;
   gross: number;
   takeHome: number;
+  loggedChecks: number;
+  estimatedChecks: number;
   // Debt payments that come out of the bank account (not the paycheck).
   debtPayments: number;
   // Debt payments deducted from the paycheck - already in take-home.
@@ -188,7 +267,21 @@ export interface MonthSummary {
   owedByKind: Record<DebtKind, number>;
   totalOwed: number;
   assets: number;
+  // Left over (or short, if negative) from the current month up to,
+  // not including, this one - cash a future month starts with on top of
+  // the assets entered. 0 for the current month and earlier.
+  projectedSavings: number;
   netWorth: number;
+}
+
+export interface SummarizeOptions {
+  // Paychecks logged so far (any months; only this month's are used for
+  // pay, but the latest one pins down the pay cycle).
+  paychecks?: Paycheck[];
+  // The real current month. When given, a later month's net worth
+  // counts each month's left over in between; without it, net worth is
+  // just assets minus what's owed.
+  currentMonth?: MonthKey;
 }
 
 // Looks up one debt's position in a given month from its schedule.
@@ -229,8 +322,9 @@ export function summarizeMonth(
   items: MoneyItem[],
   month: MonthKey,
   fuel: number,
+  { paychecks = [], currentMonth }: SummarizeOptions = {},
 ): MonthSummary {
-  const { gross, takeHome } = pay ? monthlyPay(pay) : { gross: 0, takeHome: 0 };
+  const { gross, takeHome, loggedChecks, estimatedChecks } = payForMonth(pay, paychecks, month);
 
   const debts = items.filter(isDebt).map((item) => debtInMonth(item, debtSchedule(item), month));
 
@@ -260,10 +354,24 @@ export function summarizeMonth(
   const debtPayments = fromCents(debtCents);
   const leftOver = takeHome - fromCents(totalOutCents);
 
+  // Debt balances already shrink month to month as payments are made,
+  // but the paychecks and bills behind those payments have to show up
+  // too: each month in between adds its left over (or subtracts its
+  // shortfall). Without this, a month that's short every time still
+  // showed net worth climbing.
+  let projectedSavingsCents = 0;
+  if (currentMonth !== undefined) {
+    for (let between = currentMonth; between < month; between = addMonths(between, 1)) {
+      projectedSavingsCents += toCents(summarizeMonth(pay, items, between, fuel, { paychecks }).leftOver);
+    }
+  }
+
   return {
     month,
     gross,
     takeHome,
+    loggedChecks,
+    estimatedChecks,
     debtPayments,
     paycheckDebtPayments: fromCents(paycheckDebtCents),
     bills: fromCents(billCents),
@@ -281,7 +389,8 @@ export function summarizeMonth(
     },
     totalOwed: fromCents(totalOwedCents),
     assets: fromCents(assetCents),
-    netWorth: fromCents(assetCents - totalOwedCents),
+    projectedSavings: fromCents(projectedSavingsCents),
+    netWorth: fromCents(assetCents + projectedSavingsCents - totalOwedCents),
   };
 }
 

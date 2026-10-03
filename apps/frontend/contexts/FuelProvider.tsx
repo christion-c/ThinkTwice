@@ -17,12 +17,12 @@ import {
   type DailyDrivingLog,
   type SavedFillUpHistoryEntry,
   upsertFinanceInputs,
-} from "@/lib/backend-api";
+} from "@/lib/api/backend";
 import {
   computeFillUpStats,
   computeFinanceProjections,
   filterEntriesForVehicle,
-} from "@/lib/finance-projections";
+} from "@/lib/fuel/projections";
 import { getLocalDateString } from "@/lib/local-date";
 import { useAuth } from "./AuthProvider";
 import { useVehicle } from "./VehicleProvider";
@@ -55,7 +55,7 @@ function financeInputsJson(inputs: BackendFinanceInputs): string {
   ]);
 }
 
-type FinanceContextValue = {
+type FuelContextValue = {
   incomeInput: string;
   setIncomeInput: (value: string) => void;
   expenseInput: string;
@@ -110,9 +110,9 @@ type FinanceContextValue = {
   refresh: () => Promise<void>;
 };
 
-const FinanceContext = createContext<FinanceContextValue | undefined>(undefined);
+const FuelContext = createContext<FuelContextValue | undefined>(undefined);
 
-export function FinanceProvider({ children }: { children: ReactNode }) {
+export function FuelProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { selectedVehicle } = useVehicle();
   const [incomeInput, setIncomeInput] = useState("");
@@ -612,14 +612,14 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
+  return <FuelContext.Provider value={value}>{children}</FuelContext.Provider>;
 }
 
-export function useFinance() {
-  const context = useContext(FinanceContext);
+export function useFuel() {
+  const context = useContext(FuelContext);
 
   if (!context) {
-    throw new Error("useFinance must be used inside FinanceProvider");
+    throw new Error("useFuel must be used inside FuelProvider");
   }
 
   return context;

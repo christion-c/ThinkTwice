@@ -1,4 +1,4 @@
-import { amountToInput, parseAmount, parseDecimal } from "./money-input";
+import { amountToInput, parseAmount, parseDecimal } from "./input";
 
 describe("parseAmount", () => {
   it("accepts what people type on a phone", () => {

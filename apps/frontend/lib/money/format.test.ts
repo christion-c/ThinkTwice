@@ -1,4 +1,4 @@
-import { formatCurrency, formatCurrencyWhole } from "./money-format";
+import { formatCurrency, formatCurrencyWhole } from "./format";
 
 describe("formatCurrency", () => {
   it("formats a typical positive value with cents precision", () => {

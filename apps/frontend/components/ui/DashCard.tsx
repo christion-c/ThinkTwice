@@ -2,8 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps, ReactNode } from "react";
 import { Text, View } from "react-native";
 
-import { useAppPreferences, useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import { shadows } from "@/components/theme";
+import { useAppPreferences, useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { shadows } from "@/lib/theme";
 import { withAlpha } from "@/lib/color";
 
 interface DashCardProps {

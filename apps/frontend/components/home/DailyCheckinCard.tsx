@@ -1,12 +1,12 @@
 import { Pressable, Text, TextInput, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
 import { StatusMessage } from "@/components/ui";
 import { useDailyCheckin } from "@/hooks/useDailyCheckin";
 
 // Home's daily driving check-in: log today's miles once, feeding the
 // Tank Forecast card's dailyMiles estimate directly (see
-// computeFillUpStats in lib/finance-projections.ts). Content only - the
+// computeFillUpStats in lib/fuel/projections.ts). Content only - the
 // caller wraps this in a Card, matching components/fuel/VehicleSelector.
 export default function DailyCheckinCard() {
   const colors = useThemeColors();

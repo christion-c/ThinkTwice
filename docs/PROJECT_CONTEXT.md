@@ -172,7 +172,7 @@ project-wide correctness and split things up for maintainability. Highlights
   unused and removed them from `requirements.txt`.
 - **Frontend**: migrated the entire styling system from React Native
   `StyleSheet.create` to Tailwind CSS via NativeWind (`tailwind.config.js`,
-  `components/ThemeVarsRoot.tsx` bridges the app's runtime dark/light/
+  `components/layout/ThemeVarsRoot.tsx` bridges the app's runtime dark/light/
   high-contrast theme into Tailwind as CSS variables). Extracted a set of
   shared UI primitives at `components/ui/` (`Card`, `CardTitle`, `CardText`,
   `StatusMessage`) plus several domain-specific shared components/hooks

@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import type { BackendVehicle } from "@/lib/backend-api";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import type { BackendVehicle } from "@/lib/api/backend";
 import { withAlpha } from "@/lib/color";
 
 interface VehicleSelectorProps {

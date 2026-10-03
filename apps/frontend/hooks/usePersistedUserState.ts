@@ -11,7 +11,7 @@ export type FieldValidators<T> = { [K in keyof T]: (value: unknown) => value is 
 // that needs "remember this per account, reset when the account
 // changes" - AppPreferencesProvider and useSetupChecklist previously
 // each hand-rolled their own near-identical version of this same
-// reset/load/hydration-guarded-save sequence. FinanceProvider still
+// reset/load/hydration-guarded-save sequence. FuelProvider still
 // hand-rolls its own instead of using this: its local persistence is
 // entangled with a cloud fetch/debounced-save round trip (the cloud
 // copy is the source of truth, local storage is just an offline

@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
-import PageScaffold from "@/components/PageScaffold";
-import { useThemeColors } from "@/components/contexts/AppPreferencesProvider";
-import { useAuth } from "@/components/contexts/AuthProvider";
+import PageScaffold from "@/components/layout/PageScaffold";
+import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { useAuth } from "@/contexts/AuthProvider";
 import MlAccountInfoBox from "@/components/ml/MlAccountInfoBox";
 import MlMetricBox from "@/components/ml/MlMetricBox";
 import MlPreviewControls from "@/components/ml/MlPreviewControls";
 import { Card, CardTitle } from "@/components/ui";
 import { useMlPreview } from "@/hooks/useMlPreview";
-import { fetchFillUpHistory, type SavedFillUpHistoryEntry } from "@/lib/backend-api";
-import { formatCurrency } from "@/lib/money-format";
+import { fetchFillUpHistory, type SavedFillUpHistoryEntry } from "@/lib/api/backend";
+import { formatCurrency } from "@/lib/money/format";
 
 export default function MlPreviewPage() {
   const colors = useThemeColors();
