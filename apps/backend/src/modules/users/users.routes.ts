@@ -29,9 +29,13 @@ usersRouter.delete(
     try {
       await firebaseAuth.deleteUser(currentUser.firebaseUid);
     } catch (error) {
-      console.error("Deleted user data but failed to delete the Firebase account:", error);
+      console.error(
+        "Deleted user data but failed to delete the Firebase account:",
+        error,
+      );
       response.status(500).json({
-        error: "Your data was deleted, but removing your login failed. Please try again.",
+        error:
+          "Your data was deleted, but removing your login failed. Please try again.",
       });
       return;
     }

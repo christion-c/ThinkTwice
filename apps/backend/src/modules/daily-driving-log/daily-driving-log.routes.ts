@@ -82,7 +82,12 @@ dailyDrivingLogRouter.patch(
   requireAuth,
   syncCurrentUser,
   withCurrentUser(async (currentUser, request, response) => {
-    const logId = parseRouteParam(response, logIdSchema, request.params.logId, "log ID");
+    const logId = parseRouteParam(
+      response,
+      logIdSchema,
+      request.params.logId,
+      "log ID",
+    );
 
     if (!logId) {
       return;
@@ -91,7 +96,11 @@ dailyDrivingLogRouter.patch(
     const validationResult = reassignVehicleSchema.safeParse(request.body);
 
     if (!validationResult.success) {
-      respondWithValidationError(response, validationResult.error, "Invalid vehicle assignment");
+      respondWithValidationError(
+        response,
+        validationResult.error,
+        "Invalid vehicle assignment",
+      );
       return;
     }
 
@@ -117,7 +126,12 @@ dailyDrivingLogRouter.delete(
   requireAuth,
   syncCurrentUser,
   withCurrentUser(async (currentUser, request, response) => {
-    const logId = parseRouteParam(response, logIdSchema, request.params.logId, "log ID");
+    const logId = parseRouteParam(
+      response,
+      logIdSchema,
+      request.params.logId,
+      "log ID",
+    );
 
     if (!logId) {
       return;

@@ -4,7 +4,10 @@ import { after, before } from "node:test";
 import type { AddressInfo } from "node:net";
 
 import { createApp } from "../../app.js";
-import { logSchema, reassignVehicleSchema } from "./daily-driving-log.routes.js";
+import {
+  logSchema,
+  reassignVehicleSchema,
+} from "./daily-driving-log.routes.js";
 
 let baseUrl = "";
 let server: ReturnType<ReturnType<typeof createApp>["listen"]>;
@@ -108,25 +111,36 @@ test("logSchema accepts a null vehicleId", () => {
 
 test("reassignVehicleSchema accepts a UUID or null but rejects a missing field", () => {
   assert.equal(
-    reassignVehicleSchema.safeParse({ vehicleId: "3fa85f64-5717-4562-b3fc-2c963f66afa6" }).success,
+    reassignVehicleSchema.safeParse({
+      vehicleId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    }).success,
     true,
   );
-  assert.equal(reassignVehicleSchema.safeParse({ vehicleId: null }).success, true);
+  assert.equal(
+    reassignVehicleSchema.safeParse({ vehicleId: null }).success,
+    true,
+  );
   assert.equal(reassignVehicleSchema.safeParse({}).success, false);
 });
 
 test("PATCH /daily-driving-log/:logId rejects a request with no Authorization header", async () => {
-  const response = await fetch(`${baseUrl}/daily-driving-log/3fa85f64-5717-4562-b3fc-2c963f66afa6`, {
-    method: "PATCH",
-  });
+  const response = await fetch(
+    `${baseUrl}/daily-driving-log/3fa85f64-5717-4562-b3fc-2c963f66afa6`,
+    {
+      method: "PATCH",
+    },
+  );
 
   assert.equal(response.status, 401);
 });
 
 test("DELETE /daily-driving-log/:logId rejects a request with no Authorization header", async () => {
-  const response = await fetch(`${baseUrl}/daily-driving-log/3fa85f64-5717-4562-b3fc-2c963f66afa6`, {
-    method: "DELETE",
-  });
+  const response = await fetch(
+    `${baseUrl}/daily-driving-log/3fa85f64-5717-4562-b3fc-2c963f66afa6`,
+    {
+      method: "DELETE",
+    },
+  );
 
   assert.equal(response.status, 401);
 });

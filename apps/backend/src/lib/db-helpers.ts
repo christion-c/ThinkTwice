@@ -66,5 +66,7 @@ export async function withPostgresRetry<T>(
   }
 
   // Unreachable - the loop above always either returns or throws.
-  throw new Error("withPostgresRetry exhausted its attempts without returning or throwing.");
+  throw new Error(
+    "withPostgresRetry exhausted its attempts without returning or throwing.",
+  );
 }

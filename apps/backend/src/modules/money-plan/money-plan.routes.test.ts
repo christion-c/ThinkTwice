@@ -3,7 +3,11 @@ import { after, before, test } from "node:test";
 import type { AddressInfo } from "node:net";
 
 import { createApp } from "../../app.js";
-import { moneyItemSchema, paycheckSchema, payProfileSchema } from "./money-plan.routes.js";
+import {
+  moneyItemSchema,
+  paycheckSchema,
+  payProfileSchema,
+} from "./money-plan.routes.js";
 
 let baseUrl = "";
 let server: ReturnType<ReturnType<typeof createApp>["listen"]>;
@@ -32,13 +36,17 @@ test("GET /money-plan rejects a request with no Authorization header", async () 
 });
 
 test("POST /money-plan/items rejects a request with no Authorization header", async () => {
-  const response = await fetch(`${baseUrl}/money-plan/items`, { method: "POST" });
+  const response = await fetch(`${baseUrl}/money-plan/items`, {
+    method: "POST",
+  });
 
   assert.equal(response.status, 401);
 });
 
 test("POST /money-plan/paychecks rejects a request with no Authorization header", async () => {
-  const response = await fetch(`${baseUrl}/money-plan/paychecks`, { method: "POST" });
+  const response = await fetch(`${baseUrl}/money-plan/paychecks`, {
+    method: "POST",
+  });
 
   assert.equal(response.status, 401);
 });
@@ -88,7 +96,11 @@ test("payProfileSchema accepts cents that aren't exact in binary floating point"
 });
 
 test("moneyItemSchema accepts a bill with just a name and amount", () => {
-  const result = moneyItemSchema.safeParse({ kind: "bill", name: "Phone", monthlyAmount: 45 });
+  const result = moneyItemSchema.safeParse({
+    kind: "bill",
+    name: "Phone",
+    monthlyAmount: 45,
+  });
 
   assert.equal(result.success, true);
 });
@@ -155,19 +167,58 @@ test("moneyItemSchema accepts an asset with a value", () => {
 });
 
 test("moneyItemSchema rejects an empty name and an unknown kind", () => {
-  assert.equal(moneyItemSchema.safeParse({ kind: "bill", name: " ", monthlyAmount: 1 }).success, false);
-  assert.equal(moneyItemSchema.safeParse({ kind: "income", name: "Job", monthlyAmount: 1 }).success, false);
+  assert.equal(
+    moneyItemSchema.safeParse({ kind: "bill", name: " ", monthlyAmount: 1 })
+      .success,
+    false,
+  );
+  assert.equal(
+    moneyItemSchema.safeParse({ kind: "income", name: "Job", monthlyAmount: 1 })
+      .success,
+    false,
+  );
 });
 
 test("paycheckSchema accepts take-home alone or with gross", () => {
-  assert.equal(paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: 612.4 }).success, true);
-  assert.equal(paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: 612.4, gross: 800 }).success, true);
-  assert.equal(paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: 612.4, gross: null }).success, true);
+  assert.equal(
+    paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: 612.4 }).success,
+    true,
+  );
+  assert.equal(
+    paycheckSchema.safeParse({
+      paidOn: "2026-10-03",
+      takeHome: 612.4,
+      gross: 800,
+    }).success,
+    true,
+  );
+  assert.equal(
+    paycheckSchema.safeParse({
+      paidOn: "2026-10-03",
+      takeHome: 612.4,
+      gross: null,
+    }).success,
+    true,
+  );
 });
 
 test("paycheckSchema rejects a bad date, a negative amount, fractions of a cent, and extra fields", () => {
-  assert.equal(paycheckSchema.safeParse({ paidOn: "2026-13-01", takeHome: 600 }).success, false);
-  assert.equal(paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: -1 }).success, false);
-  assert.equal(paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: 600.001 }).success, false);
-  assert.equal(paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: 600, hours: 40 }).success, false);
+  assert.equal(
+    paycheckSchema.safeParse({ paidOn: "2026-13-01", takeHome: 600 }).success,
+    false,
+  );
+  assert.equal(
+    paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: -1 }).success,
+    false,
+  );
+  assert.equal(
+    paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: 600.001 })
+      .success,
+    false,
+  );
+  assert.equal(
+    paycheckSchema.safeParse({ paidOn: "2026-10-03", takeHome: 600, hours: 40 })
+      .success,
+    false,
+  );
 });

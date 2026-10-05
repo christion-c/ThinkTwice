@@ -7,7 +7,10 @@ import {
   deleteTestUser,
   ensureSchemaReady,
 } from "../../test-support/db-test-helpers.js";
-import { createVehicle, listVehiclesForUser } from "../vehicles/vehicles.repository.js";
+import {
+  createVehicle,
+  listVehiclesForUser,
+} from "../vehicles/vehicles.repository.js";
 import { deleteUserById, upsertUserFromFirebase } from "./users.repository.js";
 
 let dbAvailable = false;

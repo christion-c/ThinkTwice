@@ -70,7 +70,9 @@ const probeMigration: Migration = {
 
 async function removeProbe(): Promise<void> {
   await database.query(`DROP TABLE IF EXISTS ${PROBE_TABLE}`);
-  await database.query("DELETE FROM schema_migrations WHERE id = $1", [probeMigration.id]);
+  await database.query("DELETE FROM schema_migrations WHERE id = $1", [
+    probeMigration.id,
+  ]);
 }
 
 test("runMigrations marks an existing table as applied when migration history is incomplete", async (t) => {

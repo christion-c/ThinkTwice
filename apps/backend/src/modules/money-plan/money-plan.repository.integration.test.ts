@@ -95,7 +95,14 @@ test("createMoneyItem round-trips every field exactly, dates as YYYY-MM-DD", asy
   assert.deepEqual(fields, debt);
 
   const listed = await listMoneyItemsForUser(userId);
-  assert.ok(listed.some((item) => item.id === id && item.balance === 9000.25 && item.startsOn === "2027-01-01"));
+  assert.ok(
+    listed.some(
+      (item) =>
+        item.id === id &&
+        item.balance === 9000.25 &&
+        item.startsOn === "2027-01-01",
+    ),
+  );
 });
 
 test("listMoneyItemsForUser never returns another user's items", async (t) => {
@@ -104,7 +111,10 @@ test("listMoneyItemsForUser never returns another user's items", async (t) => {
     return;
   }
 
-  const theirs = await createMoneyItem(otherUserId, { ...debt, name: "Their loan" });
+  const theirs = await createMoneyItem(otherUserId, {
+    ...debt,
+    name: "Their loan",
+  });
 
   const mine = await listMoneyItemsForUser(userId);
   assert.ok(!mine.some((item) => item.id === theirs.id));
@@ -117,17 +127,30 @@ test("replaceMoneyItemForUser updates the owner's item but refuses another user'
   }
 
   const mine = await createMoneyItem(userId, { ...debt, name: "Mine" });
-  const theirs = await createMoneyItem(otherUserId, { ...debt, name: "Theirs" });
+  const theirs = await createMoneyItem(otherUserId, {
+    ...debt,
+    name: "Theirs",
+  });
 
-  const updated = await replaceMoneyItemForUser(mine.id, userId, { ...debt, name: "Renamed", balance: 8500 });
+  const updated = await replaceMoneyItemForUser(mine.id, userId, {
+    ...debt,
+    name: "Renamed",
+    balance: 8500,
+  });
   assert.equal(updated?.name, "Renamed");
   assert.equal(updated?.balance, 8500);
 
-  const refused = await replaceMoneyItemForUser(theirs.id, userId, { ...debt, name: "Hijacked" });
+  const refused = await replaceMoneyItemForUser(theirs.id, userId, {
+    ...debt,
+    name: "Hijacked",
+  });
   assert.equal(refused, null);
 
   const theirsAfter = await listMoneyItemsForUser(otherUserId);
-  assert.equal(theirsAfter.find((item) => item.id === theirs.id)?.name, "Theirs");
+  assert.equal(
+    theirsAfter.find((item) => item.id === theirs.id)?.name,
+    "Theirs",
+  );
 });
 
 test("deleteMoneyItemForUser deletes the owner's item but refuses another user's", async (t) => {
@@ -137,13 +160,22 @@ test("deleteMoneyItemForUser deletes the owner's item but refuses another user's
   }
 
   const mine = await createMoneyItem(userId, { ...debt, name: "Delete me" });
-  const theirs = await createMoneyItem(otherUserId, { ...debt, name: "Keep me" });
+  const theirs = await createMoneyItem(otherUserId, {
+    ...debt,
+    name: "Keep me",
+  });
 
   assert.equal(await deleteMoneyItemForUser(theirs.id, userId), false);
   assert.equal(await deleteMoneyItemForUser(mine.id, userId), true);
 
-  assert.ok(!(await listMoneyItemsForUser(userId)).some((item) => item.id === mine.id));
-  assert.ok((await listMoneyItemsForUser(otherUserId)).some((item) => item.id === theirs.id));
+  assert.ok(
+    !(await listMoneyItemsForUser(userId)).some((item) => item.id === mine.id),
+  );
+  assert.ok(
+    (await listMoneyItemsForUser(otherUserId)).some(
+      (item) => item.id === theirs.id,
+    ),
+  );
 });
 
 test("deleting the user removes their pay profile and items", async (t) => {
@@ -173,26 +205,65 @@ test("paychecks round-trip exactly, list newest first, and stay with their owner
     return;
   }
 
-  const older = await createPaycheck(userId, { paidOn: "2026-09-19", takeHome: 598.12, gross: null });
-  const newer = await createPaycheck(userId, { paidOn: "2026-10-03", takeHome: 612.4, gross: 801.55 });
-  const theirs = await createPaycheck(otherUserId, { paidOn: "2026-10-03", takeHome: 1, gross: null });
+  const older = await createPaycheck(userId, {
+    paidOn: "2026-09-19",
+    takeHome: 598.12,
+    gross: null,
+  });
+  const newer = await createPaycheck(userId, {
+    paidOn: "2026-10-03",
+    takeHome: 612.4,
+    gross: 801.55,
+  });
+  const theirs = await createPaycheck(otherUserId, {
+    paidOn: "2026-10-03",
+    takeHome: 1,
+    gross: null,
+  });
 
-  assert.deepEqual(newer, { id: newer.id, paidOn: "2026-10-03", takeHome: 612.4, gross: 801.55 });
+  assert.deepEqual(newer, {
+    id: newer.id,
+    paidOn: "2026-10-03",
+    takeHome: 612.4,
+    gross: 801.55,
+  });
 
   const mine = await listPaychecksForUser(userId);
   assert.deepEqual(
-    mine.filter((check) => check.id === older.id || check.id === newer.id).map((check) => check.id),
+    mine
+      .filter((check) => check.id === older.id || check.id === newer.id)
+      .map((check) => check.id),
     [newer.id, older.id],
   );
   assert.ok(!mine.some((check) => check.id === theirs.id));
 
-  const updated = await replacePaycheckForUser(older.id, userId, { paidOn: "2026-09-20", takeHome: 600, gross: 790 });
-  assert.deepEqual(updated, { id: older.id, paidOn: "2026-09-20", takeHome: 600, gross: 790 });
-  assert.equal(await replacePaycheckForUser(theirs.id, userId, { paidOn: "2026-10-03", takeHome: 5, gross: null }), null);
+  const updated = await replacePaycheckForUser(older.id, userId, {
+    paidOn: "2026-09-20",
+    takeHome: 600,
+    gross: 790,
+  });
+  assert.deepEqual(updated, {
+    id: older.id,
+    paidOn: "2026-09-20",
+    takeHome: 600,
+    gross: 790,
+  });
+  assert.equal(
+    await replacePaycheckForUser(theirs.id, userId, {
+      paidOn: "2026-10-03",
+      takeHome: 5,
+      gross: null,
+    }),
+    null,
+  );
 
   assert.equal(await deletePaycheckForUser(theirs.id, userId), false);
   assert.equal(await deletePaycheckForUser(older.id, userId), true);
-  assert.ok((await listPaychecksForUser(otherUserId)).some((check) => check.id === theirs.id && check.takeHome === 1));
+  assert.ok(
+    (await listPaychecksForUser(otherUserId)).some(
+      (check) => check.id === theirs.id && check.takeHome === 1,
+    ),
+  );
 });
 
 test("deleting the user removes their paychecks", async (t) => {
@@ -202,7 +273,11 @@ test("deleting the user removes their paychecks", async (t) => {
   }
 
   const throwaway = await createTestUser();
-  await createPaycheck(throwaway, { paidOn: "2026-10-03", takeHome: 100, gross: null });
+  await createPaycheck(throwaway, {
+    paidOn: "2026-10-03",
+    takeHome: 100,
+    gross: null,
+  });
 
   await deleteTestUser(throwaway);
 

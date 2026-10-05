@@ -84,7 +84,9 @@ const ITEM_COLUMNS = `
 `;
 
 // Returns the user's pay profile, or null if they haven't set one up.
-export async function getPayProfileForUser(userId: string): Promise<PayProfile | null> {
+export async function getPayProfileForUser(
+  userId: string,
+): Promise<PayProfile | null> {
   const result = await database.query<PayProfileRow>(
     `
       SELECT hourly_rate, hours_per_week, pay_frequency, take_home_per_check
@@ -119,7 +121,13 @@ export async function upsertPayProfileForUser(
 
       RETURNING hourly_rate, hours_per_week, pay_frequency, take_home_per_check
     `,
-    [userId, pay.hourlyRate, pay.hoursPerWeek, pay.payFrequency, pay.takeHomePerCheck],
+    [
+      userId,
+      pay.hourlyRate,
+      pay.hoursPerWeek,
+      pay.payFrequency,
+      pay.takeHomePerCheck,
+    ],
   );
 
   return mapPayRow(expectOneRow(result, "upserted pay profile"));
@@ -127,7 +135,9 @@ export async function upsertPayProfileForUser(
 
 // Returns only the given user's money items, oldest first (the order
 // they were added, which is the order the app lists them in).
-export async function listMoneyItemsForUser(userId: string): Promise<MoneyItem[]> {
+export async function listMoneyItemsForUser(
+  userId: string,
+): Promise<MoneyItem[]> {
   const result = await database.query<MoneyItemRow>(
     `
       SELECT ${ITEM_COLUMNS}
@@ -152,7 +162,10 @@ export async function countMoneyItemsForUser(userId: string): Promise<number> {
 }
 
 // Creates a money item owned by the given user.
-export async function createMoneyItem(userId: string, input: MoneyItemInput): Promise<MoneyItem> {
+export async function createMoneyItem(
+  userId: string,
+  input: MoneyItemInput,
+): Promise<MoneyItem> {
   const result = await database.query<MoneyItemRow>(
     `
       INSERT INTO money_items (
@@ -222,7 +235,10 @@ export async function replaceMoneyItemForUser(
 }
 
 // Deletes a money item only when it belongs to the given user.
-export async function deleteMoneyItemForUser(itemId: string, userId: string): Promise<boolean> {
+export async function deleteMoneyItemForUser(
+  itemId: string,
+  userId: string,
+): Promise<boolean> {
   const result = await database.query(
     `
       DELETE FROM money_items
@@ -269,7 +285,9 @@ function mapPaycheckRow(row: PaycheckRow): Paycheck {
 const PAYCHECK_COLUMNS = "id, paid_on::text AS paid_on, take_home, gross";
 
 // Returns only the given user's paychecks, newest first.
-export async function listPaychecksForUser(userId: string): Promise<Paycheck[]> {
+export async function listPaychecksForUser(
+  userId: string,
+): Promise<Paycheck[]> {
   const result = await database.query<PaycheckRow>(
     `
       SELECT ${PAYCHECK_COLUMNS}
@@ -294,7 +312,10 @@ export async function countPaychecksForUser(userId: string): Promise<number> {
 }
 
 // Logs a paycheck owned by the given user.
-export async function createPaycheck(userId: string, input: PaycheckInput): Promise<Paycheck> {
+export async function createPaycheck(
+  userId: string,
+  input: PaycheckInput,
+): Promise<Paycheck> {
   const result = await database.query<PaycheckRow>(
     `
       INSERT INTO paychecks (user_id, paid_on, take_home, gross)
@@ -335,7 +356,10 @@ export async function replacePaycheckForUser(
 }
 
 // Deletes a paycheck only when it belongs to the given user.
-export async function deletePaycheckForUser(paycheckId: string, userId: string): Promise<boolean> {
+export async function deletePaycheckForUser(
+  paycheckId: string,
+  userId: string,
+): Promise<boolean> {
   const result = await database.query(
     `
       DELETE FROM paychecks

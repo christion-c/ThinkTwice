@@ -72,5 +72,7 @@ export async function createTestUser(): Promise<string> {
 
 // Removes the user this test created, keeping the shared dev database clean.
 export async function deleteTestUser(userId: string): Promise<void> {
-  await withPostgresRetry(() => database.query("DELETE FROM users WHERE id = $1", [userId]));
+  await withPostgresRetry(() =>
+    database.query("DELETE FROM users WHERE id = $1", [userId]),
+  );
 }

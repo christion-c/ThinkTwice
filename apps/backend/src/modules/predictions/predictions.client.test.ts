@@ -17,9 +17,9 @@ const fetchMock = mock.fn<typeof fetch>();
 // sandbox's own credentials produce anyway, since generating an ID
 // token for a Cloud Run audience requires a service account, not a
 // user credential) so every test here stays fast and hermetic.
-const getIdTokenAuthHeaderMock = mock.fn<(audience: string) => Promise<string | null>>(
-  async () => null,
-);
+const getIdTokenAuthHeaderMock = mock.fn<
+  (audience: string) => Promise<string | null>
+>(async () => null);
 
 const mockedGoogleIdTokenModule = mock.module("../../lib/google-id-token.js", {
   namedExports: { getIdTokenAuthHeader: getIdTokenAuthHeaderMock },
@@ -27,7 +27,8 @@ const mockedGoogleIdTokenModule = mock.module("../../lib/google-id-token.js", {
 
 // Imported after mock.module() so predictions.client.ts picks up the
 // mocked getIdTokenAuthHeader instead of the real one.
-const { requestForecast, requestPreview } = await import("./predictions.client.js");
+const { requestForecast, requestPreview } =
+  await import("./predictions.client.js");
 
 before(() => {
   global.fetch = fetchMock as unknown as typeof fetch;
@@ -122,7 +123,9 @@ test("requestForecast rethrows a non-network error", async () => {
 });
 
 test("requestForecast attaches a Google identity token as Authorization when one is available", async () => {
-  getIdTokenAuthHeaderMock.mock.mockImplementationOnce(async () => "Bearer fake-id-token");
+  getIdTokenAuthHeaderMock.mock.mockImplementationOnce(
+    async () => "Bearer fake-id-token",
+  );
   fetchMock.mock.mockImplementation(
     async () => new Response(JSON.stringify(samplePrediction), { status: 200 }),
   );
@@ -157,7 +160,9 @@ test("requestPreview returns ok with the preview payload on a successful respons
 });
 
 test("requestPreview attaches a Google identity token as Authorization when one is available", async () => {
-  getIdTokenAuthHeaderMock.mock.mockImplementationOnce(async () => "Bearer fake-id-token");
+  getIdTokenAuthHeaderMock.mock.mockImplementationOnce(
+    async () => "Bearer fake-id-token",
+  );
   fetchMock.mock.mockImplementation(
     async () => new Response(JSON.stringify({}), { status: 200 }),
   );

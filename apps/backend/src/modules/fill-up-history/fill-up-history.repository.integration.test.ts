@@ -245,7 +245,11 @@ test("updateFillUpHistoryVehicle reassigns an entry to another vehicle owned by 
   const target = entries.find((entry) => entry.gallons === 7.7);
   assert.ok(target);
 
-  const updated = await updateFillUpHistoryVehicle(target.id, userId, vehicle.id);
+  const updated = await updateFillUpHistoryVehicle(
+    target.id,
+    userId,
+    vehicle.id,
+  );
 
   assert.ok(updated);
   assert.equal(updated.vehicleId, vehicle.id);
@@ -316,14 +320,21 @@ test("updateFillUpHistoryVehicle refuses to assign a vehicle owned by a differen
   const target = entries.find((entry) => entry.gallons === 9.9);
   assert.ok(target);
 
-  const result = await updateFillUpHistoryVehicle(target.id, userId, othersVehicle.id);
+  const result = await updateFillUpHistoryVehicle(
+    target.id,
+    userId,
+    othersVehicle.id,
+  );
 
   // Neither the entry nor the target vehicle belong to the same user
   // together, so this must refuse (null), not silently succeed.
   assert.equal(result, null);
 
   const unchanged = await listFillUpHistoryByUserId(userId);
-  assert.equal(unchanged.find((entry) => entry.id === target.id)?.vehicleId, null);
+  assert.equal(
+    unchanged.find((entry) => entry.id === target.id)?.vehicleId,
+    null,
+  );
 });
 
 test("updateFillUpHistoryVehicle returns null for an entry owned by a different user", async (t) => {
@@ -479,7 +490,11 @@ test("insertFillUpHistory accepts the user's own vehicle", async (t) => {
 
   assert.equal(saved, true);
   const entries = await listFillUpHistoryByUserId(userId);
-  assert.ok(entries.some((entry) => entry.vehicleId === vehicle.id && entry.gallons === 4.25));
+  assert.ok(
+    entries.some(
+      (entry) => entry.vehicleId === vehicle.id && entry.gallons === 4.25,
+    ),
+  );
 });
 
 test("insertFillUpHistory refuses a vehicle owned by a different user", async (t) => {

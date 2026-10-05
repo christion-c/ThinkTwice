@@ -23,7 +23,10 @@ export interface FillUpEntry {
   vehicleId: string | null;
 }
 
-export type FillUpEntryInput = Omit<FillUpEntry, "id" | "recordedAt" | "vehicleId"> & {
+export type FillUpEntryInput = Omit<
+  FillUpEntry,
+  "id" | "recordedAt" | "vehicleId"
+> & {
   recordedAt?: Date | string | null | undefined;
   vehicleId?: string | null | undefined;
 };
@@ -198,7 +201,9 @@ export async function deleteFillUpHistoryEntry(
 
 // Deletes every fill-up entry for the given user - the "start my data
 // over" bulk action. Returns how many rows were removed.
-export async function deleteAllFillUpHistoryForUser(userId: string): Promise<number> {
+export async function deleteAllFillUpHistoryForUser(
+  userId: string,
+): Promise<number> {
   const result = await database.query(
     `
       DELETE FROM fill_up_history

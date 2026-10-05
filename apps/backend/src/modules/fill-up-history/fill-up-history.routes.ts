@@ -104,7 +104,12 @@ fillUpHistoryRouter.patch(
   requireAuth,
   syncCurrentUser,
   withCurrentUser(async (currentUser, request, response) => {
-    const entryId = parseRouteParam(response, entryIdSchema, request.params.entryId, "entry ID");
+    const entryId = parseRouteParam(
+      response,
+      entryIdSchema,
+      request.params.entryId,
+      "entry ID",
+    );
 
     if (!entryId) {
       return;
@@ -113,7 +118,11 @@ fillUpHistoryRouter.patch(
     const validationResult = reassignVehicleSchema.safeParse(request.body);
 
     if (!validationResult.success) {
-      respondWithValidationError(response, validationResult.error, "Invalid vehicle assignment");
+      respondWithValidationError(
+        response,
+        validationResult.error,
+        "Invalid vehicle assignment",
+      );
       return;
     }
 
@@ -139,7 +148,12 @@ fillUpHistoryRouter.delete(
   requireAuth,
   syncCurrentUser,
   withCurrentUser(async (currentUser, request, response) => {
-    const entryId = parseRouteParam(response, entryIdSchema, request.params.entryId, "entry ID");
+    const entryId = parseRouteParam(
+      response,
+      entryIdSchema,
+      request.params.entryId,
+      "entry ID",
+    );
 
     if (!entryId) {
       return;

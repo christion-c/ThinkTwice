@@ -54,8 +54,14 @@ test("upsertDailyDrivingLog then listDailyDrivingLogsForUser returns the log, ne
     return;
   }
 
-  await upsertDailyDrivingLog(userId, { logDate: "2026-01-01", milesDriven: 20 });
-  await upsertDailyDrivingLog(userId, { logDate: "2026-01-02", milesDriven: 35 });
+  await upsertDailyDrivingLog(userId, {
+    logDate: "2026-01-01",
+    milesDriven: 20,
+  });
+  await upsertDailyDrivingLog(userId, {
+    logDate: "2026-01-02",
+    milesDriven: 35,
+  });
 
   const logs = await listDailyDrivingLogsForUser(userId);
 
@@ -72,8 +78,14 @@ test("upsertDailyDrivingLog on the same day corrects the existing log instead of
     return;
   }
 
-  await upsertDailyDrivingLog(userId, { logDate: "2026-03-05", milesDriven: 10 });
-  await upsertDailyDrivingLog(userId, { logDate: "2026-03-05", milesDriven: 42 });
+  await upsertDailyDrivingLog(userId, {
+    logDate: "2026-03-05",
+    milesDriven: 10,
+  });
+  await upsertDailyDrivingLog(userId, {
+    logDate: "2026-03-05",
+    milesDriven: 42,
+  });
 
   const logs = await listDailyDrivingLogsForUser(userId);
   const matching = logs.filter((log) => log.logDate === "2026-03-05");
@@ -88,7 +100,10 @@ test("listDailyDrivingLogsForUser does not leak another user's logs", async (t) 
     return;
   }
 
-  await upsertDailyDrivingLog(otherUserId, { logDate: "2026-04-01", milesDriven: 999 });
+  await upsertDailyDrivingLog(otherUserId, {
+    logDate: "2026-04-01",
+    milesDriven: 999,
+  });
 
   const ownLogs = await listDailyDrivingLogsForUser(userId);
 
@@ -101,7 +116,10 @@ test("upsertDailyDrivingLog returns an id and defaults vehicleId to null", async
     return;
   }
 
-  const log = await upsertOwnLog(userId, { logDate: "2026-05-01", milesDriven: 12 });
+  const log = await upsertOwnLog(userId, {
+    logDate: "2026-05-01",
+    milesDriven: 12,
+  });
 
   assert.equal(typeof log.id, "string");
   assert.ok(log.id.length > 0);
@@ -156,9 +174,16 @@ test("updateDailyDrivingLogVehicle reassigns a log to another vehicle owned by t
     combinedMpg: null,
   });
 
-  const log = await upsertOwnLog(userId, { logDate: "2026-05-03", milesDriven: 18 });
+  const log = await upsertOwnLog(userId, {
+    logDate: "2026-05-03",
+    milesDriven: 18,
+  });
 
-  const updated = await updateDailyDrivingLogVehicle(log.id, userId, vehicle.id);
+  const updated = await updateDailyDrivingLogVehicle(
+    log.id,
+    userId,
+    vehicle.id,
+  );
 
   assert.ok(updated);
   assert.equal(updated.vehicleId, vehicle.id);
@@ -180,9 +205,16 @@ test("updateDailyDrivingLogVehicle refuses to assign a vehicle owned by a differ
     combinedMpg: null,
   });
 
-  const log = await upsertOwnLog(userId, { logDate: "2026-05-04", milesDriven: 22 });
+  const log = await upsertOwnLog(userId, {
+    logDate: "2026-05-04",
+    milesDriven: 22,
+  });
 
-  const result = await updateDailyDrivingLogVehicle(log.id, userId, othersVehicle.id);
+  const result = await updateDailyDrivingLogVehicle(
+    log.id,
+    userId,
+    othersVehicle.id,
+  );
 
   assert.equal(result, null);
 });
@@ -193,7 +225,10 @@ test("deleteDailyDrivingLog removes only the log owned by the given user", async
     return;
   }
 
-  const log = await upsertOwnLog(userId, { logDate: "2026-05-05", milesDriven: 24 });
+  const log = await upsertOwnLog(userId, {
+    logDate: "2026-05-05",
+    milesDriven: 24,
+  });
 
   const deleted = await deleteDailyDrivingLog(log.id, userId);
   assert.equal(deleted, true);
@@ -230,9 +265,18 @@ test("deleteAllDailyDrivingLogsForUser removes every log for that user and none 
   const untouchedUserId = await createTestUser();
 
   try {
-    await upsertDailyDrivingLog(bulkUserId, { logDate: "2026-06-01", milesDriven: 5 });
-    await upsertDailyDrivingLog(bulkUserId, { logDate: "2026-06-02", milesDriven: 6 });
-    await upsertDailyDrivingLog(untouchedUserId, { logDate: "2026-06-01", milesDriven: 7 });
+    await upsertDailyDrivingLog(bulkUserId, {
+      logDate: "2026-06-01",
+      milesDriven: 5,
+    });
+    await upsertDailyDrivingLog(bulkUserId, {
+      logDate: "2026-06-02",
+      milesDriven: 6,
+    });
+    await upsertDailyDrivingLog(untouchedUserId, {
+      logDate: "2026-06-01",
+      milesDriven: 7,
+    });
 
     const deletedCount = await deleteAllDailyDrivingLogsForUser(bulkUserId);
     assert.equal(deletedCount, 2);

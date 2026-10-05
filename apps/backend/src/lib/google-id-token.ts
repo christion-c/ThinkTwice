@@ -13,7 +13,10 @@ import { GoogleAuth } from "google-auth-library";
 // its IdTokenClient caching/refresh logic actually gets to do its job
 // instead of re-deriving credentials from scratch every request.
 const auth = new GoogleAuth();
-const idTokenClientsByAudience = new Map<string, ReturnType<GoogleAuth["getIdTokenClient"]>>();
+const idTokenClientsByAudience = new Map<
+  string,
+  ReturnType<GoogleAuth["getIdTokenClient"]>
+>();
 
 // Returns a ready-to-use "Bearer <token>" Authorization header value,
 // or null (never throws) when a token can't be obtained - local
@@ -24,7 +27,9 @@ const idTokenClientsByAudience = new Map<string, ReturnType<GoogleAuth["getIdTok
 // internal-service-token header check still gates the ML service
 // independently of this, so a missing identity token there just means
 // one fewer layer, not an open door.
-export async function getIdTokenAuthHeader(audience: string): Promise<string | null> {
+export async function getIdTokenAuthHeader(
+  audience: string,
+): Promise<string | null> {
   try {
     let clientPromise = idTokenClientsByAudience.get(audience);
 

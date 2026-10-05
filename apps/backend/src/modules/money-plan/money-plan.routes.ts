@@ -186,12 +186,19 @@ moneyPlanRouter.post(
       return;
     }
 
-    if ((await countMoneyItemsForUser(currentUser.id)) >= MAX_MONEY_ITEMS_PER_USER) {
-      response.status(409).json({ error: `You can have up to ${MAX_MONEY_ITEMS_PER_USER} items` });
+    if (
+      (await countMoneyItemsForUser(currentUser.id)) >= MAX_MONEY_ITEMS_PER_USER
+    ) {
+      response.status(409).json({
+        error: `You can have up to ${MAX_MONEY_ITEMS_PER_USER} items`,
+      });
       return;
     }
 
-    const item = await createMoneyItem(currentUser.id, toItemInput(result.data));
+    const item = await createMoneyItem(
+      currentUser.id,
+      toItemInput(result.data),
+    );
     response.status(201).json({ item });
   }),
 );
@@ -200,7 +207,12 @@ moneyPlanRouter.post(
 moneyPlanRouter.put(
   "/items/:itemId",
   withCurrentUser(async (currentUser, request, response) => {
-    const itemId = parseRouteParam(response, itemIdSchema, request.params.itemId, "item ID");
+    const itemId = parseRouteParam(
+      response,
+      itemIdSchema,
+      request.params.itemId,
+      "item ID",
+    );
 
     if (!itemId) {
       return;
@@ -213,7 +225,11 @@ moneyPlanRouter.put(
       return;
     }
 
-    const item = await replaceMoneyItemForUser(itemId, currentUser.id, toItemInput(result.data));
+    const item = await replaceMoneyItemForUser(
+      itemId,
+      currentUser.id,
+      toItemInput(result.data),
+    );
 
     if (!item) {
       respondNotFound(response, "Item");
@@ -228,7 +244,12 @@ moneyPlanRouter.put(
 moneyPlanRouter.delete(
   "/items/:itemId",
   withCurrentUser(async (currentUser, request, response) => {
-    const itemId = parseRouteParam(response, itemIdSchema, request.params.itemId, "item ID");
+    const itemId = parseRouteParam(
+      response,
+      itemIdSchema,
+      request.params.itemId,
+      "item ID",
+    );
 
     if (!itemId) {
       return;
@@ -256,8 +277,12 @@ moneyPlanRouter.post(
       return;
     }
 
-    if ((await countPaychecksForUser(currentUser.id)) >= MAX_PAYCHECKS_PER_USER) {
-      response.status(409).json({ error: `You can log up to ${MAX_PAYCHECKS_PER_USER} paychecks` });
+    if (
+      (await countPaychecksForUser(currentUser.id)) >= MAX_PAYCHECKS_PER_USER
+    ) {
+      response.status(409).json({
+        error: `You can log up to ${MAX_PAYCHECKS_PER_USER} paychecks`,
+      });
       return;
     }
 
@@ -274,7 +299,12 @@ moneyPlanRouter.post(
 moneyPlanRouter.put(
   "/paychecks/:paycheckId",
   withCurrentUser(async (currentUser, request, response) => {
-    const paycheckId = parseRouteParam(response, itemIdSchema, request.params.paycheckId, "paycheck ID");
+    const paycheckId = parseRouteParam(
+      response,
+      itemIdSchema,
+      request.params.paycheckId,
+      "paycheck ID",
+    );
 
     if (!paycheckId) {
       return;
@@ -306,7 +336,12 @@ moneyPlanRouter.put(
 moneyPlanRouter.delete(
   "/paychecks/:paycheckId",
   withCurrentUser(async (currentUser, request, response) => {
-    const paycheckId = parseRouteParam(response, itemIdSchema, request.params.paycheckId, "paycheck ID");
+    const paycheckId = parseRouteParam(
+      response,
+      itemIdSchema,
+      request.params.paycheckId,
+      "paycheck ID",
+    );
 
     if (!paycheckId) {
       return;

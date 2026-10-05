@@ -4,7 +4,10 @@ import { after, before } from "node:test";
 import type { AddressInfo } from "node:net";
 
 import { createApp } from "../../app.js";
-import { entrySchema, reassignVehicleSchema } from "./fill-up-history.routes.js";
+import {
+  entrySchema,
+  reassignVehicleSchema,
+} from "./fill-up-history.routes.js";
 
 // Matches the default the test script exports (see package.json's
 // "test" script) before env.ts is ever imported.
@@ -177,17 +180,23 @@ test("reassignVehicleSchema rejects a missing vehicleId field", () => {
 });
 
 test("PATCH /fill-up-history/:entryId rejects a request with no Authorization header", async () => {
-  const response = await fetch(`${baseUrl}/fill-up-history/3fa85f64-5717-4562-b3fc-2c963f66afa6`, {
-    method: "PATCH",
-  });
+  const response = await fetch(
+    `${baseUrl}/fill-up-history/3fa85f64-5717-4562-b3fc-2c963f66afa6`,
+    {
+      method: "PATCH",
+    },
+  );
 
   assert.equal(response.status, 401);
 });
 
 test("DELETE /fill-up-history/:entryId rejects a request with no Authorization header", async () => {
-  const response = await fetch(`${baseUrl}/fill-up-history/3fa85f64-5717-4562-b3fc-2c963f66afa6`, {
-    method: "DELETE",
-  });
+  const response = await fetch(
+    `${baseUrl}/fill-up-history/3fa85f64-5717-4562-b3fc-2c963f66afa6`,
+    {
+      method: "DELETE",
+    },
+  );
 
   assert.equal(response.status, 401);
 });

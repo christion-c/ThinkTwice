@@ -106,5 +106,7 @@ export async function upsertUserFromFirebase(
 // 40P01) against a concurrent CREATE TABLE ... REFERENCES users(id),
 // confirmed against a real Postgres instance, not theoretical.
 export async function deleteUserById(userId: string): Promise<void> {
-  await withPostgresRetry(() => database.query("DELETE FROM users WHERE id = $1", [userId]));
+  await withPostgresRetry(() =>
+    database.query("DELETE FROM users WHERE id = $1", [userId]),
+  );
 }

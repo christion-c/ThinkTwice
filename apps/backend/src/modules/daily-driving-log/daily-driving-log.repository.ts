@@ -137,7 +137,9 @@ export async function deleteDailyDrivingLog(
 
 // Deletes every daily driving log for the given user - the "start my
 // data over" bulk action. Returns how many rows were removed.
-export async function deleteAllDailyDrivingLogsForUser(userId: string): Promise<number> {
+export async function deleteAllDailyDrivingLogsForUser(
+  userId: string,
+): Promise<number> {
   const result = await database.query(
     `
       DELETE FROM daily_driving_logs
