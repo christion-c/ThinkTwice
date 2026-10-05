@@ -74,9 +74,7 @@ async def handle_unexpected_error(request: Request, exc: Exception) -> JSONRespo
 
 
 @app.exception_handler(RequestValidationError)
-async def handle_validation_error(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     # FastAPI's default handler for a malformed request body returns
     # Pydantic's own {"detail": [...]} shape, including internal field/
     # type names - reshaped here to match the {"error": "..."} convention
