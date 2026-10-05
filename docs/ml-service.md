@@ -1,6 +1,6 @@
-# ThinkTwice ML Service
+# ML Service
 
-FastAPI service exposing:
+FastAPI service in `services/ml/` (paths below are relative to it). Exposes:
 
 - `GET /health` — liveness check.
 - `POST /predict` — forecasts next-period fuel cost from a user's logged
@@ -76,7 +76,7 @@ Despite the `"linear_regression"` label (kept for API-shape stability),
 this is not scikit-learn's `LinearRegression` — the service has no
 `pandas`/`scikit-learn` dependency at all.
 
-The backend is the only caller — see `apps/backend/src/modules/predictions`.
+The backend is the only caller — see `apps/backend/src/modules/predictions` and [backend.md](backend.md).
 It fetches the user's recent `budget_entries` rows and forwards them here;
 the frontend never calls this service directly.
 
@@ -88,3 +88,7 @@ the frontend never calls this service directly.
 | `INTERNAL_SERVICE_TOKEN` | Shared secret sent as `X-Internal-Token` on requests to the backend's internal-only routes. Must match the value the backend expects (same env var name there) — see `apps/backend/src/middleware/require-internal-service.ts`. |
 | `ML_HISTORY_PATH` | Local fallback-cache file path for fill-up history when the backend call fails. Not durable on Cloud Run (ephemeral, possibly multi-instance filesystem) — see `history.py`'s module docstring. |
 | `PORT` | Read directly by the Dockerfile's `uvicorn` command (`${PORT:-8000}`), not by the app code — Cloud Run assigns this. |
+
+## Deploying
+
+See [deploying.md](deploying.md#ml-service-cloud-run).

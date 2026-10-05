@@ -1,8 +1,25 @@
 # ThinkTwice Documentation
 
-- [Project context](PROJECT_CONTEXT.md) records current status, verified behavior, known gaps, and historical setup decisions.
-- The root [README](../README.md) is the setup and daily-development guide.
-- Stable instructions for contributors and coding agents live in the root [AGENTS.md](../AGENTS.md).
-- [Christion's laptop setup](christion-laptop-setup.md) is personal machine-recovery notes, not general project documentation — see `apps/backend/README.md` instead for the backend's actual architecture/deploy reference.
+Start with the root [README](../README.md) for setup and daily development.
 
-Keep durable rules in `AGENTS.md`; keep dated status and project history in `PROJECT_CONTEXT.md`.
+**Project status**
+- [Known issues and to-do](KNOWN_ISSUES.md): open bugs, unfinished features, and cleanup.
+- [Project context](PROJECT_CONTEXT.md): dated status and project history.
+
+**How each part works**
+- [Backend](backend.md): Express API architecture, migrations, env vars, running and testing.
+- [Frontend](frontend.md): Expo app setup, validation, troubleshooting.
+- [ML service](ml-service.md): FastAPI endpoints and the `/predict` contract.
+- [Shared types](shared-types.md): the `@thinktwice/shared-types` API contract package.
+
+**Shipping**
+- [CI](ci.md): what the GitHub Actions workflow checks.
+- [Deploying](deploying.md): backend, ML and frontend deploy steps, checks, and the GCP/Firebase resource table.
+- [Christion's laptop setup](christion-laptop-setup.md): personal machine-recovery notes.
+
+**Rules for contributors and coding agents** live in `AGENTS.md` files next to
+the code they cover (root [AGENTS.md](../AGENTS.md), `apps/frontend/AGENTS.md`);
+they stay there because agents read the nearest one.
+
+Keep durable rules in `AGENTS.md`, dated history in `PROJECT_CONTEXT.md`, and
+open work in `KNOWN_ISSUES.md`.

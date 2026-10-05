@@ -1,6 +1,6 @@
 # Christion's Laptop Recovery Guide
 
-Personal setup notes for getting back to a working ThinkTwice dev environment after a factory reset. Assumes a fresh Windows 11 install with only VS Code on it. Not general project documentation — see the root [`README.md`](../README.md) and [`apps/backend/README.md`](../apps/backend/README.md) for that.
+Personal setup notes for getting back to a working ThinkTwice dev environment after a factory reset. Assumes a fresh Windows 11 install with only VS Code on it. Not general project documentation — see the root [`README.md`](../README.md) and the [docs index](README.md) for that.
 
 ---
 
@@ -24,11 +24,11 @@ After installing, **start Docker Desktop once** and wait for it to say "Docker i
 ```powershell
 git clone https://github.com/christion-c/ThinkTwice.git
 cd ThinkTwice
-git checkout Christion
 code .
 ```
 
-`main` and `Christion` should be identical — `Christion` is just the branch you normally work from.
+Work from `main` (or a feature branch off it). The old `Christion` branch is
+far behind `main` (45 commits as of 2026-10-05), so don't check it out.
 
 ---
 
@@ -99,4 +99,4 @@ npm test
 
 ---
 
-For the backend's architecture, env var reference, deploy commands, and the GCP/Firebase resource table, see [`apps/backend/README.md`](../apps/backend/README.md) — that content isn't repeated here since it isn't laptop-specific.
+For deploy commands and the GCP/Firebase resource table, see [deploying.md](deploying.md); for the backend's architecture and env vars, see [backend.md](backend.md). That content isn't repeated here since it isn't laptop-specific.

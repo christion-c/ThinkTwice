@@ -11,7 +11,7 @@ import { getAuth } from "firebase-admin/auth";
 // initializeApp() call would do. Can happen during dev reloads or tests.
 // applicationDefault() reads credentials from the ambient environment:
 // the impersonated service account's Application Default Credentials
-// locally (see apps/backend/README.md), or Cloud Run's attached service
+// locally (see the root README, step 4), or Cloud Run's attached service
 // account identity in production - no key file either way.
 const firebaseApp =
   getApps().length > 0

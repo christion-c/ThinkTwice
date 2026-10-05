@@ -1,20 +1,20 @@
 # ThinkTwice Project Context
 
-Last audited: 2026-08-19
+Last audited: 2026-10-05
+
+Dated status and project history. Open bugs and to-dos live in
+[KNOWN_ISSUES.md](KNOWN_ISSUES.md); deploy steps in [deploying.md](deploying.md).
 
 ## Team ownership
 
-The capstone team dissolved after presentation (Aug 2026):
-
-- Christion Callahan now owns the whole project (backend, frontend, and ML).
-- Parker Lewis occasionally contributes, most often to the frontend.
-- Gabriel Phipps and James Lewis are no longer on the project. Historical
-  entries below that name them as owners of a given area are preserved as a
-  record of what was true at the time, not current fact.
+Current ownership is defined in the root [AGENTS.md](../AGENTS.md):
+Christion Callahan owns the whole project, and Parker Lewis occasionally
+contributes. Historical entries below that name Gabriel Phipps or James
+Lewis as owners of an area describe what was true at the time.
 
 ## Stack
 
-- Expo SDK 54 / React Native frontend, now styled with Tailwind CSS via
+- Expo SDK 57 / React Native frontend, styled with Tailwind CSS via
   NativeWind (see the 2026-08-19 entry below) rather than StyleSheet.create
 - Node 22 / Express / TypeScript backend
 - PostgreSQL 17
@@ -23,6 +23,8 @@ The capstone team dissolved after presentation (Aug 2026):
   forecasting (see the 2026-08-13 entry below); no longer uses pandas or
   scikit-learn despite what earlier entries in this log describe
 - Docker Compose development environment
+- Production: backend and ML on Cloud Run, PostgreSQL on Cloud SQL, frontend
+  web export on Firebase Hosting (`thinktwice.site`)
 
 ## Authentication model
 
@@ -192,23 +194,39 @@ project-wide correctness and split things up for maintainability. Highlights
   the project's own; frontend: typecheck/lint/a full `expo export --platform
   web` build) rather than assumed safe from the diff alone.
 
-## Known incomplete or external work
+## Money plan, frontend reorganization, and paychecks (2026-10-02 to 2026-10-05)
 
-- The Expo SDK 54 dependency tree retains 24 npm audit findings (13 high and 11
-  moderate). Resolving the remaining Metro/Expo findings requires a coordinated
-  major Expo upgrade; never run `npm audit fix --force` as an unattended fix.
-- Firebase Admin retains six moderate transitive `uuid` findings. npm's proposed
-  automated fix is a breaking downgrade of Firebase Admin and was not applied.
-- Google OAuth requires provider configuration and a native development build.
-- A valid Firebase-token flow and native Android/iOS builds have still not been
-  exercised (needs a real Firebase project and a development build).
-- Local ADC must be verified as an impersonated-service-account credential on
-  each developer machine.
-- Notification preferences (`settings/notifications.tsx`) persist locally but
-  have no delivery mechanism yet — there's no push service wired up.
-- No global font-scale/text-size accessibility control; only high contrast
-  mode was added. Every screen still hardcodes its own `fontSize` values.
-- Account deletion is not implemented (read-only account info + sign-out only).
+- **Money plan (2026-10-02):** the Finance tab became a month-by-month money
+  plan (pay profile, bills, debts, assets) backed by migration `008`
+  (`pay_profiles`, `money_items`) and `/money-plan` routes. `finance_inputs`
+  still backs the Fuel tab's planner (fuel price, MPG, tank, miles); its
+  income/expense columns are still stored but no screen edits them any more.
+- **Expo SDK 57 (2026-10-02):** patch-aligned Expo packages; removed the
+  unused `expo-modules-core` dependency and the obsolete `newArchEnabled`
+  setting.
+- **Frontend reorganization (2026-10-03):** providers moved to `contexts/`;
+  `FinanceProvider`/`useFinance` renamed `FuelProvider`/`useFuel` (it holds
+  fuel data; the Finance tab uses `MoneyPlanProvider`); `lib/` grouped into
+  `api/`, `fuel/`, `money/`, `budget/`. The map lives in
+  `apps/frontend/AGENTS.md`.
+- **Fixes (2026-10-03):** removed Profile's duplicate settings button; made
+  the display name editable (Firebase `updateProfile` plus a token refresh so
+  the backend's synced copy updates); added paycheck logging (migration
+  `009`, `/money-plan/paychecks`), where logged checks replace estimates for
+  their month; and fixed projected net worth, which counted debt paydown but
+  ignored each month's left over or shortfall.
+- **Deploy incident (2026-10-05):** deploying the backend's `:latest` tag
+  started a revision on a stale image without `/money-plan`, breaking the
+  live Finance tab until it was redeployed by digest. Deploys are now done by
+  digest with a 401-vs-404 route check (see [deploying.md](deploying.md)).
+- **Docs consolidated (2026-10-05):** per-service READMEs moved into
+  `docs/` (`backend.md`, `frontend.md`, `ml-service.md`, `shared-types.md`,
+  `ci.md`); deploy steps combined into `deploying.md`. The "known
+  incomplete" list that used to be in this file moved to `KNOWN_ISSUES.md`,
+  dropping entries that were no longer true: account deletion is
+  implemented, and the old notification-settings screen was replaced by
+  local daily check-in reminders. Moving `.github/README.md` out also means
+  GitHub now shows the root README on the repo home page.
 
 ## History and operational notes
 

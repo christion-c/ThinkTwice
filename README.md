@@ -32,13 +32,14 @@ Frontend (Expo)  →  Backend (Express)  →  ML service (FastAPI)
 
 * **Frontend** (`apps/frontend`) never talks to the ML service directly. Every request — including the debug-only preview flow — goes through the backend, which is the only thing that holds the ML service's internal auth token.
 * **Backend** (`apps/backend`) owns the database and Firebase token verification, and is the client for the ML service's `/predict` and `/ml-preview` endpoints. Route/data-access code is organized one folder per feature under `src/modules/`.
-* **ML service** (`services/ml`) computes fuel and budget forecasts. Its `method: "linear_regression"` response field is a naming choice for API stability, not literally scikit-learn — see `services/ml/README.md` for what the math actually does.
+* **ML service** (`services/ml`) computes fuel and budget forecasts. Its `method: "linear_regression"` response field is a naming choice for API stability, not literally scikit-learn — see [`docs/ml-service.md`](docs/ml-service.md) for what the math actually does.
 
 **Where to go next:**
 
-* [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md) — current status, verified behavior, and known gaps (read this before assuming something is or isn't done)
+* [`docs/`](docs/README.md) — all project documentation, indexed
+* [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) — open bugs and to-dos (read this before assuming something is or isn't done)
 * [`AGENTS.md`](AGENTS.md) — durable repo rules (ownership, security practices)
-* [`apps/frontend/README.md`](apps/frontend/README.md), [`apps/backend/README.md`](apps/backend/README.md), [`services/ml/README.md`](services/ml/README.md), [`packages/README.md`](packages/README.md) — per-service internals
+* [`docs/backend.md`](docs/backend.md), [`docs/frontend.md`](docs/frontend.md), [`docs/ml-service.md`](docs/ml-service.md), [`docs/shared-types.md`](docs/shared-types.md) — per-service internals
 
 ---
 
@@ -243,20 +244,12 @@ The front end reads `EXPO_PUBLIC_API_URL` from `.env`. Set it based on how you'r
 
 ---
 
-Everyone should use the committed Docker configuration as the standard development environment. Do not change shared infrastructure files without communicating with the team, and never commit secrets or local environment files.
+Everyone should use the committed Docker configuration as the standard development environment. Be deliberate with shared infrastructure files (`compose.yaml`, `.env.example`, `infra/`), and never commit secrets or local environment files.
 
 ---
 
 ## Deploying
 
-The frontend deploys to Firebase Hosting. From `apps/frontend`:
-
-```bash
-npx expo export --platform web --clear
-npx firebase-tools@latest deploy --only hosting
-```
-
-Backend and ML service deploys go to Cloud Run via Docker — see
-`apps/backend/README.md` for the exact build/push/deploy commands and the
-project's GCP resource reference (project ID, region, service names, Artifact
-Registry path).
+Deploys are manual: backend and ML service to Cloud Run, frontend to
+Firebase Hosting, backend first. See [`docs/deploying.md`](docs/deploying.md)
+for the commands, post-deploy checks, and the GCP/Firebase resource table.
