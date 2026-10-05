@@ -1,11 +1,62 @@
 # ThinkTwice Known Issues and To-Do
 
-Last reviewed: 2026-10-05 (after the paycheck/net-worth release, commit `a55d135`,
-and the docs consolidation).
+Last reviewed: 2026-10-05.
 
 Check items off as they're done, and add new ones under the right heading. When
 an item is finished, delete it here and, if it's worth remembering, record it
 in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
+
+## Requested app changes
+
+- [ ] **Add a "Use phone setting" appearance option.** Preferences only offers
+      Dark and Light today: `ColorMode` in `lib/theme.ts` is `"dark" | "light"`,
+      and the saved preference defaults to `"dark"`
+      (`contexts/AppPreferencesProvider.tsx`). Add a third choice that follows
+      the phone's light/dark setting (React Native's `useColorScheme()`), and
+      make it the default. `app.json` already sets `userInterfaceStyle` to
+      `"automatic"`, so the app can read the phone's setting. Users who already
+      picked Dark or Light should keep their choice. The Profile screen's
+      "Appearance" row needs a label for the new option.
+
+- [ ] **Bills need a due date.** Bills only have a name and monthly amount;
+      there's nowhere to say when one is due. This needs a database migration
+      (new `010`, since applied migrations can't be edited), the
+      `/money-plan/items` route schema, the shared `MoneyItem` type, and a
+      field in `components/money/MoneyItemSheet.tsx`. A day of the month
+      (1-31) is probably enough. Decide what happens in shorter months, such as
+      a bill due on the 31st in February.
+
+- [ ] **Bill due-date reminders.** Let users get a notification before a bill
+      is due and choose how many days in advance. This needs bill due dates
+      first (item above). The daily check-in reminder already schedules local
+      notifications (`lib/checkin-reminders.ts`, `hooks/useCheckinReminders.ts`)
+      and can serve as the pattern. The setting belongs in Preferences, next
+      to the existing reminder toggle. Reminders have to be rescheduled
+      whenever a bill is added, edited or deleted.
+
+- [ ] **Quick actions are hard to reach.** They're the last card on the Home
+      screen (`app/index.tsx`), so users have to scroll to the bottom. Move them
+      near the top, or make them always visible, for example as a row under
+      the header or a floating button.
+
+## New features
+
+- [ ] **Fall theme.** Colors are defined as dark and light palettes in
+      `lib/theme.ts`, with high-contrast overrides, then passed to Tailwind as
+      CSS variables by `components/layout/ThemeVarsRoot.tsx`. A seasonal theme
+      means new palettes plus a theme picker in Preferences. Decide whether
+      each season gets its own light and dark version, and how it combines
+      with high contrast.
+
+- [ ] **Winter theme.** Same approach as the fall theme; building both
+      together means the theme picker only has to be built once.
+
+- [ ] **Move Profile off the bottom bar, give its spot to Nutrition.** Make
+      Profile and Settings reachable from the Home screen instead (for
+      example, an avatar or gear button in the Home header), and put Nutrition
+      in the bottom-bar slot Profile uses now (`components/layout/nav-tabs.ts`).
+      Nutrition is still paused (see "Nutrition is paused" below), so the tab
+      needs that feature finished first, or it will open the placeholder page.
 
 ## Money plan accuracy (Finance tab)
 
@@ -64,6 +115,26 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
       the backend returns at most 60 daily logs. Add a backend total if
       lifetime miles matter.
 
+## Repo and process
+
+- [ ] **ML deploy steps don't name the image.** [deploying.md](deploying.md)
+      only gives a command to look up the ML service's image path. Run it once
+      (`gcloud run services describe thinktwice-ml --region us-east4 --format="value(spec.template.spec.containers[0].image)"`)
+      and put the real path in the doc.
+
+- [ ] **Parker's branch is out of date.** `parker` is 97 commits behind `main`
+      and still has the old file layout from before the 2026-10-03
+      reorganization. Update it from `main` before new work goes on it.
+
+- [ ] **Agent rules don't require frontend tests.** The "Required
+      verification" list in the root `AGENTS.md` doesn't include `npm test`
+      for the frontend, although CI now runs it. Add it.
+
+- [ ] **Service folders have no README.** `apps/backend/`, `apps/frontend/`,
+      `services/ml/` and `packages/` lost theirs when the docs moved to
+      `docs/`. Add short READMEs there that point to the matching doc, for
+      anyone browsing those folders on GitHub.
+
 ## Security and dependencies
 
 - [ ] **Frontend has 80 npm audit findings (66 high, 14 moderate).** They come
@@ -101,8 +172,10 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
   access and PR creation happen from the Windows laptop (see
   [deploying.md](deploying.md) and
   [christion-laptop-setup.md](christion-laptop-setup.md)).
+
 - Local ADC has to be set up on each machine as an impersonated credential
   for `thinktwice-dev-backend`, never a downloaded key (root README, step 4).
+
 - Docker inside the devcontainer publishes ports on the host, not on
   `localhost`. To reach a container from inside the devcontainer, use its
   bridge IP (`docker inspect`) or `host.docker.internal`.
