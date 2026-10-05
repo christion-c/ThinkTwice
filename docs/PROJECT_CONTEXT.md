@@ -227,6 +227,11 @@ project-wide correctness and split things up for maintainability. Highlights
   implemented, and the old notification-settings screen was replaced by
   local daily check-in reminders. Moving `.github/README.md` out also means
   GitHub now shows the root README on the repo home page.
+- **CI green again (2026-10-05):** every CI run had been red. Two jobs were
+  failing on formatting alone: the Backend job's Prettier `format:check`
+  (20 files) and the ML job's `ruff format --check` (one signature in
+  `app/main.py`). Both were reformatted with no code changes, and `npm test`
+  was added to the Frontend job so the Jest suite runs on every push.
 
 ## History and operational notes
 

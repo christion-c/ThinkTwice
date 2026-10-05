@@ -48,8 +48,7 @@ npm run export:web
 ```
 
 `npm test` runs the Jest suite (money-plan math, fuel projections, providers
-and hooks). CI doesn't run it yet (see [KNOWN_ISSUES.md](KNOWN_ISSUES.md)), so
-run it locally before pushing.
+and hooks). CI runs every one of these checks on each push.
 
 ## Troubleshooting
 

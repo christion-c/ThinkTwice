@@ -61,6 +61,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm test -- --ci
       - run: npx expo install --check
       - run: npm run export:web -- --output-dir /tmp/thinktwice-web-dist
         env:

@@ -7,19 +7,6 @@ Check items off as they're done, and add new ones under the right heading. When
 an item is finished, delete it here and, if it's worth remembering, record it
 in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
-## Fix first
-
-- [ ] **CI fails on every push: backend formatting.** The `Backend` job runs
-      `npm run format:check`, and 20 files in `apps/backend` don't match
-      Prettier, including the money-plan module. This was already the case
-      before 2026-10-03. Fix: from `apps/backend`, run `npx prettier --write .`,
-      check the diff only changes formatting, and commit it on its own.
-- [ ] **Frontend tests don't run in CI.** The `Frontend` job runs lint,
-      typecheck, the Expo check and web export, but never `npm test`, so the
-      156 Jest tests (money math, fuel projections, providers) only run if
-      someone runs them locally. Add `- run: npm test` to the Frontend job in
-      `.github/workflows/validate.yml`.
-
 ## Money plan accuracy (Finance tab)
 
 - [ ] **Can't log a paycheck older than 3 weeks.** The payday picker in
