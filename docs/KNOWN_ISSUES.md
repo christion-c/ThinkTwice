@@ -12,24 +12,30 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 - [ ] **Can't log a paycheck older than 3 weeks.** The payday picker in
       `components/money/PaycheckSheet.tsx` only offers the last 21 days. Add a
       date picker, or more chips, so older checks can be back-filled.
+
 - [ ] **Unlogged paydays are always estimated, even in past months.** If a
       biweekly month had 3 paydays and only 2 were logged, the third still
       counts at the normal take-home (`payForMonth` in `lib/money/plan.ts`).
       Decide whether paydays already past should count as $0 unless logged.
+
 - [ ] **No paycheck history view.** Logged checks only show under the selected
       month on the Finance tab. Consider a full list, like `app/history.tsx`
       does for fill-ups.
+
 - [ ] **Debt balances assume this month's payment hasn't been made.** The form
       says "Before this month's payment". If someone enters a balance after
       already paying, the schedule takes that payment out again, so future
       months show one payment less owed than is real. Consider asking
       "Already paid this month?" when entering a debt.
+
 - [ ] **Assets never change value.** Savings, investments and cars stay at
       their entered value in every future month: no interest, growth or
       depreciation.
+
 - [ ] **Projected net worth assumes all left-over money is kept.** Future
       months add each month's left over (or subtract the shortfall) as cash.
       The card labels this, but there's no way to say "I spend whatever's left".
+
 - [ ] **Debt-to-income leaves out paycheck-deducted debts.** Debts marked
       "Taken from paycheck" (like a 401K loan) aren't counted in the DTI
       percentages; lenders usually count them. Decide whether to include
@@ -42,14 +48,18 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
       `app/nutrition.tsx` is a placeholder, and `contexts/BudgetProvider.tsx`
       and `lib/budget/` are kept but unused. Either finish it or delete all of
       them together.
+
 - [ ] **Sign-up doesn't ask for a name.** New accounts have no display name
       until someone sets one in Settings → Account. Add an optional name field
       to `app/auth/register.tsx`.
+
 - [ ] **Google sign-in and native builds haven't been tested end to end.**
       Google sign-in needs provider configuration and a development build;
       nobody has tested Android or iOS builds against real Firebase.
+
 - [ ] **No text-size setting for accessibility.** There's only high-contrast
       mode, and screens set fixed font sizes.
+
 - [ ] **"Miles logged" on Profile only covers the last 60 check-ins,** because
       the backend returns at most 60 daily logs. Add a backend total if
       lifetime miles matter.
@@ -62,10 +72,12 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
       offered fix is a major-version bump, so don't run
       `npm audit fix --force`. Most will clear with future Expo SDK upgrades.
       Upgrading the SDK means updating `apps/frontend/AGENTS.md` too.
+
 - [ ] **Backend has 11 npm audit findings (3 high, 8 moderate),** all through
       `firebase-admin`. A non-breaking fix exists within 14.x: run
       `npm update firebase-admin` in `apps/backend`, then run the full backend
       checks.
+
 - [ ] **Internal debug pages are open to any signed-in user.** `/ml-preview`
       and `/debug/ml-account` aren't linked anywhere, but anyone who knows the
       URL can open them. They only show that user's own data, so the risk is
@@ -76,6 +88,7 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 - [ ] **`app/finance.tsx` is ~550 lines.** `ItemRow`, `IconButton` and
       `debtStatus` are defined inside the screen file. Move them to
       `components/money/` to match the repo rule that `app/` holds routes only.
+
 - [ ] **One backend comment points at an old path.**
       `apps/backend/src/db/migrations/006-create-daily-driving-logs.ts`
       mentions `apps/frontend/lib/finance-projections.ts`, which is now
