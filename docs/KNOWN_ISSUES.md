@@ -22,6 +22,35 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
       the closed test grows. The data part already works and is safe to
       retry.
 
+- [ ] **The Play app and the live site aren't in sync.** They ship
+      separately and by hand (EAS build for Android, `expo export` + Firebase
+      deploy for web), and nothing checks that both came from the same
+      commit. Seen on 2026-10-10: Play has 1.1.0 (`404e330`), but
+      thinktwice.site still serves the earlier `audit-fixes` build
+      (`entry-66cfc2c7…`), so Google sign-in is disabled on the web while it
+      works on Android. Fix the drift (redeploy the site from the release
+      commit), then add checks so it can't happen silently:
+      1. **Build stamp:** embed the app version and git commit in both
+         builds through `app.config.ts` `extra` (EAS provides the commit on
+         its build workers; the web export can read `git rev-parse`), and
+         show it in Settings, e.g. "Version 1.1.0 (404e330)", so anyone can
+         compare the two at a glance.
+      2. **Published version file:** write `dist/version.json` (version +
+         commit) during the web export, so the live site can be checked
+         with `curl`.
+      3. **Automated check:** a GitHub Actions job (on a schedule, and after
+         deploys) that compares the site's `version.json` commit with the
+         latest production EAS build's commit (`eas build:list --json`,
+         using an `EXPO_TOKEN` secret) and fails when they differ.
+      4. **Release checklist:** a "Release" section in
+         [deploying.md](deploying.md) that ships web and Android from the
+         same commit, every time.
+      5. **Same tests on both:** the code that's meant to differ by
+         platform lives in `*.native.ts` files (today only
+         `lib/google-sign-in`). Keep that list small, and give each such
+         module tests for both versions. A later step could run the same
+         end-to-end flows on web (Playwright) and Android (Maestro).
+
 ## Requested app changes
 
 - [ ] **Add a "Use phone setting" appearance option.** Preferences only offers
