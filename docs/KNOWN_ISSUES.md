@@ -6,6 +6,22 @@ Check items off as they're done, and add new ones under the right heading. When
 an item is finished, delete it here and, if it's worth remembering, record it
 in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
+## Bugs
+
+- [ ] **"Delete my account" deletes the data but not the login.** Settings →
+      Account → Delete my account shows "Your data was deleted, but removing
+      your login failed." `DELETE /users/me` (`users.routes.ts`) deletes the
+      Postgres user first, which works, then calls Firebase Admin's
+      `deleteUser`, which fails. Likely cause: the Cloud Run service account
+      lacks the **Firebase Authentication Admin** role
+      (`roles/firebaseauth.admin`). Verifying sign-in tokens needs no IAM
+      role, so this is the backend's first call that does. Confirm with
+      `gcloud run services logs read thinktwice-backend --region us-east4 --limit 200 | Select-String "failed to delete the Firebase account" -Context 0,12`,
+      then grant the role to the service account the backend runs as and
+      retry. Google Play requires in-app account deletion, so fix this before
+      the closed test grows. The data part already works and is safe to
+      retry.
+
 ## Requested app changes
 
 - [ ] **Add a "Use phone setting" appearance option.** Preferences only offers
@@ -17,6 +33,18 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
       `"automatic"`, so the app can read the phone's setting. Users who already
       picked Dark or Light should keep their choice. The Profile screen's
       "Appearance" row needs a label for the new option.
+
+- [ ] **Let users clear all their data without deleting the account.** A
+      second option next to "Delete my account" in Settings → Account:
+      wipe everything (vehicles, fill-ups, check-ins, budget entries, fuel
+      planner inputs, pay profile, bills, debts, assets, paychecks) but keep
+      the login and profile. Needs a backend route (e.g.
+      `DELETE /users/me/data`) that deletes from every table referencing
+      `users` in one transaction, plus a test that reads `information_schema`
+      so a future table can't be missed. The app should also clear its
+      on-device caches (the fuel inputs cache in AsyncStorage) and refetch.
+      Decide whether app preferences (theme, reminders) count as data to
+      clear. The public `delete-account` page should mention both options.
 
 - [ ] **Bills need a due date.** Bills only have a name and monthly amount;
       there's nowhere to say when one is due. This needs a database migration
