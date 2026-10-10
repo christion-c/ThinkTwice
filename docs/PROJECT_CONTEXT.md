@@ -279,6 +279,22 @@ An audit of the math, logic, copy and docs, then fixes for what it found.
   schemas reject, so deploy the backend (which applies migration `010` on
   startup) before the frontend.
 
+## Google sign-in fix and 1.1.0 prep (2026-10-10)
+
+- Google sign-in was disabled everywhere: no client IDs were configured,
+  and web wrongly required one although Firebase's popup flow needs none.
+  Web now always offers it. Native moved from `expo-auth-session` (removed;
+  it relies on custom-scheme redirects Google restricts for Android OAuth
+  clients) to `@react-native-google-signin/google-signin`, which Expo's
+  guide recommends. Cancelling no longer leaves the button stuck on
+  "Connecting Google...", the "G" mark now matches Google's, and signing out
+  also clears the native Google session.
+- `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` is no longer used and was removed
+  from the env examples and `compose.yaml`; release builds now require
+  `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
+- App version bumped to 1.1.0 for the closed test; notes in
+  [RELEASE_NOTES.md](RELEASE_NOTES.md).
+
 ## History and operational notes
 
 - The frontend lockfile was updated; a clean Node 22 `npm ci` succeeds.
