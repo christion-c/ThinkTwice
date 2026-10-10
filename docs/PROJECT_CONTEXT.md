@@ -2,8 +2,9 @@
 
 Last audited: 2026-10-10
 
-Dated status and project history. Open bugs and to-dos live in
-[KNOWN_ISSUES.md](KNOWN_ISSUES.md); deploy steps in [deploying.md](deploying.md).
+Dated status and project history. Open bugs and to-dos live in the ThinkTwice
+Issue Tracker (linked from [KNOWN_ISSUES.md](KNOWN_ISSUES.md)); deploy steps in
+[deploying.md](deploying.md).
 
 ## Team ownership
 
@@ -301,6 +302,15 @@ An audit of the math, logic, copy and docs, then fixes for what it found.
   Firebase Android app. The 1.1.0 production build, installed from Play's
   internal-testing track, passed a full check: Google sign-in, cancel, sign
   out, Finance, Fuel and Settings.
+
+## Known issues move to a tracker (2026-10-10)
+
+- The 32 open items in `KNOWN_ISSUES.md` moved to the ThinkTwice Issue
+  Tracker (a claude.ai page with its own database: status, priority, area,
+  files). `KNOWN_ISSUES.md` now just links to it and keeps the standing
+  notes. Before the move the file was reorganized (bugs by severity, the
+  sync plan under "Repo and process") and made Prettier-stable after an
+  editor's format-on-save had flattened its nested lists.
 
 ## History and operational notes
 

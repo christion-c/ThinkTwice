@@ -3,7 +3,7 @@
 Start with the root [README](../README.md) for setup and daily development.
 
 **Project status**
-- [Known issues and to-do](KNOWN_ISSUES.md): open bugs, unfinished features, and cleanup.
+- [Known issues and to-do](KNOWN_ISSUES.md): where open bugs, unfinished features, and cleanup are tracked (the ThinkTwice Issue Tracker), plus standing notes.
 - [Project context](PROJECT_CONTEXT.md): dated status and project history.
 
 **How each part works**
@@ -23,4 +23,4 @@ the code they cover (root [AGENTS.md](../AGENTS.md), `apps/frontend/AGENTS.md`);
 they stay there because agents read the nearest one.
 
 Keep durable rules in `AGENTS.md`, dated history in `PROJECT_CONTEXT.md`, and
-open work in `KNOWN_ISSUES.md`.
+open work in the ThinkTwice Issue Tracker (linked from `KNOWN_ISSUES.md`).

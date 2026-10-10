@@ -37,7 +37,7 @@ Frontend (Expo)  →  Backend (Express)  →  ML service (FastAPI)
 **Where to go next:**
 
 * [`docs/`](docs/README.md) — all project documentation, indexed
-* [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) — open bugs and to-dos (read this before assuming something is or isn't done)
+* [ThinkTwice Issue Tracker](https://claude.ai/artifact/LUxkvCZ7CTfgNFHui1emFY) — open bugs and to-dos (read this before assuming something is or isn't done; [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) explains access)
 * [`AGENTS.md`](AGENTS.md) — durable repo rules (ownership, security practices)
 * [`docs/backend.md`](docs/backend.md), [`docs/frontend.md`](docs/frontend.md), [`docs/ml-service.md`](docs/ml-service.md), [`docs/shared-types.md`](docs/shared-types.md) — per-service internals
 
