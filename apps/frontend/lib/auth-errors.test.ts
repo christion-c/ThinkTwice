@@ -1,4 +1,4 @@
-import { getAuthErrorMessage } from "./auth-errors";
+import { getAuthErrorMessage, getGoogleSignInErrorMessage } from "./auth-errors";
 
 describe("getAuthErrorMessage", () => {
   const cases: [string, string][] = [
@@ -29,5 +29,27 @@ describe("getAuthErrorMessage", () => {
 
   it("falls back to the default message for an object with no code field", () => {
     expect(getAuthErrorMessage({ message: "boom" }, "fallback")).toBe("fallback");
+  });
+});
+
+describe("getGoogleSignInErrorMessage", () => {
+  it("shows nothing for a sign-in that's already in progress", () => {
+    expect(getGoogleSignInErrorMessage({ code: "ASYNC_OP_IN_PROGRESS" })).toBeNull();
+  });
+
+  it("explains a missing signing-key setup (DEVELOPER_ERROR) without blaming the user", () => {
+    expect(getGoogleSignInErrorMessage({ code: "10" })).toMatch(/isn't set up for this version/);
+  });
+
+  it("handles missing Play services and an email already registered", () => {
+    expect(getGoogleSignInErrorMessage({ code: "PLAY_SERVICES_NOT_AVAILABLE" })).toMatch(/Google Play services/);
+    expect(getGoogleSignInErrorMessage({ code: "auth/account-exists-with-different-credential" })).toMatch(
+      /already has a ThinkTwice account/,
+    );
+  });
+
+  it("falls back to the shared Firebase messages, then a generic one", () => {
+    expect(getGoogleSignInErrorMessage({ code: "auth/too-many-requests" })).toBe("Too many attempts. Please try again later.");
+    expect(getGoogleSignInErrorMessage(new Error("boom"))).toBe("Unable to sign in with Google. Please try again.");
   });
 });

@@ -104,7 +104,7 @@ EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
 ```
 
-These come from the Firebase web-app configuration. `EXPO_PUBLIC_*` variables are compiled into the client, so they must never contain secrets. Native Google sign-in additionally needs the platform OAuth client IDs in `.env` and an Expo development build — Expo Go alone is not enough for that native module.
+These come from the Firebase web-app configuration. `EXPO_PUBLIC_*` variables are compiled into the client, so they must never contain secrets. Google sign-in on Android and iOS also needs `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (the *Web* OAuth client ID from Firebase Auth's Google provider) and a development or release build, not Expo Go. On Android, each signing key's SHA-1 must be registered in Firebase; see [frontend.md](docs/frontend.md#google-sign-in). Web Google sign-in needs no client ID.
 
 ### 5. Build the full project
 

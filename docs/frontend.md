@@ -50,6 +50,42 @@ npm run export:web
 `npm test` runs the Jest suite (money-plan math, fuel projections, providers
 and hooks). CI runs every one of these checks on each push.
 
+## Google sign-in
+
+`lib/google-sign-in.ts` (web) and `lib/google-sign-in.native.ts` (Android,
+iOS) share one API; Metro picks the file per platform.
+
+- **Web** uses Firebase's `signInWithPopup` and needs no client ID: just the
+  Google provider enabled in Firebase Auth, with `thinktwice.site` in its
+  authorized domains.
+- **Android and iOS** use `@react-native-google-signin/google-signin` (the
+  native Google SDK, as Expo's guide recommends). It doesn't run in Expo Go;
+  use a development or release build. It needs
+  `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`: the *Web* OAuth client ID from
+  Firebase Auth > Sign-in method > Google > Web SDK configuration. Release
+  builds refuse to start building without it (`app.config.ts`).
+
+One-time setup for Android:
+
+1. In Firebase project settings, make sure there's an Android app for
+   `com.thinktwicefinance.app`.
+2. Add both signing keys' **SHA-1** fingerprints to that Android app:
+   - the EAS upload key: `npx eas-cli credentials --platform android`
+     (production profile; shows the SHA-1);
+   - the Play **app signing** key: in Play Console, open the app's "App
+     signing" page (search "App signing"; it's under App integrity).
+
+   Without the Play key's SHA-1, a Play-installed build fails with
+   `DEVELOPER_ERROR` (code `10`), which the app shows as "Google sign-in
+   isn't set up for this version of the app yet."
+3. Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in the EAS environments the build
+   profiles use (`npx eas-cli env:create`), and in `apps/frontend/.env` for
+   development builds.
+
+iOS also needs `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`; `app.config.ts` adds the
+Google Sign-In config plugin (which sets the iOS URL scheme) only when it's
+set.
+
 ## Troubleshooting
 
 **Stale typed-route errors.** Expo Router's typed-routes cache

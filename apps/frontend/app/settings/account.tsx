@@ -11,6 +11,7 @@ import { useVehicle } from "@/contexts/VehicleProvider";
 import { Card, CardText, CardTitle, ListRow, PrimaryButton, StatusMessage } from "@/components/ui";
 import { deleteCurrentUserAccount } from "@/lib/api/backend";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import { signOutOfGoogle } from "@/lib/google-sign-in";
 
 const MAX_DISPLAY_NAME_LENGTH = 60;
 
@@ -64,7 +65,7 @@ export default function Account() {
       // The backend account is gone - clear the local session too and
       // send the user to login, same as a normal sign-out.
       if (isFirebaseConfigured && auth) {
-        await signOut(auth);
+        await Promise.all([signOut(auth), signOutOfGoogle()]);
       }
 
       router.replace("/auth/login");
