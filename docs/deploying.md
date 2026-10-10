@@ -66,20 +66,27 @@ gcloud run services logs read thinktwice-backend --region us-east4 --limit 50
 ## ML service (Cloud Run)
 
 Same pattern as the backend, but the build context is `services/ml` (see the
-`docker-build` job in `.github/workflows/validate.yml`):
+`docker-build` job in `.github/workflows/validate.yml`). Run from the repo
+root:
 
 ```powershell
-docker build -f infra/docker/ml/Dockerfile --target production -t <ml-image>:latest services/ml
+docker build -f infra/docker/ml/Dockerfile --target production -t us-east4-docker.pkg.dev/thinktwice-dev-christion/thinktwice/ml:latest services/ml
+docker push us-east4-docker.pkg.dev/thinktwice-dev-christion/thinktwice/ml:latest
+
+$mldigest = gcloud artifacts docker images describe us-east4-docker.pkg.dev/thinktwice-dev-christion/thinktwice/ml:latest --format="value(image_summary.digest)"
+echo $mldigest   # must be one line starting with sha256:
+gcloud run deploy thinktwice-ml --region us-east4 --image "us-east4-docker.pkg.dev/thinktwice-dev-christion/thinktwice/ml@$mldigest"
 ```
 
-To find the image path the service currently uses, so you can push to the
-same one, run:
+Deploy by digest for the same reason as the backend. To confirm which image
+the service is running:
 
 ```powershell
 gcloud run services describe thinktwice-ml --region us-east4 --format="value(spec.template.spec.containers[0].image)"
 ```
 
-Push, then deploy `thinktwice-ml` by digest exactly as for the backend.
+The ML service only accepts IAM-authenticated calls, so an unauthenticated
+`curl` of its URL returns 403 even when it's healthy.
 
 ## Frontend (Firebase Hosting)
 
@@ -112,6 +119,7 @@ refresh may be needed, since the JS bundle is cached as immutable but
 | Live backend URL            | https://thinktwice-backend-93723759667.us-east4.run.app                                   |
 | Live ML service URL         | https://thinktwice-ml-93723759667.us-east4.run.app                                        |
 | Artifact Registry repo      | `us-east4-docker.pkg.dev/thinktwice-dev-christion/thinktwice`                             |
+| Images                      | `.../thinktwice/backend`, `.../thinktwice/ml`                                             |
 | Cloud SQL instance          | `thinktwice` (region `us-central1`; a different region from Cloud Run on purpose)         |
 | Cloud SQL connection name   | `thinktwice-dev-christion:us-central1:thinktwice`                                         |
 | Secret Manager secrets      | `db-url`, `internal-service-token`                                                        |

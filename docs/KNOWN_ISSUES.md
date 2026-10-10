@@ -83,11 +83,6 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ## Repo and process
 
-- [ ] **ML deploy steps don't name the image.** [deploying.md](deploying.md)
-      only gives a command to look up the ML service's image path. Run it once
-      (`gcloud run services describe thinktwice-ml --region us-east4 --format="value(spec.template.spec.containers[0].image)"`)
-      and put the real path in the doc.
-
 - [ ] **Parker's branch is out of date.** `parker` hasn't changed since
       2026-08-12. It was 98 commits behind `main` on 2026-10-10, before the
       audit-fix commits, and still has the old file layout from before the
