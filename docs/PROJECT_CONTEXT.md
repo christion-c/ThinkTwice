@@ -294,6 +294,13 @@ An audit of the math, logic, copy and docs, then fixes for what it found.
   `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
 - App version bumped to 1.1.0 for the closed test; notes in
   [RELEASE_NOTES.md](RELEASE_NOTES.md).
+- Console setup done the same day: Google provider enabled in Firebase Auth,
+  `thinktwice.site` added to authorized domains,
+  `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` set in EAS (production and preview),
+  and both SHA-1s (EAS upload key, Play app-signing key) added to the
+  Firebase Android app. The 1.1.0 production build, installed from Play's
+  internal-testing track, passed a full check: Google sign-in, cancel, sign
+  out, Finance, Fuel and Settings.
 
 ## History and operational notes
 
