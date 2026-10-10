@@ -46,6 +46,19 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
       Decide whether app preferences (theme, reminders) count as data to
       clear. The public `delete-account` page should mention both options.
 
+- [ ] **The bottom nav bar doesn't really float.** It's styled as a rounded
+      island, but it sits on a solid strip that runs across the screen, so it
+      looks like an island on a banner. Cause: `PageScaffold` lays the nav
+      out *below* the scroll view instead of over it, and the outer wrapper
+      in `components/layout/BottomNav.tsx` has an opaque `bg-background` and
+      padding, so content stops at that strip rather than scrolling behind
+      the island. To float it: position the nav absolutely over the content
+      (bottom-anchored, respecting the safe-area inset), make the wrapper
+      transparent, and add bottom padding to the scroll content equal to the
+      bar's height so the last card isn't hidden. Check both themes, compact
+      cards, the wide-layout `max-w-[560px]` wrapper, and the keyboard
+      (the bar shouldn't ride up over inputs).
+
 - [ ] **Bills need a due date.** Bills only have a name and monthly amount;
       there's nowhere to say when one is due. This needs a database migration
       (new `011`, since applied migrations can't be edited), the
