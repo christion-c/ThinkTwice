@@ -43,6 +43,8 @@ export default function ProfileSettings() {
     setRemindersEnabled,
     reminderTime,
     setReminderTime,
+    keepLeftOver,
+    setKeepLeftOver,
   } = useAppPreferences();
   // Also mounted in app/_layout.tsx so the schedule stays active app-wide;
   // calling it again here is safe (scheduling/permission requests are
@@ -169,6 +171,17 @@ export default function ProfileSettings() {
             />
           </View>
         ) : null}
+      </Card>
+
+      <Card surface>
+        <CardTitle>Money</CardTitle>
+
+        <SettingToggleRow
+          title="Keep Left-Over Money"
+          caption="Future net worth adds each month's left-over money as savings. Turn off if you usually spend it; shortfalls still count."
+          value={keepLeftOver}
+          onValueChange={setKeepLeftOver}
+        />
       </Card>
 
       <Card surface>

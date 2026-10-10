@@ -116,7 +116,10 @@ def _fetch_backend_history(user_id: str) -> list[dict[str, Any]] | None:
 
 def _load_local_history(user_id: str | None) -> list[dict[str, Any]]:
     # Reads the local fallback cache and flattens/filters it for the
-    # requested user (or every user, if user_id is None).
+    # requested user (or every user, if user_id is None). The file stores
+    # entries oldest-first (save_user_history appends), so they're
+    # reversed to newest-first - the order the backend returns and
+    # recency_weighted_average expects.
     payload = read_json(HISTORY_PATH, default=None)
     if not isinstance(payload, dict):
         return []
@@ -126,13 +129,13 @@ def _load_local_history(user_id: str | None) -> list[dict[str, Any]]:
         entries: list[dict[str, Any]] = []
         for value in payload.values():
             if isinstance(value, list):
-                entries.extend([item for item in value if isinstance(item, dict)])
+                entries.extend([item for item in reversed(value) if isinstance(item, dict)])
         return entries
 
     # Otherwise return just this user's entries.
     value = payload.get(user_id)
     if isinstance(value, list):
-        return [item for item in value if isinstance(item, dict)]
+        return [item for item in reversed(value) if isinstance(item, dict)]
 
     return []
 

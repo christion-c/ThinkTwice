@@ -10,14 +10,15 @@ import { Chip, Field } from "@/components/money/SheetFields";
 import type { Paycheck, PaycheckInput } from "@thinktwice/shared-types";
 import { withAlpha } from "@/lib/color";
 import { getLocalDateString } from "@/lib/local-date";
-import { amountToInput, parseAmount } from "@/lib/money/input";
+import { amountToInput, parseAmount, parseUsDate } from "@/lib/money/input";
 
 cssInterop(KeyboardAvoidingView, { className: "style" });
 
 // null = log a new check; a Paycheck = edit that one.
 export type PaycheckSheetTarget = { paycheck: Paycheck | null };
 
-// Paydays offered as one-tap choices, most recent first.
+// Paydays offered as one-tap choices, most recent first. Older checks
+// are back-filled by typing the date instead.
 const DAYS_OFFERED = 21;
 
 const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -57,6 +58,8 @@ function SheetBody({ paycheck, onClose }: { paycheck: Paycheck | null; onClose: 
   // A new check starts from the normal take-home, since most checks are.
   const [takeHome, setTakeHome] = useState(amountToInput(paycheck ? paycheck.takeHome : pay?.takeHomePerCheck));
   const [gross, setGross] = useState(amountToInput(paycheck?.gross));
+  // A typed MM/DD/YYYY payday; when filled in, it wins over the chips.
+  const [otherDate, setOtherDate] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -70,6 +73,18 @@ function SheetBody({ paycheck, onClose }: { paycheck: Paycheck | null; onClose: 
   };
 
   const buildInput = (): PaycheckInput | string => {
+    let payday = paidOn;
+    if (otherDate.trim()) {
+      const typed = parseUsDate(otherDate);
+      if (typed === null) {
+        return "Type the payday as MM/DD/YYYY, like 9/5/2026.";
+      }
+      if (typed > dayChoices[0]) {
+        return "That payday is in the future.";
+      }
+      payday = typed;
+    }
+
     const parsedTakeHome = parseAmount(takeHome);
     if (parsedTakeHome === null) {
       return "Enter what hit your bank, like 612.40.";
@@ -86,7 +101,7 @@ function SheetBody({ paycheck, onClose }: { paycheck: Paycheck | null; onClose: 
       }
     }
 
-    return { paidOn, takeHome: parsedTakeHome, gross: parsedGross };
+    return { paidOn: payday, takeHome: parsedTakeHome, gross: parsedGross };
   };
 
   const save = async () => {
@@ -153,12 +168,24 @@ function SheetBody({ paycheck, onClose }: { paycheck: Paycheck | null; onClose: 
                 <Chip
                   key={day}
                   label={index === 0 ? "Today" : index === 1 ? "Yesterday" : paydayLabel(day)}
-                  selected={paidOn === day}
-                  onPress={() => setPaidOn(day)}
+                  selected={!otherDate.trim() && paidOn === day}
+                  onPress={() => {
+                    setPaidOn(day);
+                    setOtherDate("");
+                  }}
                 />
               ))}
             </ScrollView>
           </View>
+
+          <Field
+            label="Or another date"
+            value={otherDate}
+            onChangeText={setOtherDate}
+            placeholder="MM/DD/YYYY"
+            hint="For checks older than 3 weeks"
+            keyboardType="numbers-and-punctuation"
+          />
 
           <Field
             label="Take-home"

@@ -1,9 +1,11 @@
 from app import prediction as ml_prediction
 from app.models import BudgetEntry
 from app.prediction import (
+    FALLBACK_COST_PER_MILE,
     MIN_ENTRIES_FOR_REGRESSION,
     _baseline_cost_per_mile,
     _blend_with_history,
+    _build_explanation,
     predict_by_regression,
     recency_weighted_average,
 )
@@ -21,25 +23,58 @@ def test_recency_weighted_average_returns_none_when_every_value_is_non_positive(
     assert recency_weighted_average([0.0, -5.0, -1.0]) is None
 
 
-def test_predict_by_regression_falls_back_to_a_zeroed_average_when_every_entry_is_unusable():
+def test_predict_by_regression_falls_back_to_the_plain_average_when_no_entry_has_miles_and_cost():
     # At/above MIN_ENTRIES_FOR_REGRESSION so /predict would route here,
-    # but every entry has non-positive miles or cost - valid_entries
+    # but no entry has both positive miles and cost - valid_entries
     # ends up empty, a distinct branch from the "entries list itself is
     # empty" case (which /predict rejects with a 422 before this
-    # function is ever called).
+    # function is ever called). The forecast is the plain average of
+    # logged fuel costs, not $0.
     entries = [
         BudgetEntry(date="2026-08-01", fuelCost=0, milesDriven=100),
         BudgetEntry(date="2026-08-08", fuelCost=50, milesDriven=0),
-        BudgetEntry(date="2026-08-15", fuelCost=0, milesDriven=0),
+        BudgetEntry(date="2026-08-15", fuelCost=40, milesDriven=0),
     ]
     assert len(entries) >= MIN_ENTRIES_FOR_REGRESSION
 
     result = predict_by_regression(entries)
 
     assert result.method == "average"
-    assert result.predicted_fuel_cost == 0.0
-    assert result.predicted_total == 0.0
+    assert result.predicted_fuel_cost == 30.0
+    assert result.predicted_total == 30.0
     assert result.sample_size == len(entries)
+
+
+def test_recency_weighted_average_keeps_decaying_past_the_fourth_entry():
+    # Two recent entries at 10, then a long tail of old entries at 100.
+    # With a flat weight floor the old tail used to dominate (the result
+    # drifted toward 100 as history grew); with geometric decay the
+    # result stays close to the recent entries however long the tail is.
+    short = recency_weighted_average([10.0, 10.0] + [100.0] * 5)
+    long = recency_weighted_average([10.0, 10.0] + [100.0] * 200)
+
+    assert short is not None and long is not None
+    # The whole tail adds at most 4/3 of weight against the first two's 7:
+    # (7 * 10 + 4/3 * 100) / (7 + 4/3) = 24.4.
+    assert long < 24.5
+    assert long - short < 3.0
+
+
+def test_recency_weighted_average_keeps_the_third_and_fourth_weights():
+    # Weights 1, 6, 1/3, 1/4 for the first four entries.
+    values = [1.0, 2.0, 3.0, 4.0]
+    expected = (1 * 1.0 + 6 * 2.0 + (1 / 3) * 3.0 + 0.25 * 4.0) / (1 + 6 + 1 / 3 + 0.25)
+
+    assert abs(recency_weighted_average(values) - expected) < 1e-9
+
+
+def test_explanation_pluralizes_entry_correctly():
+    one = _build_explanation(30, 120, 16.8, 1, True, 0.7)
+    many = _build_explanation(30, 120, 16.8, 4, True, 0.85)
+
+    assert "1 saved fill-up entry in history" in one
+    assert "4 saved fill-up entries in history" in many
+    assert "entryy" not in one and "entryies" not in many
 
 
 def test_blend_with_history_returns_unblended_baseline_when_history_is_empty(monkeypatch):
@@ -106,8 +141,8 @@ def test_baseline_cost_per_mile_falls_back_to_a_flat_rate_when_rows_are_unusable
     # rather than dividing by zero.
     unusable_rows = [{"fuel_cost": 10.0, "miles_driven": 0} for _ in range(5)]
 
-    assert _baseline_cost_per_mile(unusable_rows) == 0.29
+    assert _baseline_cost_per_mile(unusable_rows) == FALLBACK_COST_PER_MILE
 
 
 def test_baseline_cost_per_mile_falls_back_for_empty_rows():
-    assert _baseline_cost_per_mile([]) == 0.29
+    assert _baseline_cost_per_mile([]) == FALLBACK_COST_PER_MILE

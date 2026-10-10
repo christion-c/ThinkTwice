@@ -9,7 +9,7 @@ import { requestForecast, requestPreview } from "./predictions.client.js";
 
 export const predictionsRouter = Router();
 
-// Below this many logged days, a linear-regression forecast is
+// Below this many logged days, a trend (cost-per-mile) forecast is
 // unreliable enough that the ML service falls back to a plain average.
 // Skipping the network call entirely at that point keeps the response
 // fast and the message encouraging rather than an error.

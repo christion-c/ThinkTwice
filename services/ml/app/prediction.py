@@ -27,6 +27,15 @@ from .models import BudgetEntry, PredictResponse
 # /predict falls back to a plain average instead of pretending to be precise.
 MIN_ENTRIES_FOR_REGRESSION = 3
 
+# recency_weighted_average's weight for the third-most-recent entry, and
+# how much each older entry's weight shrinks from the one before it.
+OLDEST_DECAY_START_WEIGHT = 1.0 / 3.0
+OLDER_ENTRY_DECAY = 0.75
+
+# Cost per mile when the reference dataset has no usable rows: about
+# $3.90/gallon at 28 MPG, the middle of the dataset's own ranges.
+FALLBACK_COST_PER_MILE = 0.14
+
 
 def recency_weighted_average(values: list[float]) -> float | None:
     # Turns a list of historical cost-per-mile observations into one
@@ -35,8 +44,10 @@ def recency_weighted_average(values: list[float]) -> float | None:
     # one-off (a road trip, a price spike at one station) - so the
     # second-most-recent entry carries the strongest weight instead,
     # keeping the estimate grounded in the user's established pattern
-    # rather than over-reacting to the very latest data point. Weight
-    # decays for older entries beyond that.
+    # rather than over-reacting to the very latest data point. Beyond
+    # that, each older entry's weight is OLDER_ENTRY_DECAY times the one
+    # before it, so a long history can't outweigh the recent entries
+    # just by having many of them.
 
     # Drop non-positive/invalid readings before weighting.
     finite_values = [value for value in values if value > 0]
@@ -47,8 +58,9 @@ def recency_weighted_average(values: list[float]) -> float | None:
         return finite_values[0]
 
     # Build one weight per value: index 1 (second-most-recent) gets the
-    # highest weight, index 0 (most recent) less, and everything older
-    # decays smoothly.
+    # highest weight, index 0 (most recent) less, then 1/3 for index 2,
+    # 1/4 for index 3, and geometric decay from there. Every entry from
+    # index 2 on adds up to at most 4/3 in total, however long the history.
     weights: list[float] = []
     for index in range(len(finite_values)):
         if index == 1:
@@ -56,7 +68,7 @@ def recency_weighted_average(values: list[float]) -> float | None:
         elif index == 0:
             weight = 1.0
         else:
-            weight = max(0.25, 1.0 / (1 + index))
+            weight = OLDEST_DECAY_START_WEIGHT * OLDER_ENTRY_DECAY ** (index - 2)
         weights.append(weight)
 
     # Standard weighted-average formula: sum(value * weight) / sum(weight).
@@ -105,7 +117,7 @@ def _baseline_cost_per_mile(rows: list[dict[str, Any]]) -> float:
     # dataset, falling back to a plausible flat rate if it has no
     # usable rows.
     dataset_rates = _rates(rows, "fuel_cost", "miles_driven", require_positive_cost=False)
-    return sum(dataset_rates) / len(dataset_rates) if dataset_rates else 0.29
+    return sum(dataset_rates) / len(dataset_rates) if dataset_rates else FALLBACK_COST_PER_MILE
 
 
 def _blend_with_history(
@@ -151,13 +163,13 @@ def _build_explanation(
     blend_weight: float,
 ) -> str:
     explanation_parts = [
-        f"The math baseline uses a real-world cost-per-mile estimate from {rows_count} reference fill-ups and then personalizes it with the user's fill-up history.",
+        f"The math baseline uses a cost-per-mile estimate from {rows_count} synthetic reference days (sample data, not live prices) and then personalizes it with the user's fill-up history.",
         f"For {miles_driven} miles, the baseline estimate is ${baseline_prediction:.2f} for fuel.",
     ]
 
     if blended:
         explanation_parts.append(
-            f"Because this account already has {history_count} saved fill-up entry{'y' if history_count == 1 else 'ies'} in history, the model blends the math baseline with the user's observed cost-per-mile trend.",
+            f"Because this account already has {history_count} saved fill-up entr{'y' if history_count == 1 else 'ies'} in history, the model blends the math baseline with the user's observed cost-per-mile trend.",
         )
         explanation_parts.append(
             f"The blend currently uses {round((1 - blend_weight) * 100)}% baseline and {round(blend_weight * 100)}% history, with the second-most-recent fill-up weighted most heavily.",
@@ -252,17 +264,15 @@ def predict_by_regression(entries: list[BudgetEntry]) -> PredictResponse:
     # implementation isn't literally scikit-learn's LinearRegression.
 
     # Only entries with both a positive mileage and fuel cost are usable.
+    # Without any, there's no cost-per-mile to follow, so fall back to the
+    # plain average of logged fuel costs (the same as below the
+    # threshold) instead of forecasting $0 for someone who logs fuel
+    # costs but not miles.
     valid_entries = [
         entry for entry in entries if (entry.miles_driven or 0) > 0 and (entry.fuel_cost or 0) > 0
     ]
     if not valid_entries:
-        return PredictResponse(
-            predicted_fuel_cost=0.0,
-            predicted_food_cost=0.0,
-            predicted_total=0.0,
-            method="average",
-            sample_size=len(entries),
-        )
+        return predict_by_average(entries)
 
     # Convert each entry to its own cost-per-mile rate, then weight-average them.
     cost_per_mile_values = [

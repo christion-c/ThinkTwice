@@ -22,14 +22,21 @@ import {
 
 export const fillUpHistoryRouter = Router();
 
+// Upper bounds match the fill_up_history columns (migration 005):
+// NUMERIC(10, 2) holds up to 99,999,999.99 and NUMERIC(10, 4) up to
+// 999,999.9999. A larger value would pass validation and then fail the
+// insert with a numeric-overflow 500 instead of a 400.
+const NUMERIC_10_2_MAX = 99_999_999.99;
+const NUMERIC_10_4_MAX = 999_999.9999;
+
 export const entrySchema = z
   .object({
-    milesDriven: z.number().min(0).max(99999999),
-    fuelPrice: z.number().min(0).max(99999999),
-    combinedMpg: z.number().min(0).max(99999999),
-    tankCapacity: z.number().min(0).max(99999999),
-    gallons: z.number().min(0).max(99999999),
-    observedCost: z.number().min(0).max(99999999),
+    milesDriven: z.number().min(0).max(NUMERIC_10_2_MAX),
+    fuelPrice: z.number().min(0).max(NUMERIC_10_4_MAX),
+    combinedMpg: z.number().min(0).max(NUMERIC_10_2_MAX),
+    tankCapacity: z.number().min(0).max(NUMERIC_10_2_MAX),
+    gallons: z.number().min(0).max(NUMERIC_10_4_MAX),
+    observedCost: z.number().min(0).max(NUMERIC_10_4_MAX),
     recordedAt: z
       .string()
       .refine((value) => !Number.isNaN(Date.parse(value)), {

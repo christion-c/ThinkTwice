@@ -18,9 +18,9 @@ const FUEL_CHECKIN_STEPS: StepFlowStepConfig<FuelCheckinStepKey>[] = [
 ];
 
 const VEHICLE_DETAILS_STEPS: StepFlowStepConfig<VehicleDetailsStepKey>[] = [
-  { key: "nickname", title: "Nickname", hint: "Enter a nickname for this vehicle.", placeholder: "eg. My daily driver", keyboardType: "default", autoCapitalize: "words", autoCorrect: true, icon: "create-outline" },
-  { key: "year", title: "Year", hint: "Enter the model year.", placeholder: "eg. 2016", keyboardType: "number-pad", autoCapitalize: "none", autoCorrect: false, icon: "calendar-outline" },
-  { key: "make", title: "Make", hint: "Enter the make.", placeholder: "eg. Toyota, Ford, Nissan", keyboardType: "default", autoCapitalize: "words", autoCorrect: true, icon: "business-outline" },
+  { key: "nickname", title: "Nickname", hint: "Enter a nickname for this vehicle.", placeholder: "e.g. My daily driver", keyboardType: "default", autoCapitalize: "words", autoCorrect: true, icon: "create-outline" },
+  { key: "year", title: "Year", hint: "Enter the model year.", placeholder: "e.g. 2016", keyboardType: "number-pad", autoCapitalize: "none", autoCorrect: false, icon: "calendar-outline" },
+  { key: "make", title: "Make", hint: "Enter the make.", placeholder: "e.g. Toyota, Ford, Nissan", keyboardType: "default", autoCapitalize: "words", autoCorrect: true, icon: "business-outline" },
   { key: "model", title: "Model", hint: "Enter the model.", placeholder: "Model Name", keyboardType: "default", autoCapitalize: "words", autoCorrect: true, icon: "car-outline" },
   { key: "mpg", title: "MPG", hint: "Optional - leave blank and we'll calculate your real MPG from fill-up history once you've logged a few.", placeholder: "0", keyboardType: "decimal-pad", autoCapitalize: "none", autoCorrect: false, icon: "leaf-outline" },
   { key: "tank", title: "Tank size", hint: "Enter the tank size in gallons.", placeholder: "0", keyboardType: "decimal-pad", autoCapitalize: "none", autoCorrect: false, icon: "water-outline" },
@@ -79,7 +79,7 @@ export function useFuelCheckinFlow() {
 
     try {
       await syncVehicle(values);
-      setSaveMessage("Vehicle Saved.");
+      setSaveMessage("Vehicle saved.");
     } catch {
       // Vehicle context provides the error message.
     }

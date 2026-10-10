@@ -2,7 +2,7 @@
 
 ## What the Project Delivers
 
-ThinkTwice is an ADHD-friendly personal finance and habit-tracking app. Instead of just showing where money went, it turns everyday spending and driving/eating habits into forward-looking predictions — for example, projecting that a recurring $35/week coffee habit becomes roughly $140 by the end of the month — so users can adjust before small habits become bigger problems.
+ThinkTwice is an ADHD-friendly personal finance and habit-tracking app. Instead of just showing where money went, it turns everyday spending and driving/eating habits into forward-looking predictions — for example, projecting that a recurring $35/week coffee habit becomes roughly $150 a month — so users can adjust before small habits become bigger problems.
 
 **Complete project stack:**
 

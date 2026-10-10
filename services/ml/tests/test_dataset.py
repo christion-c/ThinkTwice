@@ -57,3 +57,33 @@ def test_build_dataset_regenerates_when_cached_cost_per_mile_is_implausible(tmp_
 
     assert len(rows) == 30
     assert rows != implausible_rows
+
+
+def test_generated_rows_cost_exactly_gallons_times_price():
+    rows = ml_dataset._generate_rows()
+
+    for row in rows:
+        assert row["fuel_cost"] == round(row["gallons"] * row["fuel_price"], 2)
+
+
+def test_build_dataset_regenerates_a_cache_whose_fuel_cost_is_not_gallons_times_price(
+    tmp_path, monkeypatch
+):
+    data_path = tmp_path / "budget_data.json"
+    # A row from the old generator: gallons x price plus a flat $20.
+    old_rows = [
+        {
+            "date": "2026-01-01",
+            "fuel_cost": round(4.0 * 3.5 + 20.0, 2),
+            "miles_driven": 112,
+            "fuel_price": 3.5,
+            "gallons": 4.0,
+        }
+    ]
+    data_path.write_text(json.dumps(old_rows), encoding="utf-8")
+    monkeypatch.setattr(ml_dataset, "DATA_PATH", data_path)
+
+    rows = ml_dataset.build_dataset()
+
+    assert len(rows) == 30
+    assert rows != old_rows

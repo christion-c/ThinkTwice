@@ -38,3 +38,23 @@ export function amountToInput(value: number | null | undefined): string {
 
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
+
+// Parses a typed calendar date - "10/2/2026" or "10/02/2026"
+// (month/day/year, the way US pay stubs print it) - into "YYYY-MM-DD".
+// Null unless it's a real date (no February 30th).
+export function parseUsDate(text: string): string | null {
+  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text.trim());
+
+  if (!match) {
+    return null;
+  }
+
+  const [month, day, year] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return null;
+  }
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}

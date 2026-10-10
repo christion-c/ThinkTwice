@@ -1,6 +1,6 @@
 # ThinkTwice Project Context
 
-Last audited: 2026-10-05
+Last audited: 2026-10-10
 
 Dated status and project history. Open bugs and to-dos live in
 [KNOWN_ISSUES.md](KNOWN_ISSUES.md); deploy steps in [deploying.md](deploying.md).
@@ -237,6 +237,48 @@ project-wide correctness and split things up for maintainability. Highlights
   lists `expo/types` itself. `npm test` was also added to the Frontend job
   so the Jest suite runs on every push.
 
+## Accuracy audit fixes (2026-10-10)
+
+An audit of the math, logic, copy and docs, then fixes for what it found.
+
+- **Fuel forecast:** an unknown MPG no longer turns into the 5 MPG floor
+  (that multiplied the fuel budget about 6x); a blank tank level is unknown
+  rather than empty; "Next fill-up" counts down between check-ins using
+  miles driven since the last one; fill-ups less than a day apart no longer
+  count as a cycle; the Fuel screen's averages, MPG and lists now match the
+  chart beside them and the selected vehicle.
+- **Backend:** fill-up validation limits now match their NUMERIC columns
+  (oversized values were a 500); `firebase-admin` updated within 14.x plus
+  a non-breaking `npm audit fix`, leaving 0 backend audit findings.
+- **ML service:** recency weights decay geometrically past the third entry
+  (a long history used to outweigh recent entries); `/predict` falls back to
+  the plain average when no entry has miles instead of returning $0; the
+  local fallback history reads newest-first; the synthetic `/ml-preview`
+  baseline no longer adds $20-$30.50 to each day's fuel cost, and its
+  explanation says it's synthetic.
+- **Money plan:** migration `010` adds `growth_percent` (an asset's yearly
+  change, compounded monthly; negative for depreciation) and
+  `balance_after_payment` (a debt's "Already paid this month" switch).
+  Debt-to-income now counts paycheck-deducted debts. A new preference keeps
+  left-over money out of projected net worth for people who spend it.
+  Paychecks can be back-filled by typed date, and `app/paychecks.tsx` lists
+  every logged check. Decided: paydays already past but never logged still
+  count at the normal take-home, since forgetting to log is likelier than
+  not being paid.
+- **Other:** the ML debug pages render in development builds only; service
+  folders have short READMEs again; `finance.tsx`'s helpers moved to
+  `components/money/` and `lib/money/debt-status.ts`.
+- **Frontend dependencies:** Expo patches aligned (`expo` 57.0.27,
+  `expo-router` 57.0.25, `expo-auth-session` 57.0.14, `expo-notifications`
+  57.0.22), then a non-breaking `npm audit fix`: 86 findings (1 critical,
+  `shell-quote`) down to 79 (none critical). Running the audit fix before
+  aligning Expo broke the web export (`Cannot read properties of undefined
+  (reading 'OS')` exporting `/finance`); in that order it works.
+- **Deploy order matters for this one:** the frontend now sends
+  `growthPercent` and `balanceAfterPayment`, which the old backend's strict
+  schemas reject, so deploy the backend (which applies migration `010` on
+  startup) before the frontend.
+
 ## History and operational notes
 
 - The frontend lockfile was updated; a clean Node 22 `npm ci` succeeds.
@@ -249,8 +291,8 @@ project-wide correctness and split things up for maintainability. Highlights
 - `@types/node` was pinned to `^22.x` on 2026-08-11 (was `^26.1.1`, mismatched
   against the Node 22 runtime).
 - `services/ml/data.py` and `update.py` (exploratory, uncovered by
-  `requirements.txt`) were removed on 2026-08-11; their logic is now the real
-  `/predict` implementation in `app/main.py`.
+  `requirements.txt`) were removed on 2026-08-11; their logic became the real
+  `/predict` implementation (then in `app/main.py`, now `app/prediction.py`).
 - `apps/frontend/components/SimpleCardPage.tsx` was removed on 2026-08-11 after
   its last three callers (the accessibility, notifications, and account
   settings screens) became real functional screens instead of placeholders.

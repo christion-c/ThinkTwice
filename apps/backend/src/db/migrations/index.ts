@@ -7,6 +7,7 @@ import { createDailyDrivingLogsMigration } from "./006-create-daily-driving-logs
 import { addVehicleIdToHistoryMigration } from "./007-add-vehicle-id-to-history.js";
 import { createMoneyPlanMigration } from "./008-create-money-plan.js";
 import { createPaychecksMigration } from "./009-create-paychecks.js";
+import { addMoneyItemGrowthAndPaidMigration } from "./010-add-money-item-growth-and-paid.js";
 import type { Migration } from "./migration.types.js";
 
 // Every ThinkTwice database migration, in execution order. Never
@@ -21,4 +22,5 @@ export const migrations: readonly Migration[] = [
   addVehicleIdToHistoryMigration,
   createMoneyPlanMigration,
   createPaychecksMigration,
+  addMoneyItemGrowthAndPaidMigration,
 ];

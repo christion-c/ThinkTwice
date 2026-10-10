@@ -17,8 +17,9 @@ cssInterop(KeyboardAvoidingView, { className: "style" });
 
 export type MoneySheetTarget =
   | { group: "bill" | "debt" | "asset"; item?: undefined }
-  // currentBalance: the debt's projected balance this month, shown in
-  // the form instead of the (possibly months-old) entered balance.
+  // currentBalance: the debt's balance or asset's value projected for
+  // this month, shown in the form instead of the (possibly months-old)
+  // entered one.
   | { group: "bill" | "debt" | "asset"; item: MoneyItem; currentBalance: number | null };
 
 const DEBT_KIND_LABELS: Record<DebtKind, string> = { loan: "Loan", card: "Card", collection: "Collection" };
@@ -27,6 +28,9 @@ const GROUP_NOUN = { bill: "bill", debt: "debt", asset: "asset" } as const;
 // One-screen add/edit form for a bill, debt, or asset - only the
 // fields that matter, with a debt's rarely-needed extras (deferred
 // start, APR, paycheck deduction) folded under "More".
+//
+// An asset's yearly change is a positive percent plus a Grows / Loses
+// value choice, since the iOS decimal keypad has no minus key.
 export default function MoneyItemSheet({ target, onClose }: { target: MoneySheetTarget | null; onClose: () => void }) {
   return (
     <Modal transparent visible={Boolean(target)} animationType="fade" onRequestClose={onClose}>
@@ -51,11 +55,20 @@ function SheetBody({ target, onClose }: { target: MoneySheetTarget; onClose: () 
   const [startsOn, setStartsOn] = useState<string | null>(existingStart && existingStart > thisMonth ? existingStart : null);
   const [apr, setApr] = useState(item?.aprPercent != null ? String(item.aprPercent) : "");
   const [fromPaycheck, setFromPaycheck] = useState(item?.fromPaycheck ?? false);
+  const enteredThisMonth = item?.balanceAsOf ? monthKeyFromIsoDate(item.balanceAsOf) === thisMonth : false;
+  const [alreadyPaid, setAlreadyPaid] = useState(enteredThisMonth && (item?.balanceAfterPayment ?? false));
+  const [growth, setGrowth] = useState(item?.growthPercent != null ? String(Math.abs(item.growthPercent)) : "");
+  const [losesValue, setLosesValue] = useState((item?.growthPercent ?? 0) < 0);
   const [showMore, setShowMore] = useState(Boolean(startsOn || item?.aprPercent || item?.fromPaycheck));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  const balanceIsNew = !item || balance.trim() !== initialBalance || item.balanceAsOf === null;
+  // Shown for a balance being entered now (new, or changed), or one
+  // already dated this month.
+  const showPaidToggle = group === "debt" && (balanceIsNew || enteredThisMonth);
 
   // Lower the keyboard first, then fade the sheet - closing both at
   // once makes the sheet jump as the keyboard space collapses mid-fade.
@@ -99,14 +112,21 @@ function SheetBody({ target, onClose }: { target: MoneySheetTarget; onClose: () 
 
     // An unchanged balance keeps its original date, so its payment
     // schedule stays exact; a new balance is dated today.
-    const balanceUnchanged = item && balance.trim() === initialBalance;
-    const keepOriginal = balanceUnchanged && item.balanceAsOf !== null && item.balance !== null;
+    const keepOriginal = !balanceIsNew && item?.balanceAsOf != null && item.balance !== null;
     const balanceFields = keepOriginal
       ? { balance: item.balance as number, balanceAsOf: item.balanceAsOf as string }
       : { balance: parsedBalance, balanceAsOf: getLocalDateString(new Date()) };
 
     if (group === "asset") {
-      return { kind: "asset", name: trimmedName, ...balanceFields };
+      let growthPercent: number | null = null;
+      if (growth.trim()) {
+        const parsedGrowth = parseDecimal(growth);
+        if (parsedGrowth === null || parsedGrowth > 100) {
+          return "Enter the yearly change as a percent, like 4.5.";
+        }
+        growthPercent = losesValue ? -parsedGrowth : parsedGrowth;
+      }
+      return { kind: "asset", name: trimmedName, ...balanceFields, growthPercent };
     }
 
     const payment = parseAmount(amount);
@@ -130,6 +150,9 @@ function SheetBody({ target, onClose }: { target: MoneySheetTarget; onClose: () 
       aprPercent,
       startsOn: startsOn ? `${startsOn}-01` : null,
       fromPaycheck,
+      // Only a balance dated this month can have this month's payment
+      // out already; an older, unchanged balance keeps its own setting.
+      balanceAfterPayment: showPaidToggle ? alreadyPaid : (item?.balanceAfterPayment ?? false),
     };
   };
 
@@ -204,7 +227,50 @@ function SheetBody({ target, onClose }: { target: MoneySheetTarget; onClose: () 
           <Field label="Name" value={name} onChangeText={setName} placeholder={group === "bill" ? "Phone" : group === "debt" ? "Discover" : "Savings"} autoCapitalize="words" autoFocus={!item} />
 
           {group === "debt" || group === "asset" ? (
-            <Field label={balanceLabel} value={balance} onChangeText={setBalance} placeholder="0.00" money hint={group === "debt" ? "Before this month's payment" : undefined} />
+            <Field
+              label={balanceLabel}
+              value={balance}
+              onChangeText={setBalance}
+              placeholder="0.00"
+              money
+              hint={group === "debt" ? (showPaidToggle && alreadyPaid ? "After this month's payment" : "Before this month's payment") : undefined}
+            />
+          ) : null}
+
+          {showPaidToggle ? (
+            <View className="flex-row items-center justify-between gap-md">
+              <View className="flex-1">
+                <Text className="text-body font-semibold text-text">Already paid this month</Text>
+                <Text className="text-caption text-textMuted">This month&apos;s payment is already out of that balance.</Text>
+              </View>
+              <Switch
+                value={alreadyPaid}
+                onValueChange={setAlreadyPaid}
+                trackColor={{ true: colors.accent, false: colors.surfaceSoft }}
+                thumbColor={colors.surface}
+              />
+            </View>
+          ) : null}
+
+          {group === "asset" ? (
+            <View className="gap-sm">
+              <ChipRow
+                options={[
+                  { value: "grows", label: "Grows" },
+                  { value: "loses", label: "Loses value" },
+                ]}
+                selected={losesValue ? "loses" : "grows"}
+                onSelect={(value) => setLosesValue(value === "loses")}
+              />
+              <Field
+                label="Yearly change % (optional)"
+                value={growth}
+                onChangeText={setGrowth}
+                placeholder="0"
+                money
+                hint={losesValue ? "Like a car losing value" : "Like savings interest"}
+              />
+            </View>
           ) : null}
 
           {group !== "asset" ? (

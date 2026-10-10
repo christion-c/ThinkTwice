@@ -16,11 +16,12 @@ APP_DIR = Path(__file__).resolve().parent
 ROOT = APP_DIR.parent
 DATA_PATH = ROOT / "budget_data.json"
 
-# A previously-generated dataset is only reused if its average
-# cost-per-mile looks realistic - this guards against reusing a
-# dataset with unrealistic numbers left over from an earlier,
-# less-tuned generator.
-MIN_PLAUSIBLE_COST_PER_MILE = 0.15
+# A previously-generated dataset is only reused if every row's fuel cost
+# is exactly its gallons times its price, and the average cost per mile
+# looks realistic. This regenerates caches left over from earlier
+# generators - including one that added an unexplained $20-$30.50 to
+# every row's fuel cost on top of gallons x price.
+MIN_PLAUSIBLE_COST_PER_MILE = 0.05
 
 
 def _generate_rows() -> list[dict[str, Any]]:
@@ -31,7 +32,7 @@ def _generate_rows() -> list[dict[str, Any]]:
         fuel_price = round(3.2 + (index % 6) * 0.28, 2)
         combined_mpg = 24 + (index % 5) * 2
         gallons = round(miles_driven / combined_mpg, 2)
-        fuel_cost = round(gallons * fuel_price + 20.0 + (index % 4) * 3.5, 2)
+        fuel_cost = round(gallons * fuel_price, 2)
         meals = 8 + (index % 5) * 2
         food_cost = round(4.4 + meals * 1.1 + (index % 3) * 0.5, 2)
         rows.append(
@@ -49,15 +50,28 @@ def _generate_rows() -> list[dict[str, Any]]:
     return rows
 
 
+def _row_is_consistent(item: Any) -> bool:
+    # True when a cached row's fuel cost is its gallons x price (to the cent).
+    if not isinstance(item, dict):
+        return False
+    try:
+        gallons = float(item["gallons"])
+        fuel_price = float(item["fuel_price"])
+        fuel_cost = float(item["fuel_cost"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    return abs(round(gallons * fuel_price, 2) - fuel_cost) < 0.005
+
+
 def build_dataset() -> list[dict[str, Any]]:
     # Regenerates and overwrites budget_data.json if it's missing,
-    # corrupt, or the cached data's average cost-per-mile looks
-    # implausible; otherwise reuses what's already on disk so repeated
-    # calls are stable.
+    # corrupt, inconsistent, or the cached data's average cost-per-mile
+    # looks implausible; otherwise reuses what's already on disk so
+    # repeated calls are stable.
 
     # Prefer a valid, plausible cached dataset over regenerating one.
     payload = read_json(DATA_PATH, default=None)
-    if isinstance(payload, list) and payload:
+    if isinstance(payload, list) and payload and all(_row_is_consistent(item) for item in payload):
         cost_per_mile = [
             float(item.get("fuel_cost", 0)) / float(item.get("miles_driven", 1) or 1)
             for item in payload

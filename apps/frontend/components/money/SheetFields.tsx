@@ -10,6 +10,7 @@ export function Field({
   label,
   hint,
   money = false,
+  keyboardType,
   ...inputProps
 }: {
   label: string;
@@ -21,6 +22,8 @@ export function Field({
   autoCapitalize?: "none" | "words";
   autoFocus?: boolean;
   onFocus?: () => void;
+  // Overrides the default keyboard (decimal pad for money, else default).
+  keyboardType?: "numbers-and-punctuation";
 }) {
   const colors = useThemeColors();
 
@@ -32,7 +35,7 @@ export function Field({
       </View>
       <TextInput
         {...inputProps}
-        keyboardType={money ? "decimal-pad" : "default"}
+        keyboardType={keyboardType ?? (money ? "decimal-pad" : "default")}
         autoCorrect={false}
         placeholderTextColor={colors.textMuted}
         className="rounded-md border border-border bg-surfaceSoft px-md py-3 text-base text-text"

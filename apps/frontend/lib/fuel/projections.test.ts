@@ -1,6 +1,9 @@
 import {
   clampNumber,
   computeFillUpStats,
+  DAYS_PER_MONTH,
+  fillUpMpg,
+  MIN_CYCLE_DAYS,
   computeFinanceProjections,
   filterEntriesForVehicle,
   parseMoney,
@@ -649,14 +652,15 @@ describe("computeFinanceProjections - full scenario", () => {
     expect(result.monthlyFuelBudget).toBeCloseTo(163.98062730627308, 6);
     expect(result.projectedDaysUntilFillUp).toBeCloseTo(3.252, 6);
     expect(result.projectedBudgetAfterEssentials).toBeCloseTo(2836.019372693727, 6);
-    expect(result.weeklySpendTarget).toBeCloseTo(498.0392698058166, 6);
+    // (1200 + 800 + 163.98...) / (52/12) weeks.
+    expect(result.weeklySpendTarget).toBeCloseTo(((1200 + 800 + 163.98062730627308) * 12) / 52, 6);
   });
 
   it("handles all-empty inputs and no history without throwing or producing NaN/Infinity", () => {
     const result = computeFinanceProjections(makeInputs(), makeStats());
 
     for (const value of Object.values(result)) {
-      expect(Number.isFinite(value)).toBe(true);
+      expect(value === null || Number.isFinite(value)).toBe(true);
     }
     expect(result).toEqual({
       monthlyIncome: 0,
@@ -664,10 +668,62 @@ describe("computeFinanceProjections - full scenario", () => {
       monthlyFixedCosts: 0,
       monthlyFuelBudget: 0,
       projectedFillUpCost: 0,
-      projectedDaysUntilFillUp: 0,
+      projectedDaysUntilFillUp: null,
+      estimatedTankPercent: null,
       projectedBudgetAfterEssentials: 0,
       weeklySpendTarget: 0,
     });
+  });
+
+  it("treats a blank tank level as unknown, not as an empty tank", () => {
+    const inputs = makeInputs({
+      fuelGallonsInput: "9",
+      fuelPriceInput: "3.00",
+      tankCapacityInput: "12",
+      combinedMpgInput: "30",
+      milesPerWeekInput: "210",
+    });
+    const result = computeFinanceProjections(inputs, makeStats());
+
+    expect(result.estimatedTankPercent).toBeNull();
+    expect(result.projectedDaysUntilFillUp).toBeNull();
+    // Refill cost falls back to the gallons entered, not a full 12-gallon tank.
+    expect(result.projectedFillUpCost).toBeCloseTo(27, 10);
+  });
+
+  it("keeps an explicit 0% tank level as an empty tank", () => {
+    const inputs = makeInputs({
+      fuelPriceInput: "3.00",
+      tankCapacityInput: "12",
+      combinedMpgInput: "30",
+      milesPerWeekInput: "210",
+      currentTankPercentInput: "0",
+    });
+    const result = computeFinanceProjections(inputs, makeStats());
+
+    expect(result.estimatedTankPercent).toBe(0);
+    expect(result.projectedDaysUntilFillUp).toBe(0);
+    expect(result.projectedFillUpCost).toBeCloseTo(36, 10);
+  });
+
+  it("does not assume 5 MPG when no MPG is known", () => {
+    const inputs = makeInputs({ fuelPriceInput: "3.50", tankCapacityInput: "12", currentTankPercentInput: "50" });
+    const result = computeFinanceProjections(inputs, makeStats({ dailyMiles: 30 }));
+
+    // With no MPG there's no way to turn miles into gallons, so the
+    // budget and countdown stay unknown instead of using the 5 MPG floor
+    // (which gave $639.19/month here).
+    expect(result.monthlyFuelBudget).toBe(0);
+    expect(result.projectedDaysUntilFillUp).toBeNull();
+    // The tank level itself is still known.
+    expect(result.estimatedTankPercent).toBe(50);
+  });
+
+  it("still clamps a known but implausibly low MPG up to 5", () => {
+    const inputs = makeInputs({ combinedMpgInput: "1", fuelPriceInput: "4.00" });
+    const result = computeFinanceProjections(inputs, makeStats({ dailyMiles: 10 }));
+
+    expect(result.monthlyFuelBudget).toBeCloseTo(((10 * DAYS_PER_MONTH) / 5) * 4, 6);
   });
 
   it("clamps an implausible fuel price so a typo doesn't blow up the estimate", () => {
@@ -735,7 +791,7 @@ describe("computeFinanceProjections - dailyMiles confidence blend", () => {
     expect(after.projectedDaysUntilFillUp).toBeCloseTo(1.5830769230769233, 6);
     expect(after.projectedDaysUntilFillUp).toBeGreaterThan(1);
     // It still moves - a single real day of evidence isn't nothing.
-    expect(after.projectedDaysUntilFillUp).toBeLessThan(before.projectedDaysUntilFillUp);
+    expect(after.projectedDaysUntilFillUp).toBeLessThan(before.projectedDaysUntilFillUp ?? Number.NaN);
   });
 
   it("blends exactly halfway when evidence is exactly half the confidence threshold", () => {
@@ -792,7 +848,7 @@ describe("computeFinanceProjections - dailyMiles confidence blend", () => {
     const noHistoryAtAll = computeFinanceProjections(inputs, makeStats());
 
     expect(zeroEvidence.projectedDaysUntilFillUp).toBeCloseTo(
-      noHistoryAtAll.projectedDaysUntilFillUp,
+      noHistoryAtAll.projectedDaysUntilFillUp ?? Number.NaN,
       10,
     );
   });
@@ -867,6 +923,72 @@ describe("computeFinanceProjections - end-to-end regression: single-day outlier 
     // The 700 mi/day day is filtered as a statistical outlier against
     // the three agreeing 25 mi/day samples (see the "near-unanimous
     // cluster" tests) - the forecast should be unaffected by it.
-    expect(after.projectedDaysUntilFillUp).toBeCloseTo(before.projectedDaysUntilFillUp, 10);
+    expect(after.projectedDaysUntilFillUp).toBeCloseTo(before.projectedDaysUntilFillUp ?? Number.NaN, 10);
+  });
+});
+
+describe("computeFinanceProjections - tank countdown between check-ins", () => {
+  // 12-gallon tank at 30 MPG = 360 miles of range; 30 mi/day of driving.
+  const inputs = makeInputs({
+    tankCapacityInput: "12",
+    combinedMpgInput: "30",
+    currentTankPercentInput: "100",
+    fuelPriceInput: "3.00",
+    fuelGallonsInput: "10",
+  });
+  const stats = makeStats({ dailyMiles: 30 });
+
+  it("counts the tank level and days down as days pass since the reading", () => {
+    const atReading = computeFinanceProjections(inputs, stats, { daysSinceTankReading: 0 });
+    const fourDaysLater = computeFinanceProjections(inputs, stats, { daysSinceTankReading: 4 });
+
+    expect(atReading.estimatedTankPercent).toBe(100);
+    expect(atReading.projectedDaysUntilFillUp).toBeCloseTo(12, 10);
+    // 4 days x 30 mi = 120 of 360 miles used.
+    expect(fourDaysLater.estimatedTankPercent).toBeCloseTo(100 * (240 / 360), 10);
+    expect(fourDaysLater.projectedDaysUntilFillUp).toBeCloseTo(8, 10);
+  });
+
+  it("stops at an empty tank instead of going negative", () => {
+    const result = computeFinanceProjections(inputs, stats, { daysSinceTankReading: 20 });
+
+    expect(result.estimatedTankPercent).toBe(0);
+    expect(result.projectedDaysUntilFillUp).toBe(0);
+  });
+
+  it("keeps the refill cost based on the reading, so it doesn't creep up from a few cents", () => {
+    const atReading = computeFinanceProjections(inputs, stats, { daysSinceTankReading: 0 });
+    const oneDayLater = computeFinanceProjections(inputs, stats, { daysSinceTankReading: 1 });
+
+    // A full tank at the reading needs nothing, so it falls back to the
+    // 10 gallons last bought: 10 x $3.00.
+    expect(atReading.projectedFillUpCost).toBeCloseTo(30, 10);
+    expect(oneDayLater.projectedFillUpCost).toBeCloseTo(30, 10);
+  });
+});
+
+describe("computeFillUpStats - sub-day gaps", () => {
+  it("ignores fill-ups less than a day apart instead of dividing miles by a fraction of a day", () => {
+    const stats = computeFillUpStats([
+      makeEntry({ milesDriven: 5, recordedAt: "2024-01-11T12:00:00.000Z" }),
+      makeEntry({ milesDriven: 300, recordedAt: "2024-01-11T10:00:00.000Z" }), // 2 hours earlier
+      makeEntry({ milesDriven: 0, recordedAt: "2024-01-01T10:00:00.000Z" }),
+    ]);
+
+    // Only the 10-day gap counts: 300 miles / 10 days.
+    expect(stats.typicalCycleDays).toBeCloseTo(10, 10);
+    expect(stats.dailyMiles).toBeCloseTo(30, 10);
+    expect(MIN_CYCLE_DAYS).toBe(1);
+  });
+});
+
+describe("fillUpMpg", () => {
+  it("measures MPG from miles and gallons when both are known", () => {
+    expect(fillUpMpg(makeEntry({ milesDriven: 300, gallons: 10, combinedMpg: 25 }))).toBeCloseTo(30, 10);
+  });
+
+  it("falls back to the stored MPG, and is null when there's none", () => {
+    expect(fillUpMpg(makeEntry({ combinedMpg: 25 }))).toBe(25);
+    expect(fillUpMpg(makeEntry())).toBeNull();
   });
 });

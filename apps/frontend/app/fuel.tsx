@@ -24,8 +24,13 @@ import { useWebKeyboardInset } from "@/hooks/useWebKeyboardInset";
 import { useRefetchOnFocus } from "@/hooks/useRefetchOnFocus";
 import { useFuelCheckinFlow } from "@/hooks/useFuelCheckinFlow";
 import { fillUpCostSeries } from "@/lib/fuel/chart-series";
+import { fillUpMpg } from "@/lib/fuel/projections";
+import { formatDaysUntilFillUp, fuelStatusLabel } from "@/lib/fuel/status";
 import { withAlpha } from "@/lib/color";
 import { formatCurrency, formatCurrencyWhole } from "@/lib/money/format";
+
+// How many fill-ups the cost chart (and its averages) covers.
+const CHART_FILL_UPS = 6;
 
 export default function Fuel() {
   const colors = useThemeColors();
@@ -40,20 +45,19 @@ export default function Fuel() {
   const {
     fuelGallonsInput,
     combinedMpgInput,
-    currentTankPercentInput,
+    estimatedTankPercent,
     projectedFillUpCost,
     projectedDaysUntilFillUp,
     monthlyFuelBudget,
-    fillUpHistory,
+    vehicleFillUpHistory,
     refresh: refreshFuel,
   } = useFuel();
-  const tankPercent = Number.parseFloat(currentTankPercentInput) || 0;
   const recentFillUps = useMemo(
     () =>
-      [...fillUpHistory]
+      [...vehicleFillUpHistory]
         .sort((a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt))
         .slice(0, 5),
-    [fillUpHistory],
+    [vehicleFillUpHistory],
   );
 
   useRefetchOnFocus(
@@ -66,22 +70,26 @@ export default function Fuel() {
   const { fuelFlow, vehicleFlow, startFuelFlow, startVehicleFlow, saveMessage } = useFuelCheckinFlow();
   const hasExistingVehicle = Boolean(vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles[0]);
 
-  const fuelStatus =
-    projectedDaysUntilFillUp <= 3
-      ? "Refill soon"
-      : projectedDaysUntilFillUp <= 7
-        ? "Monitor this week"
-        : "On track";
+  const fuelStatus = fuelStatusLabel(projectedDaysUntilFillUp);
 
-  const costSeries = useMemo(() => fillUpCostSeries(fillUpHistory, 6), [fillUpHistory]);
+  // The chart and the two averages under it cover the same fill-ups.
+  const chartFillUps = useMemo(
+    () =>
+      [...vehicleFillUpHistory]
+        .sort((a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt))
+        .slice(0, CHART_FILL_UPS),
+    [vehicleFillUpHistory],
+  );
+  const costSeries = useMemo(() => fillUpCostSeries(chartFillUps, CHART_FILL_UPS), [chartFillUps]);
   const averageFillUpCost =
-    recentFillUps.length > 0
-      ? recentFillUps.reduce((sum, entry) => sum + entry.observedCost, 0) / recentFillUps.length
+    chartFillUps.length > 0
+      ? chartFillUps.reduce((sum, entry) => sum + entry.observedCost, 0) / chartFillUps.length
       : 0;
+  // Measured MPG (miles / gallons) where a fill-up has it, skipping
+  // fill-ups with no MPG at all rather than averaging them in as 0.
+  const mpgReadings = chartFillUps.map(fillUpMpg).filter((mpg): mpg is number => mpg !== null);
   const averageMpg =
-    recentFillUps.length > 0
-      ? recentFillUps.reduce((sum, entry) => sum + entry.combinedMpg, 0) / recentFillUps.length
-      : 0;
+    mpgReadings.length > 0 ? mpgReadings.reduce((sum, mpg) => sum + mpg, 0) / mpgReadings.length : null;
 
   return (
     <PageScaffold
@@ -94,13 +102,13 @@ export default function Fuel() {
       <HeroCard>
         <View className="flex-row items-center gap-xl">
           <RadialGauge
-            percent={tankPercent}
+            percent={estimatedTankPercent ?? 0}
             size={112}
             strokeWidth={11}
             trackColor={withAlpha(colors.accentDeep, 0.2)}
             fillColor={colors.accentDeep}
             label="Tank"
-            valueLabel={`${Math.round(tankPercent)}%`}
+            valueLabel={estimatedTankPercent === null ? "—" : `${Math.round(estimatedTankPercent)}%`}
             labelColor={colors.accentDeep}
             valueColor={colors.accentDeep}
           />
@@ -108,7 +116,7 @@ export default function Fuel() {
             <HeroPill label={fuelStatus} />
             <Text className="mt-xs text-sm font-semibold text-accentDeep">Next fill-up in</Text>
             <Text numberOfLines={1} adjustsFontSizeToFit className="text-[34px] font-bold leading-[40px] text-accentDeep">
-              {Math.max(projectedDaysUntilFillUp, 0).toFixed(1)} days
+              {formatDaysUntilFillUp(projectedDaysUntilFillUp)}
             </Text>
             <Text className="text-caption font-semibold text-accentDeep">
               About {formatCurrency(projectedFillUpCost)} to refill
@@ -147,7 +155,7 @@ export default function Fuel() {
                 </View>
                 <View className="flex-1 gap-0.5 rounded-sm bg-surfaceSoft px-md py-sm">
                   <Text className="text-xs text-textMuted">Avg. MPG</Text>
-                  <Text className="text-body font-bold text-text">{averageMpg.toFixed(1)}</Text>
+                  <Text className="text-body font-bold text-text">{averageMpg === null ? "—" : averageMpg.toFixed(1)}</Text>
                 </View>
               </View>
             </>
@@ -216,7 +224,9 @@ export default function Fuel() {
           }
         >
           <View>
-            {recentFillUps.map((entry, index) => (
+            {recentFillUps.map((entry, index) => {
+              const mpg = fillUpMpg(entry);
+              return (
               <View
                 key={entry.id}
                 className={`flex-row items-center gap-md py-md ${index > 0 ? "border-t border-border" : ""}`}
@@ -233,10 +243,11 @@ export default function Fuel() {
                 </View>
                 <View className="items-end gap-0.5">
                   <Text className="text-[14px] font-bold text-text">{formatCurrency(entry.observedCost)}</Text>
-                  <Text className="text-[12px] text-textMuted">{entry.combinedMpg.toFixed(1)} mpg</Text>
+                  <Text className="text-[12px] text-textMuted">{mpg === null ? "— mpg" : `${mpg.toFixed(1)} mpg`}</Text>
                 </View>
               </View>
-            ))}
+              );
+            })}
           </View>
         </DashCard>
       ) : null}

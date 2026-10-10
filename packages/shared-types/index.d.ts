@@ -148,6 +148,10 @@ export interface MoneyItem {
   startsOn: string | null;
   /** Deducted from the paycheck (already reflected in take-home). */
   fromPaycheck: boolean;
+  /** An asset's yearly growth %, compounded monthly from balanceAsOf (negative = depreciation); null = flat. */
+  growthPercent: number | null;
+  /** A debt's balance already has its balanceAsOf month's payment taken out. */
+  balanceAfterPayment: boolean;
 }
 
 export type MoneyItemInput =
@@ -161,8 +165,9 @@ export type MoneyItemInput =
       aprPercent?: number | null;
       startsOn?: string | null;
       fromPaycheck?: boolean;
+      balanceAfterPayment?: boolean;
     }
-  | { kind: "asset"; name: string; balance: number; balanceAsOf: string };
+  | { kind: "asset"; name: string; balance: number; balanceAsOf: string; growthPercent?: number | null };
 
 /** One actual paycheck, as received - overrides the pay profile's estimate for its month. */
 export interface Paycheck {

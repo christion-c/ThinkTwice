@@ -166,6 +166,67 @@ test("moneyItemSchema accepts an asset with a value", () => {
   assert.equal(result.success, true);
 });
 
+test("moneyItemSchema accepts an asset growth rate, including a negative one", () => {
+  for (const growthPercent of [4.25, -15, null]) {
+    const result = moneyItemSchema.safeParse({
+      kind: "asset",
+      name: "Car",
+      balance: 12000,
+      balanceAsOf: "2026-10-02",
+      growthPercent,
+    });
+    assert.equal(result.success, true, String(growthPercent));
+  }
+});
+
+test("moneyItemSchema rejects an out-of-range growth rate, or one on a debt", () => {
+  assert.equal(
+    moneyItemSchema.safeParse({
+      kind: "asset",
+      name: "Fund",
+      balance: 100,
+      balanceAsOf: "2026-10-02",
+      growthPercent: 150,
+    }).success,
+    false,
+  );
+  assert.equal(
+    moneyItemSchema.safeParse({
+      kind: "loan",
+      name: "Loan",
+      monthlyAmount: 10,
+      balance: 100,
+      balanceAsOf: "2026-10-02",
+      growthPercent: 5,
+    }).success,
+    false,
+  );
+});
+
+test("moneyItemSchema accepts balanceAfterPayment on a debt only", () => {
+  assert.equal(
+    moneyItemSchema.safeParse({
+      kind: "card",
+      name: "Card",
+      monthlyAmount: 40,
+      balance: 500,
+      balanceAsOf: "2026-10-02",
+      balanceAfterPayment: true,
+    }).success,
+    true,
+  );
+  assert.equal(
+    moneyItemSchema.safeParse({
+      kind: "asset",
+      name: "Savings",
+      balance: 500,
+      balanceAsOf: "2026-10-02",
+      balanceAfterPayment: true,
+    }).success,
+    false,
+  );
+});
+
 test("moneyItemSchema rejects an empty name and an unknown kind", () => {
   assert.equal(
     moneyItemSchema.safeParse({ kind: "bill", name: " ", monthlyAmount: 1 })

@@ -25,6 +25,10 @@ export interface MoneyItem {
   // YYYY-MM-01 of the first payment month, or null if already paying.
   startsOn: string | null;
   fromPaycheck: boolean;
+  // An asset's yearly growth %, compounded monthly; null = flat.
+  growthPercent: number | null;
+  // A debt's balance already has its balanceAsOf month's payment out.
+  balanceAfterPayment: boolean;
 }
 
 // Everything but the id - what a create or full replace writes.
@@ -47,6 +51,8 @@ interface MoneyItemRow {
   apr_percent: string | null;
   starts_on: string | null;
   from_paycheck: boolean;
+  growth_percent: string | null;
+  balance_after_payment: boolean;
 }
 
 function mapPayRow(row: PayProfileRow): PayProfile {
@@ -69,6 +75,8 @@ function mapItemRow(row: MoneyItemRow): MoneyItem {
     aprPercent: numericOrNull(row.apr_percent),
     startsOn: row.starts_on,
     fromPaycheck: row.from_paycheck,
+    growthPercent: numericOrNull(row.growth_percent),
+    balanceAfterPayment: row.balance_after_payment,
   };
 }
 
@@ -80,7 +88,9 @@ const ITEM_COLUMNS = `
   balance_as_of::text AS balance_as_of,
   apr_percent,
   starts_on::text AS starts_on,
-  from_paycheck
+  from_paycheck,
+  growth_percent,
+  balance_after_payment
 `;
 
 // Returns the user's pay profile, or null if they haven't set one up.
@@ -170,9 +180,10 @@ export async function createMoneyItem(
     `
       INSERT INTO money_items (
         user_id, kind, name, monthly_amount, balance, balance_as_of,
-        apr_percent, starts_on, from_paycheck
+        apr_percent, starts_on, from_paycheck, growth_percent,
+        balance_after_payment
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING ${ITEM_COLUMNS}
     `,
     [
@@ -185,6 +196,8 @@ export async function createMoneyItem(
       input.aprPercent,
       input.startsOn,
       input.fromPaycheck,
+      input.growthPercent,
+      input.balanceAfterPayment,
     ],
   );
 
@@ -210,6 +223,8 @@ export async function replaceMoneyItemForUser(
         apr_percent    = $8,
         starts_on      = $9,
         from_paycheck  = $10,
+        growth_percent = $11,
+        balance_after_payment = $12,
         updated_at     = CURRENT_TIMESTAMP
       WHERE id = $1
         AND user_id = $2
@@ -226,6 +241,8 @@ export async function replaceMoneyItemForUser(
       input.aprPercent,
       input.startsOn,
       input.fromPaycheck,
+      input.growthPercent,
+      input.balanceAfterPayment,
     ],
   );
 
