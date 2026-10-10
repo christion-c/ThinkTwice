@@ -103,6 +103,28 @@ test("entrySchema accepts a missing fill-up date", () => {
   assert.equal(result.success, true);
 });
 
+test("entrySchema rejects values too large for their NUMERIC(10, 4) columns", () => {
+  const valid = {
+    milesDriven: 150,
+    fuelPrice: 3.89,
+    combinedMpg: 30,
+    tankCapacity: 14,
+    gallons: 12.4,
+    observedCost: 48.14,
+  };
+
+  for (const field of ["fuelPrice", "gallons", "observedCost"] as const) {
+    const result = entrySchema.safeParse({ ...valid, [field]: 1_000_000 });
+    assert.equal(result.success, false, field);
+  }
+
+  // NUMERIC(10, 2) columns still allow larger values.
+  assert.equal(
+    entrySchema.safeParse({ ...valid, milesDriven: 1_000_000 }).success,
+    true,
+  );
+});
+
 test("entrySchema rejects an invalid fill-up date", () => {
   const result = entrySchema.safeParse({
     milesDriven: 150,
