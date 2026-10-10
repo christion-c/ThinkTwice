@@ -75,6 +75,20 @@ def test_local_history_filters_to_a_single_user(tmp_path, monkeypatch):
     assert ml_history._load_local_history("bob") == [{"miles_driven": 200}]
 
 
+def test_local_history_returns_a_users_entries_newest_first(tmp_path, monkeypatch):
+    # The file stores entries in the order they were saved (oldest
+    # first); reads return newest first, matching the backend.
+    monkeypatch.setattr(ml_history, "HISTORY_PATH", tmp_path / "user_history.json")
+
+    ml_history.save_user_history({"user_id": "alice", "miles_driven": 100})
+    ml_history.save_user_history({"user_id": "alice", "miles_driven": 200})
+
+    assert ml_history._load_local_history("alice") == [
+        {"miles_driven": 200},
+        {"miles_driven": 100},
+    ]
+
+
 def test_local_history_returns_empty_list_for_unknown_user(tmp_path, monkeypatch):
     monkeypatch.setattr(ml_history, "HISTORY_PATH", tmp_path / "user_history.json")
 
