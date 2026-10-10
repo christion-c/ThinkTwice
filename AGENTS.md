@@ -1,5 +1,9 @@
 # ThinkTwice Repository Rules
 
+> **Starting a new session?** Read [docs/NEXT_SESSION.md](docs/NEXT_SESSION.md)
+> first: current state, sign-in steps, and working preferences. Open work is
+> in the ThinkTwice Issue Tracker (linked from `docs/KNOWN_ISSUES.md`).
+
 ## Ownership
 
 - Christion Callahan owns the whole project (`apps/backend/`, `apps/frontend/`,
