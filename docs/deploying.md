@@ -102,7 +102,9 @@ first. `firebase.json` (repo root) serves `apps/frontend/dist`.
 
 The export bakes in the `EXPO_PUBLIC_*` values from `apps/frontend/.env`, so
 make sure `EXPO_PUBLIC_API_URL` points at the live backend, not
-`localhost`, before exporting.
+`localhost`, before exporting. Either of the backend's two Cloud Run URLs
+works; they reach the same service (the laptop's `.env` uses
+`https://thinktwice-backend-u2huwum3ta-uk.a.run.app`).
 
 Check: open https://thinktwice.site signed in and confirm the change. A hard
 refresh may be needed, since the JS bundle is cached as immutable but
@@ -117,6 +119,7 @@ refresh may be needed, since the JS bundle is cached as immutable but
 | Cloud Run region            | `us-east4`                                                                                |
 | Cloud Run services          | `thinktwice-backend`, `thinktwice-ml`                                                     |
 | Live backend URL            | https://thinktwice-backend-93723759667.us-east4.run.app                                   |
+| Backend URL (alias)         | https://thinktwice-backend-u2huwum3ta-uk.a.run.app (same service)                         |
 | Live ML service URL         | https://thinktwice-ml-93723759667.us-east4.run.app                                        |
 | Artifact Registry repo      | `us-east4-docker.pkg.dev/thinktwice-dev-christion/thinktwice`                             |
 | Images                      | `.../thinktwice/backend`, `.../thinktwice/ml`                                             |
