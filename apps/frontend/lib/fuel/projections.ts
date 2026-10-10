@@ -4,6 +4,17 @@
 // state/persistence concerns.
 
 import type { DailyDrivingLog, SavedFillUpHistoryEntry } from "@/lib/api/backend";
+import { WEEKS_PER_MONTH } from "@/lib/money/plan";
+
+// An average calendar month (365.25 days / 12), for turning daily miles
+// into monthly miles.
+export const DAYS_PER_MONTH = 365.25 / 12;
+
+// Consecutive fill-ups closer together than this aren't a fill-up cycle
+// (a top-off, or the same fill-up logged twice), so they don't produce a
+// cycle-length or daily-miles sample - dividing miles by a fraction of a
+// day would turn a few miles into hundreds per day.
+export const MIN_CYCLE_DAYS = 1;
 
 export interface FinanceRawInputs {
   incomeInput: string;
@@ -23,9 +34,20 @@ export interface FinanceProjections {
   monthlyFixedCosts: number;
   monthlyFuelBudget: number;
   projectedFillUpCost: number;
-  projectedDaysUntilFillUp: number;
+  // Null when the tank level or MPG isn't known, so there's nothing to
+  // count down from.
+  projectedDaysUntilFillUp: number | null;
+  // The tank level now: the last reading minus the estimated miles driven
+  // since it was taken. Null when no tank level has been entered.
+  estimatedTankPercent: number | null;
   projectedBudgetAfterEssentials: number;
   weeklySpendTarget: number;
+}
+
+export interface ProjectionOptions {
+  // Days since the tank level was entered (the last fuel check-in), so
+  // the countdown keeps counting down between check-ins.
+  daysSinceTankReading?: number;
 }
 
 export interface FillUpStats {
@@ -60,6 +82,17 @@ export function filterEntriesForVehicle<T extends { vehicleId: string | null }>(
   }
 
   return entries.filter((entry) => entry.vehicleId === null || entry.vehicleId === selectedVehicleId);
+}
+
+// One fill-up's MPG: miles since the last fill-up divided by the gallons
+// put in (a full-tank fill-up replaces exactly what was burned), else the
+// MPG stored with the entry. Null when neither is known.
+export function fillUpMpg(entry: SavedFillUpHistoryEntry): number | null {
+  if (entry.milesDriven > 0 && entry.gallons > 0) {
+    return entry.milesDriven / entry.gallons;
+  }
+
+  return positiveOrNull(entry.combinedMpg);
 }
 
 export function parseMoney(value: string): number {
@@ -276,13 +309,7 @@ export function computeFillUpStats(
   // Prefer a computed MPG (miles / gallons) over the entry's stored
   // combined_mpg field, since the computed value reflects this
   // specific fill-up rather than a static vehicle spec.
-  const mpgSamples = sorted.map((entry) => {
-    if (entry.milesDriven > 0 && entry.gallons > 0) {
-      return entry.milesDriven / entry.gallons;
-    }
-
-    return positiveOrNull(entry.combinedMpg);
-  });
+  const mpgSamples = sorted.map(fillUpMpg);
 
   const dailyMilesSamples: DailyMilesSample[] = [];
   const cycleDaysSamples: number[] = [];
@@ -296,8 +323,9 @@ export function computeFillUpStats(
     const currentTimestamp = Date.parse(current.recordedAt);
     const elapsedDays = (currentTimestamp - Date.parse(previous.recordedAt)) / msPerDay;
 
-    // Skip same-day duplicates and unrealistically long gaps (>45 days).
-    if (!Number.isFinite(elapsedDays) || elapsedDays <= 0 || elapsedDays > 45) {
+    // Skip gaps under a day (top-offs, duplicates) and unrealistically
+    // long ones (>45 days).
+    if (!Number.isFinite(elapsedDays) || elapsedDays < MIN_CYCLE_DAYS || elapsedDays > 45) {
       continue;
     }
 
@@ -348,7 +376,11 @@ export function computeFillUpStats(
 // fully overriding the other, so a single stale manual entry doesn't
 // swing the forecast and a brand-new account without history still
 // gets a usable estimate from whatever the user just typed in.
-export function computeFinanceProjections(inputs: FinanceRawInputs, stats: FillUpStats): FinanceProjections {
+export function computeFinanceProjections(
+  inputs: FinanceRawInputs,
+  stats: FillUpStats,
+  { daysSinceTankReading = 0 }: ProjectionOptions = {},
+): FinanceProjections {
   const monthlyIncome = parseMoney(inputs.incomeInput);
   const monthlyExpenses = parseMoney(inputs.expenseInput);
   const monthlyFixedCosts = parseMoney(inputs.monthlyFixedCostsInput);
@@ -357,7 +389,8 @@ export function computeFinanceProjections(inputs: FinanceRawInputs, stats: FillU
   const milesSinceLastFillUp = parseMoney(inputs.milesPerWeekInput);
   const combinedMpg = parseMoney(inputs.combinedMpgInput);
   const tankCapacity = parseMoney(inputs.tankCapacityInput);
-  const currentTankPercent = parseMoney(inputs.currentTankPercentInput);
+  // A blank tank level is unknown, not an empty tank.
+  const tankPercentReading = parseOptionalPercent(inputs.currentTankPercentInput);
 
   // Blend the manual fuel-price input with the history-derived typical
   // price (75% history / 25% manual) when both exist, else use whichever exists.
@@ -379,7 +412,10 @@ export function computeFinanceProjections(inputs: FinanceRawInputs, stats: FillU
         ? stats.typicalMpg
         : combinedMpg;
 
-  const sanitizedMpg = clampNumber(effectiveMpg, 5, 80);
+  // 0 means no MPG is known yet (nothing entered, no fill-ups with
+  // miles). Clamping that up to the 5 MPG floor would quietly assume a
+  // terrible MPG and multiply the fuel budget, so it stays 0 (unknown).
+  const sanitizedMpg = effectiveMpg > 0 ? clampNumber(effectiveMpg, 5, 80) : 0;
 
   // Manual tank-capacity input wins if provided; otherwise fall back to history.
   const effectiveTankCapacity = tankCapacity > 0 ? tankCapacity : stats.typicalTankCapacity;
@@ -410,10 +446,24 @@ export function computeFinanceProjections(inputs: FinanceRawInputs, stats: FillU
       : fallbackDailyMiles;
   const sanitizedDailyMilesEstimate = clampNumber(dailyMilesEstimate, 0, 500);
 
-  // How many gallons are needed to fill up from the current tank level.
+  // The tank level now: the last reading, minus what's been driven since
+  // it was taken (when the range math has what it needs).
+  const fullTankRangeMiles = sanitizedMpg > 0 && effectiveTankCapacity > 0 ? effectiveTankCapacity * sanitizedMpg : 0;
+  const milesSinceReading = sanitizedDailyMilesEstimate * Math.max(daysSinceTankReading, 0);
+  const estimatedTankPercent =
+    tankPercentReading === null
+      ? null
+      : fullTankRangeMiles > 0
+        ? Math.max(tankPercentReading - (milesSinceReading / fullTankRangeMiles) * 100, 0)
+        : tankPercentReading;
+
+  // How many gallons the tank needed at the last reading. Uses the
+  // reading, not the counted-down estimate: right after a fill-up the
+  // estimate starts near 100%, which would make the refill cost a few
+  // cents and then creep up day by day.
   const needsFromTankLevel =
-    effectiveTankCapacity > 0 && currentTankPercent >= 0 && currentTankPercent <= 100
-      ? effectiveTankCapacity * Math.max(1 - (currentTankPercent / 100), 0)
+    effectiveTankCapacity > 0 && tankPercentReading !== null
+      ? effectiveTankCapacity * Math.max(1 - (tankPercentReading / 100), 0)
       : 0;
 
   // Prefer the tank-level-derived gallons, then the manual gallons
@@ -430,23 +480,26 @@ export function computeFinanceProjections(inputs: FinanceRawInputs, stats: FillU
   const projectedFillUpCost = clampNumber(projectedFillUpGallons * sanitizedFuelPrice, 0, 5000);
 
   // Monthly fuel budget: daily miles -> monthly miles -> gallons -> cost.
-  const monthlyMiles = sanitizedDailyMilesEstimate * 30.4375;
+  const monthlyMiles = sanitizedDailyMilesEstimate * DAYS_PER_MONTH;
   const monthlyFuelGallons = sanitizedMpg > 0 ? monthlyMiles / sanitizedMpg : 0;
   const monthlyFuelBudget = clampNumber(monthlyFuelGallons * sanitizedFuelPrice, 0, 5000);
 
-  // How far the current tank level can carry the user, in miles.
-  const availableRangeMiles =
-    sanitizedMpg > 0 && effectiveTankCapacity > 0
-      ? (Math.max(Math.min(currentTankPercent, 100), 0) / 100) * effectiveTankCapacity * sanitizedMpg
-      : 0;
-
-  const projectedDaysUntilFillUp = sanitizedDailyMilesEstimate > 0 ? availableRangeMiles / sanitizedDailyMilesEstimate : 0;
+  // Days until empty: how far the current tank level can carry the user,
+  // over their daily miles. Unknown without a tank level, MPG and
+  // capacity, or any daily-miles estimate.
+  const projectedDaysUntilFillUp =
+    estimatedTankPercent === null || fullTankRangeMiles <= 0
+      ? null
+      : sanitizedDailyMilesEstimate > 0
+        ? ((estimatedTankPercent / 100) * fullTankRangeMiles) / sanitizedDailyMilesEstimate
+        : null;
 
   const projectedBudgetAfterEssentials =
     monthlyIncome - monthlyExpenses - monthlyFixedCosts - monthlyFuelBudget;
-  // Weekly spend target: monthly essentials divided across ~4.345 weeks/month.
+  // Weekly spend target: monthly essentials spread over 52/12 weeks, the
+  // same weeks-per-month the money plan uses.
   const weeklySpendTarget = Math.max(
-    (monthlyExpenses + monthlyFixedCosts + monthlyFuelBudget) / 4.345,
+    (monthlyExpenses + monthlyFixedCosts + monthlyFuelBudget) / WEEKS_PER_MONTH,
     0,
   );
 
@@ -457,7 +510,20 @@ export function computeFinanceProjections(inputs: FinanceRawInputs, stats: FillU
     monthlyFuelBudget,
     projectedFillUpCost,
     projectedDaysUntilFillUp,
+    estimatedTankPercent,
     projectedBudgetAfterEssentials,
     weeklySpendTarget,
   };
+}
+
+// A tank-level field: null when blank or not a number, else clamped to 0-100.
+function parseOptionalPercent(value: string): number | null {
+  const trimmed = value.trim().replace(/%$/, "");
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number.parseFloat(trimmed);
+  return Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : null;
 }

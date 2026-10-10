@@ -27,6 +27,7 @@ import { useSetupChecklist } from "@/hooks/useSetupChecklist";
 import { dailyMilesSeries, percentOf } from "@/lib/fuel/chart-series";
 import { withAlpha } from "@/lib/color";
 import { monthKeyOf, summarizeMonth } from "@/lib/money/plan";
+import { formatDaysUntilFillUp, fuelStatusLabel } from "@/lib/fuel/status";
 import { formatCurrencyWhole } from "@/lib/money/format";
 
 export default function Home() {
@@ -68,7 +69,7 @@ export default function Home() {
     {
       label: "Fuel forecast",
       description: "Enter a fuel price and mileage to project refill costs.",
-      complete: projectedFillUpCost > 0 || projectedDaysUntilFillUp > 0,
+      complete: projectedFillUpCost > 0 || projectedDaysUntilFillUp !== null,
       path: "/fuel",
     },
     {
@@ -81,12 +82,7 @@ export default function Home() {
 
   const { shouldShowSetupChecklist, completionCount } = useSetupChecklist(setupSteps);
 
-  const fuelStatus =
-    projectedDaysUntilFillUp <= 3
-      ? "Refill soon"
-      : projectedDaysUntilFillUp <= 7
-        ? "Monitor this week"
-        : "On track";
+  const fuelStatus = fuelStatusLabel(projectedDaysUntilFillUp);
 
   // Where this month's take-home goes - the same split as the Finance
   // tab's "Where it goes" card.
@@ -132,7 +128,7 @@ export default function Home() {
               trackColor={withAlpha(colors.accentDeep, 0.2)}
             />
             <Text className="text-caption font-semibold text-accentDeep">
-              {remainingIncomeSharePercent}% of take-home left after bills and debt
+              {remainingIncomeSharePercent}% of take-home left after bills, debt, and fuel
             </Text>
           </View>
         ) : null}
@@ -175,7 +171,7 @@ export default function Home() {
             <KpiTile
               icon="time-outline"
               label="Next fill-up"
-              value={`${Math.max(projectedDaysUntilFillUp, 0).toFixed(1)} days`}
+              value={formatDaysUntilFillUp(projectedDaysUntilFillUp)}
               tint={colors.teal}
             />
             <KpiTile

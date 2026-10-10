@@ -79,7 +79,11 @@ type FuelContextValue = {
   monthlyFixedCosts: number;
   monthlyFuelBudget: number;
   projectedFillUpCost: number;
-  projectedDaysUntilFillUp: number;
+  // Null when the tank level, MPG or daily miles aren't known yet.
+  projectedDaysUntilFillUp: number | null;
+  // The last tank reading, counted down by the miles driven since. Null
+  // until a tank level is entered.
+  estimatedTankPercent: number | null;
   projectedBudgetAfterEssentials: number;
   weeklySpendTarget: number;
   // Computes the estimated miles driven since the last logged fill-up,
@@ -91,7 +95,11 @@ type FuelContextValue = {
   // for. A function (evaluated when the flow opens) rather than a
   // precomputed value since it depends on the current time.
   getEstimatedMilesSinceLastFillUp: () => number | null;
+  // Every fill-up, for every vehicle (the History screen's list).
   fillUpHistory: SavedFillUpHistoryEntry[];
+  // The fill-ups the forecast uses: the selected vehicle's, plus untagged
+  // ones (see filterEntriesForVehicle).
+  vehicleFillUpHistory: SavedFillUpHistoryEntry[];
   dailyDrivingLogs: DailyDrivingLog[];
   // Saves (or corrects) today's daily driving check-in for the
   // signed-in user, then refreshes dailyDrivingLogs so the Tank
@@ -126,6 +134,9 @@ export function FuelProvider({ children }: { children: ReactNode }) {
   const [currentTankPercentInput, setCurrentTankPercentInput] = useState("");
   const [fillUpHistory, setFillUpHistory] = useState<SavedFillUpHistoryEntry[]>([]);
   const [dailyDrivingLogs, setDailyDrivingLogs] = useState<DailyDrivingLog[]>([]);
+  // The clock the tank countdown reads, refreshed by refresh() (which the
+  // screens call on focus) instead of read during render.
+  const [now, setNow] = useState(() => Date.now());
 
   const storageKey = user?.uid ? `${FINANCE_STORAGE_KEY}.${user.uid}` : `${FINANCE_STORAGE_KEY}.guest`;
 
@@ -389,6 +400,7 @@ export function FuelProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const refresh = useCallback(async () => {
+    setNow(Date.now());
     await Promise.all([
       loadCloudFinanceInputs(),
       loadFillUpHistory(),
@@ -437,6 +449,18 @@ export function FuelProvider({ children }: { children: ReactNode }) {
     [visibleFillUpHistory, visibleDailyDrivingLogs],
   );
 
+  // When the tank level was last entered: the fuel check-in that sets it
+  // also logs a fill-up, so that's the latest fill-up's timestamp.
+  const lastFillUpTimestamp = useMemo(
+    () =>
+      visibleFillUpHistory
+        .map((entry) => Date.parse(entry.recordedAt))
+        .filter((timestamp) => Number.isFinite(timestamp))
+        .reduce((latest, timestamp) => Math.max(latest, timestamp), 0),
+    [visibleFillUpHistory],
+  );
+  const daysSinceTankReading = lastFillUpTimestamp > 0 ? Math.max((now - lastFillUpTimestamp) / (1000 * 60 * 60 * 24), 0) : 0;
+
   // A function rather than a precomputed value: it reads Date.now(), so
   // computing it during render (even memoized) isn't pure. Its only
   // caller (useFuelCheckinFlow's startFuelFlow) already only needs it
@@ -446,23 +470,18 @@ export function FuelProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    const mostRecentTimestamp = visibleFillUpHistory
-      .map((entry) => Date.parse(entry.recordedAt))
-      .filter((timestamp) => Number.isFinite(timestamp))
-      .reduce((latest, timestamp) => Math.max(latest, timestamp), 0);
-
-    if (mostRecentTimestamp <= 0) {
+    if (lastFillUpTimestamp <= 0) {
       return null;
     }
 
-    const daysSinceLastFillUp = (Date.now() - mostRecentTimestamp) / (1000 * 60 * 60 * 24);
+    const daysSinceLastFillUp = (Date.now() - lastFillUpTimestamp) / (1000 * 60 * 60 * 24);
 
     if (daysSinceLastFillUp <= 0) {
       return null;
     }
 
     return Math.round(stats.dailyMiles * daysSinceLastFillUp);
-  }, [stats.dailyMiles, visibleFillUpHistory]);
+  }, [stats.dailyMiles, lastFillUpTimestamp]);
 
   const {
     monthlyIncome,
@@ -471,6 +490,7 @@ export function FuelProvider({ children }: { children: ReactNode }) {
     monthlyFuelBudget,
     projectedFillUpCost,
     projectedDaysUntilFillUp,
+    estimatedTankPercent,
     projectedBudgetAfterEssentials,
     weeklySpendTarget,
   } = computeFinanceProjections(
@@ -486,6 +506,7 @@ export function FuelProvider({ children }: { children: ReactNode }) {
       currentTankPercentInput,
     },
     stats,
+    { daysSinceTankReading },
   );
 
   // Persists every input change locally right away, and to the backend
@@ -568,10 +589,12 @@ export function FuelProvider({ children }: { children: ReactNode }) {
       monthlyFuelBudget,
       projectedFillUpCost,
       projectedDaysUntilFillUp,
+      estimatedTankPercent,
       projectedBudgetAfterEssentials,
       weeklySpendTarget,
       getEstimatedMilesSinceLastFillUp,
       fillUpHistory,
+      vehicleFillUpHistory: visibleFillUpHistory,
       dailyDrivingLogs,
       logTodaysMiles,
       deleteFillUpEntry,
@@ -593,6 +616,7 @@ export function FuelProvider({ children }: { children: ReactNode }) {
       currentTankPercentInput,
       getEstimatedMilesSinceLastFillUp,
       fillUpHistory,
+      visibleFillUpHistory,
       dailyDrivingLogs,
       logTodaysMiles,
       deleteFillUpEntry,
@@ -606,6 +630,7 @@ export function FuelProvider({ children }: { children: ReactNode }) {
       monthlyFuelBudget,
       projectedFillUpCost,
       projectedDaysUntilFillUp,
+      estimatedTankPercent,
       projectedBudgetAfterEssentials,
       weeklySpendTarget,
       refresh,
