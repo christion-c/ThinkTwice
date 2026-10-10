@@ -15,6 +15,7 @@ Start with the root [README](../README.md) for setup and daily development.
 **Shipping**
 - [CI](ci.md): what the GitHub Actions workflow checks.
 - [Deploying](deploying.md): backend, ML and frontend deploy steps, checks, and the GCP/Firebase resource table.
+- [Release notes](RELEASE_NOTES.md): what changed in each app version, with paste-ready Play Console text.
 - [Christion's laptop setup](christion-laptop-setup.md): personal machine-recovery notes.
 
 **Rules for contributors and coding agents** live in `AGENTS.md` files next to
