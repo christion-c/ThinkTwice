@@ -13,9 +13,18 @@ const REQUIRED_PUBLIC_ENV = [
   "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET",
   "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
   "EXPO_PUBLIC_FIREBASE_APP_ID",
+  // Native Google sign-in's Web OAuth client ID (lib/google-sign-in.native.ts).
+  "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID",
 ] as const;
 
-// Static config lives in app.json; this only adds a build-time guard.
+// "123-abc.apps.googleusercontent.com" -> "com.googleusercontent.apps.123-abc",
+// the URL scheme iOS needs to return from Google's sign-in screen.
+function iosUrlSchemeFor(iosClientId: string): string {
+  return `com.googleusercontent.apps.${iosClientId.replace(/\.apps\.googleusercontent\.com$/, "")}`;
+}
+
+// Static config lives in app.json; this adds a build-time guard and the
+// Google Sign-In config plugin.
 export default ({ config }: ConfigContext): ExpoConfig => {
   // EAS_BUILD_PROFILE is set only on EAS build workers. Release builds
   // (preview/production) embed these values into the bundle, so a missing
@@ -34,5 +43,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     }
   }
 
-  return config as ExpoConfig;
+  // Without Firebase config files, the Google Sign-In plugin only sets the
+  // iOS URL scheme (Android needs no plugin, just the signing keys' SHA-1
+  // registered with Google), and it throws without one - so it's added
+  // only once an iOS client ID exists.
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim();
+  const plugins = [...(config.plugins ?? [])];
+  if (iosClientId) {
+    plugins.push(["@react-native-google-signin/google-signin", { iosUrlScheme: iosUrlSchemeFor(iosClientId) }]);
+  }
+
+  return { ...config, plugins } as ExpoConfig;
 };

@@ -1,14 +1,7 @@
 import { router } from "expo-router";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-import {
-  GoogleAuthProvider,
-  signInWithCredential,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-} from "firebase/auth";
-import { useEffect, useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { useAppPreferences } from "@/contexts/AppPreferencesProvider";
@@ -17,25 +10,16 @@ import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
 import AuthTextField from "@/components/auth/AuthTextField";
 import PreviewModeNotice from "@/components/auth/PreviewModeNotice";
 import { Card, CardTitle, StatusMessage } from "@/components/ui";
-import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { getAuthErrorMessage, getGoogleSignInErrorMessage } from "@/lib/auth-errors";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
-
-WebBrowser.maybeCompleteAuthSession();
+import { isGoogleSignInConfigured, signInWithGoogle } from "@/lib/google-sign-in";
 
 export default function Login() {
   const { colorMode } = useAppPreferences();
 
-  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-  const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-  const isGoogleConfigured = Boolean(
-    Platform.select({
-      web: googleWebClientId,
-      ios: googleIosClientId,
-      android: googleAndroidClientId,
-      default: undefined,
-    }),
-  );
+  // Web always can (Firebase's popup needs no client ID); native needs
+  // EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID - see lib/google-sign-in.native.ts.
+  const isGoogleConfigured = isGoogleSignInConfigured();
   const useBlackGoogleButton = colorMode === "light";
 
   const [email, setEmail] = useState("");
@@ -43,47 +27,6 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
-
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    // Placeholders prevent runtime crashes in preview mode when env vars are missing.
-    webClientId: googleWebClientId ?? "preview-web-client-id",
-    iosClientId: googleIosClientId ?? "preview-ios-client-id",
-    androidClientId: googleAndroidClientId ?? "preview-android-client-id",
-  });
-
-  useEffect(() => {
-    const signInFromGoogleResponse = async () => {
-      if (response?.type !== "success") {
-        return;
-      }
-
-      const idToken = response.params?.id_token;
-
-      if (!idToken) {
-        setErrorMessage("Google sign-in did not return an ID token.");
-        setIsGoogleSubmitting(false);
-        return;
-      }
-
-      if (!auth) {
-        setErrorMessage("Firebase is not configured yet. Add env values to enable Google sign-in.");
-        setIsGoogleSubmitting(false);
-        return;
-      }
-
-      try {
-        const credential = GoogleAuthProvider.credential(idToken);
-        await signInWithCredential(auth, credential);
-        router.replace("/");
-      } catch {
-        setErrorMessage("Unable to sign in with Google. Please try again.");
-      } finally {
-        setIsGoogleSubmitting(false);
-      }
-    };
-
-    void signInFromGoogleResponse();
-  }, [response]);
 
   const handleLogin = async () => {
     setErrorMessage("");
@@ -118,37 +61,20 @@ export default function Login() {
       return;
     }
 
-    if (!isGoogleConfigured) {
-      setErrorMessage("Google OAuth client ID is missing. Add Google client IDs to env first.");
-      return;
-    }
-
-    if (Platform.OS === "web") {
-      try {
-        setIsGoogleSubmitting(true);
-        const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
-        router.replace("/");
-      } catch {
-        setErrorMessage("Unable to sign in with Google. Please try again.");
-      } finally {
-        setIsGoogleSubmitting(false);
-      }
-
-      return;
-    }
-
-    if (!request) {
-      setErrorMessage("Google sign-in is still loading. Please try again.");
-      return;
-    }
-
+    setIsGoogleSubmitting(true);
     try {
-      setIsGoogleSubmitting(true);
-      await promptAsync();
-    } catch {
+      // "cancelled" (the user closed Google's screen) just resets the button.
+      if ((await signInWithGoogle(auth)) === "signed-in") {
+        router.replace("/");
+      }
+    } catch (error) {
+      console.error("Google sign-in failed:", error);
+      const message = getGoogleSignInErrorMessage(error);
+      if (message) {
+        setErrorMessage(message);
+      }
+    } finally {
       setIsGoogleSubmitting(false);
-      setErrorMessage("Unable to open Google sign-in. Please try again.");
     }
   };
 
@@ -167,7 +93,7 @@ export default function Login() {
 
         <PreviewModeNotice
           visible={isFirebaseConfigured && !isGoogleConfigured}
-          message="Google sign-in is unavailable until Google OAuth client IDs are added to env."
+          message="Google sign-in is unavailable in this build: EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID isn't set."
         />
 
         <AuthTextField
@@ -200,7 +126,9 @@ export default function Login() {
         <Pressable
           onPress={() => void handleGoogleSignIn()}
           disabled={isGoogleSubmitting || !isGoogleConfigured || !isFirebaseConfigured}
-          className={`items-center rounded-md border py-3 active:opacity-85 disabled:opacity-85 ${
+          accessibilityRole="button"
+          accessibilityLabel="Continue with Google"
+          className={`items-center rounded-md border py-3 active:opacity-85 disabled:opacity-50 ${
             useBlackGoogleButton ? "border-[#5F6368] bg-[#131314]" : "border-[#DADCE0] bg-white"
           }`}
         >
@@ -227,23 +155,25 @@ export default function Login() {
   );
 }
 
+// Google's standard multicolor "G" (24x24 viewBox), per its sign-in
+// branding guidelines.
 function GoogleMark({ size = 18 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M23.49 12.27C23.49 11.48 23.42 10.72 23.29 10H12V14.3H18.47C18.19 15.8 17.35 17.07 16.08 17.92L19.75 20.76C21.9 18.78 23.49 15.86 23.49 12.27Z"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
         fill="#4285F4"
       />
       <Path
-        d="M12 24C15.24 24 17.96 22.93 19.75 20.76L16.08 17.92C15.06 18.6 13.76 19 12 19C8.88 19 6.23 16.89 5.34 14.04L1.55 16.96C3.33 21.01 7.37 24 12 24Z"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
         fill="#34A853"
       />
       <Path
-        d="M5.34 14.04C5.11 13.36 4.98 12.64 4.98 11.9C4.98 11.16 5.11 10.44 5.34 9.76L1.55 6.84C0.57 8.8 0 10.99 0 12.3C0 13.61 0.57 15.8 1.55 17.76L5.34 14.04Z"
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
         fill="#FBBC05"
       />
       <Path
-        d="M12 4.6C13.93 4.6 15.66 5.26 17.02 6.56L19.84 3.74C17.95 1.98 15.24 0.6 12 0.6C7.37 0.6 3.33 3.59 1.55 7.64L5.34 10.56C6.23 7.71 8.88 4.6 12 4.6Z"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
         fill="#EA4335"
       />
     </Svg>

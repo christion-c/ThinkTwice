@@ -70,9 +70,12 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
       until someone sets one in Settings → Account. Add an optional name field
       to `app/auth/register.tsx`.
 
-- [ ] **Google sign-in and native builds haven't been tested end to end.**
-      Google sign-in needs provider configuration and a development build;
-      nobody has tested Android or iOS builds against real Firebase.
+- [ ] **Google sign-in on Android hasn't been tested end to end yet.** It now
+      uses the native Google SDK (`lib/google-sign-in.native.ts`). Before
+      the 1.1.0 closed test: set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in EAS,
+      register both signing keys' SHA-1 in Firebase, then test the release
+      build from Play (see [frontend.md](frontend.md#google-sign-in)). iOS
+      still needs an iOS client ID and has never been built.
 
 - [ ] **No text-size setting for accessibility.** There's only high-contrast
       mode, and screens set fixed font sizes.

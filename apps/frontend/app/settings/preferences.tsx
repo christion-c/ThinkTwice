@@ -12,6 +12,7 @@ import { Card, CardText, CardTitle, StatusMessage } from "@/components/ui";
 import { useCheckinReminders } from "@/hooks/useCheckinReminders";
 import { withAlpha } from "@/lib/color";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import { signOutOfGoogle } from "@/lib/google-sign-in";
 
 // Converts the persisted "HH:mm" reminder time into a Date, since that's
 // what DateTimePicker works with - only the hour/minute matter, so
@@ -75,7 +76,7 @@ export default function ProfileSettings() {
 
     try {
       setIsSigningOut(true);
-      await signOut(auth);
+      await Promise.all([signOut(auth), signOutOfGoogle()]);
       router.replace("/auth/login");
     } catch {
       setLogoutError("Unable to sign out right now. Please try again.");
