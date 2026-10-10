@@ -43,16 +43,16 @@
 
 - Files under `apps/frontend/app/` are routes or layouts only.
 - Put reusable components, contexts, helpers, and theme modules outside `app/`.
-- Expo SDK upgrades require frontend-owner coordination and an update to
-  `apps/frontend/AGENTS.md`.
+- Expo SDK upgrades require an update to `apps/frontend/AGENTS.md`.
 
 ## Required verification
 
 Before handing off a change, run the checks relevant to the affected subsystem:
 
 - Backend: clean install, typecheck, build, and migration/API integration checks.
-- Frontend: clean install, lint, TypeScript, Expo dependency check, web export,
-  and native checks when platform configuration changes.
+- Frontend: clean install, lint, TypeScript, tests (`npm test`), Expo
+  dependency check, web export, and native checks when platform configuration
+  changes.
 - ML: dependency check, tests, API import, and endpoint/model contract checks.
 - Shared Docker changes: Compose validation, Dockerfile checks, and image builds.
 - Confirm `git status` contains no secrets, generated files, or unrelated changes.

@@ -7,15 +7,19 @@ FastAPI service in `services/ml/` (paths below are relative to it). Exposes:
   budget entries. This is the supported, backend-mediated path (see
   below).
 - `GET /ml-preview`, `POST /fill-up-history` — an earlier, self-contained
-  prototype that blends a math-based fuel forecast (fit on synthetic
-  `budget_data.json` sample data) with a per-user fill-up history. History
+  prototype that blends a math-based fuel forecast (the average cost per
+  mile of 30 generated sample days in `budget_data.json`, where each day's
+  fuel cost is its gallons times its price) with a per-user fill-up
+  history. History
   is read from the backend's `/fill-up-history/internal` endpoint first
   (authenticated with a shared `X-Internal-Token` header — see
   `INTERNAL_SERVICE_TOKEN` below), falling back to a local JSON cache
   (`ML_HISTORY_PATH`, defaults to `/home/appuser/.cache/thinktwice/user_history.json`)
   if the backend is unreachable. Used by the frontend's internal debug
   routes (`apps/frontend/app/ml-preview.tsx`,
-  `apps/frontend/app/debug/ml-account.tsx`), not the main app flow.
+  `apps/frontend/app/debug/ml-account.tsx`), not the main app flow. Those
+  routes render in development builds only; production builds redirect
+  them to Home.
 
 ## Module layout
 
@@ -71,7 +75,11 @@ fuel costs instead. With 3 or more entries, `method` is
 recency-weighted average (see `prediction.py`'s
 `recency_weighted_average` — the second-most-recent entry is weighted
 most heavily, not the single most recent one, so a one-off spike doesn't
-dominate the estimate) and scaled by the user's average recent mileage.
+dominate the estimate, and older entries decay geometrically so a long
+history can't outweigh recent ones) and scaled by the user's average recent
+mileage. If no entry has both a fuel cost and miles, there's no
+cost-per-mile to follow, so it falls back to the plain average (`method`
+is `"average"`).
 Despite the `"linear_regression"` label (kept for API-shape stability),
 this is not scikit-learn's `LinearRegression` — the service has no
 `pandas`/`scikit-learn` dependency at all.
