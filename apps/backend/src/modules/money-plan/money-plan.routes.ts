@@ -77,6 +77,7 @@ const debtSchema = z
     aprPercent: z.number().min(0).max(100).nullable().optional(),
     startsOn: monthStart.nullable().optional(),
     fromPaycheck: z.boolean().optional(),
+    balanceAfterPayment: z.boolean().optional(),
   })
   .strict();
 
@@ -86,6 +87,17 @@ const assetSchema = z
     name: itemName,
     balance: money(100_000_000),
     balanceAsOf: isoDate,
+    // Yearly %, negative for depreciation; matches NUMERIC(6, 3).
+    growthPercent: z
+      .number()
+      .min(-100)
+      .max(100)
+      .refine(
+        (value) => Math.abs(value * 1000 - Math.round(value * 1000)) < 1e-6,
+        { message: "Must have at most 3 decimal places" },
+      )
+      .nullable()
+      .optional(),
   })
   .strict();
 
@@ -114,6 +126,8 @@ function toItemInput(body: z.infer<typeof moneyItemSchema>): MoneyItemInput {
       aprPercent: null,
       startsOn: null,
       fromPaycheck: false,
+      growthPercent: null,
+      balanceAfterPayment: false,
     };
   }
 
@@ -127,6 +141,8 @@ function toItemInput(body: z.infer<typeof moneyItemSchema>): MoneyItemInput {
       aprPercent: null,
       startsOn: null,
       fromPaycheck: false,
+      growthPercent: body.growthPercent ?? null,
+      balanceAfterPayment: false,
     };
   }
 
@@ -139,6 +155,8 @@ function toItemInput(body: z.infer<typeof moneyItemSchema>): MoneyItemInput {
     aprPercent: body.aprPercent ?? null,
     startsOn: body.startsOn ?? null,
     fromPaycheck: body.fromPaycheck ?? false,
+    growthPercent: null,
+    balanceAfterPayment: body.balanceAfterPayment ?? false,
   };
 }
 

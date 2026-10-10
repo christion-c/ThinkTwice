@@ -12,7 +12,9 @@
 //   when viewed in January, last payments are partial, and deferred
 //   debts start on time.
 // - Logged paychecks are what was actually paid; the pay profile only
-//   fills in the checks a month is still expected to have.
+//   fills in the checks a month is still expected to have, including
+//   paydays already past that were never logged (forgetting to log a
+//   check is likelier than not being paid).
 
 import type { DebtKind, MoneyItem, Paycheck, PayFrequency, PayProfile } from "@thinktwice/shared-types";
 
@@ -63,6 +65,13 @@ export function addMonths(month: MonthKey, count: number): MonthKey {
   const [year, monthNumber] = month.split("-").map(Number);
   const index = year * 12 + (monthNumber - 1) + count;
   return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
+}
+
+// Whole months from `from` to `to` (negative when `to` is earlier).
+export function monthsBetween(from: MonthKey, to: MonthKey): number {
+  const [fromYear, fromMonth] = from.split("-").map(Number);
+  const [toYear, toMonth] = to.split("-").map(Number);
+  return (toYear - fromYear) * 12 + (toMonth - fromMonth);
 }
 
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -186,9 +195,11 @@ export interface DebtSchedule {
 
 // Simulates one debt month by month from the month its balance was
 // entered. The entered balance is taken as "before this month's
-// payment" (no interest added that first month); after that, each
-// month adds interest (APR/12, rounded to the cent) then pays the
-// smaller of the monthly payment and what's left.
+// payment" (no interest added that first month) - unless
+// balanceAfterPayment says that month's payment is already out, in
+// which case the first month has no payment. After that, each month
+// adds interest (APR/12, rounded to the cent) then pays the smaller of
+// the monthly payment and what's left.
 export function debtSchedule(item: MoneyItem): DebtSchedule {
   const asOf = monthKeyFromIsoDate(item.balanceAsOf ?? "1970-01-01");
   const startsOn = item.startsOn ? monthKeyFromIsoDate(item.startsOn) : asOf;
@@ -208,7 +219,8 @@ export function debtSchedule(item: MoneyItem): DebtSchedule {
     const interestCents = offset === 0 ? 0 : Math.round(balanceCents * monthlyRate);
     balanceCents += interestCents;
 
-    const paying = month >= firstPaymentMonth;
+    const alreadyPaid = offset === 0 && item.balanceAfterPayment;
+    const paying = month >= firstPaymentMonth && !alreadyPaid;
     const payment = paying ? Math.min(paymentCents, balanceCents) : 0;
     months.push({ month, balanceCents, paymentCents: payment });
     balanceCents -= payment;
@@ -225,6 +237,23 @@ export function debtSchedule(item: MoneyItem): DebtSchedule {
   }
 
   return { months, paidOffMonth: null, neverPaysOff: true };
+}
+
+// ---- Assets -------------------------------------------------------
+
+// An asset's value in a given month: the entered value, compounded
+// monthly at growthPercent/12 for each month since it was entered
+// (negative for depreciation). Flat before then, or without a rate.
+export function assetValueInMonth(item: MoneyItem, month: MonthKey): number {
+  const balanceCents = toCents(item.balance ?? 0);
+  const months = monthsBetween(monthKeyFromIsoDate(item.balanceAsOf ?? "1970-01-01"), month);
+  const monthlyRate = (item.growthPercent ?? 0) / 100 / 12;
+
+  if (months <= 0 || monthlyRate === 0) {
+    return fromCents(balanceCents);
+  }
+
+  return fromCents(Math.max(Math.round(balanceCents * (1 + monthlyRate) ** months), 0));
 }
 
 // ---- One month's summary ------------------------------------------
@@ -259,13 +288,18 @@ export interface MonthSummary {
   leftOver: number;
   // Left over spread over the month's 52/12 weeks.
   perWeek: number;
-  // Debt payments / gross pay - the ratio lenders use. Null without pay.
+  // All debt payments (including paycheck deductions) / gross pay - the
+  // ratio lenders use. Null without pay.
   grossDti: number | null;
-  // Debt payments / take-home - how much of each paycheck goes to debt.
+  // All debt payments / take-home with the paycheck deductions added
+  // back (take-home already has them taken out) - how much of each
+  // paycheck goes to debt.
   takeHomeDebtShare: number | null;
   debts: DebtInMonth[];
   owedByKind: Record<DebtKind, number>;
   totalOwed: number;
+  // Each asset's value this month (see assetValueInMonth).
+  assetValues: { item: MoneyItem; value: number }[];
   assets: number;
   // Left over (or short, if negative) from the current month up to,
   // not including, this one - cash a future month starts with on top of
@@ -282,6 +316,10 @@ export interface SummarizeOptions {
   // counts each month's left over in between; without it, net worth is
   // just assets minus what's owed.
   currentMonth?: MonthKey;
+  // False when left-over money gets spent rather than kept: net worth
+  // then leaves out each month's left over (a shortfall still counts,
+  // since it has to come from somewhere). Defaults to true.
+  keepLeftOver?: boolean;
 }
 
 // Looks up one debt's position in a given month from its schedule.
@@ -322,7 +360,7 @@ export function summarizeMonth(
   items: MoneyItem[],
   month: MonthKey,
   fuel: number,
-  { paychecks = [], currentMonth }: SummarizeOptions = {},
+  { paychecks = [], currentMonth, keepLeftOver = true }: SummarizeOptions = {},
 ): MonthSummary {
   const { gross, takeHome, loggedChecks, estimatedChecks } = payForMonth(pay, paychecks, month);
 
@@ -344,15 +382,20 @@ export function summarizeMonth(
   const billCents = items
     .filter((item) => item.kind === "bill")
     .reduce((sum, item) => sum + toCents(item.monthlyAmount), 0);
-  const assetCents = items
+  const assetValues = items
     .filter((item) => item.kind === "asset")
-    .reduce((sum, item) => sum + toCents(item.balance ?? 0), 0);
+    .map((item) => ({ item, value: assetValueInMonth(item, month) }));
+  const assetCents = assetValues.reduce((sum, asset) => sum + toCents(asset.value), 0);
 
   const fuelCents = toCents(Math.max(fuel, 0));
   const totalOutCents = debtCents + billCents + fuelCents;
   const totalOwedCents = owedCents.loan + owedCents.card + owedCents.collection;
   const debtPayments = fromCents(debtCents);
   const leftOver = takeHome - fromCents(totalOutCents);
+  // Debt-to-income counts every debt payment, including the ones taken
+  // from the paycheck (lenders count those too).
+  const allDebtPayments = fromCents(debtCents + paycheckDebtCents);
+  const takeHomeBeforeDebt = takeHome + fromCents(paycheckDebtCents);
 
   // Debt balances already shrink month to month as payments are made,
   // but the paychecks and bills behind those payments have to show up
@@ -362,7 +405,8 @@ export function summarizeMonth(
   let projectedSavingsCents = 0;
   if (currentMonth !== undefined) {
     for (let between = currentMonth; between < month; between = addMonths(between, 1)) {
-      projectedSavingsCents += toCents(summarizeMonth(pay, items, between, fuel, { paychecks }).leftOver);
+      const leftOverCents = toCents(summarizeMonth(pay, items, between, fuel, { paychecks }).leftOver);
+      projectedSavingsCents += keepLeftOver ? leftOverCents : Math.min(leftOverCents, 0);
     }
   }
 
@@ -379,8 +423,8 @@ export function summarizeMonth(
     totalOut: fromCents(totalOutCents),
     leftOver,
     perWeek: leftOver / WEEKS_PER_MONTH,
-    grossDti: gross > 0 ? debtPayments / gross : null,
-    takeHomeDebtShare: takeHome > 0 ? debtPayments / takeHome : null,
+    grossDti: gross > 0 ? allDebtPayments / gross : null,
+    takeHomeDebtShare: takeHome > 0 ? allDebtPayments / takeHomeBeforeDebt : null,
     debts,
     owedByKind: {
       loan: fromCents(owedCents.loan),
@@ -388,6 +432,7 @@ export function summarizeMonth(
       collection: fromCents(owedCents.collection),
     },
     totalOwed: fromCents(totalOwedCents),
+    assetValues,
     assets: fromCents(assetCents),
     projectedSavings: fromCents(projectedSavingsCents),
     netWorth: fromCents(assetCents + projectedSavingsCents - totalOwedCents),

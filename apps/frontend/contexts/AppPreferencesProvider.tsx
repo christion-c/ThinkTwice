@@ -15,6 +15,9 @@ interface PersistedPreferences {
   remindersEnabled: boolean;
   // "HH:mm" - see lib/checkin-reminders.ts for the format contract.
   reminderTime: string;
+  // Whether projected net worth counts each month's left-over money as
+  // kept (see summarizeMonth's keepLeftOver).
+  keepLeftOver: boolean;
 }
 
 // Stable module-level references - usePersistedUserState relies on
@@ -25,6 +28,7 @@ const DEFAULT_PREFERENCES: PersistedPreferences = {
   highContrast: false,
   remindersEnabled: true,
   reminderTime: DEFAULT_REMINDER_TIME,
+  keepLeftOver: true,
 };
 
 const PREFERENCE_VALIDATORS: FieldValidators<PersistedPreferences> = {
@@ -33,6 +37,7 @@ const PREFERENCE_VALIDATORS: FieldValidators<PersistedPreferences> = {
   highContrast: (value): value is boolean => typeof value === "boolean",
   remindersEnabled: (value): value is boolean => typeof value === "boolean",
   reminderTime: isValidReminderTime,
+  keepLeftOver: (value): value is boolean => typeof value === "boolean",
 };
 
 type AppPreferencesValue = {
@@ -46,6 +51,8 @@ type AppPreferencesValue = {
   setRemindersEnabled: (value: boolean) => void;
   reminderTime: string;
   setReminderTime: (value: string) => void;
+  keepLeftOver: boolean;
+  setKeepLeftOver: (value: boolean) => void;
 };
 
 const AppPreferencesContext = createContext<AppPreferencesValue | undefined>(undefined);
@@ -71,6 +78,8 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
       setRemindersEnabled: (value: boolean) => updatePreferences({ remindersEnabled: value }),
       reminderTime: preferences.reminderTime,
       setReminderTime: (value: string) => updatePreferences({ reminderTime: value }),
+      keepLeftOver: preferences.keepLeftOver,
+      setKeepLeftOver: (value: boolean) => updatePreferences({ keepLeftOver: value }),
     }),
     [preferences, updatePreferences],
   );

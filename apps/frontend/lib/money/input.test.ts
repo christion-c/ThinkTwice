@@ -1,4 +1,4 @@
-import { amountToInput, parseAmount, parseDecimal } from "./input";
+import { amountToInput, parseAmount, parseDecimal, parseUsDate } from "./input";
 
 describe("parseAmount", () => {
   it("accepts what people type on a phone", () => {
@@ -34,5 +34,22 @@ describe("amountToInput", () => {
     expect(amountToInput(40)).toBe("40");
     expect(amountToInput(1325.7)).toBe("1325.70");
     expect(amountToInput(null)).toBe("");
+  });
+});
+
+describe("parseUsDate", () => {
+  it("reads month/day/year, with or without leading zeros", () => {
+    expect(parseUsDate("10/2/2026")).toBe("2026-10-02");
+    expect(parseUsDate(" 01/09/2025 ")).toBe("2025-01-09");
+    expect(parseUsDate("2/29/2028")).toBe("2028-02-29");
+  });
+
+  it("rejects dates that don't exist and other formats", () => {
+    expect(parseUsDate("2/30/2026")).toBeNull();
+    expect(parseUsDate("2/29/2026")).toBeNull();
+    expect(parseUsDate("13/1/2026")).toBeNull();
+    expect(parseUsDate("2026-10-02")).toBeNull();
+    expect(parseUsDate("10/2/26")).toBeNull();
+    expect(parseUsDate("")).toBeNull();
   });
 });

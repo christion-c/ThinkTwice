@@ -2,11 +2,13 @@ import type { MoneyItem, Paycheck, PayProfile } from "@thinktwice/shared-types";
 
 import {
   addMonths,
+  assetValueInMonth,
   checksInMonth,
   debtFreeMonth,
   debtSchedule,
   monthLabel,
   monthlyPay,
+  monthsBetween,
   payForMonth,
   summarizeMonth,
   WEEKS_PER_MONTH,
@@ -23,6 +25,8 @@ function item(fields: Partial<MoneyItem> & Pick<MoneyItem, "kind" | "name">): Mo
     aprPercent: null,
     startsOn: null,
     fromPaycheck: false,
+    growthPercent: null,
+    balanceAfterPayment: false,
     ...fields,
   };
 }
@@ -153,8 +157,11 @@ describe("summarizeMonth", () => {
     expect(summary.totalOut).toBe(345.75);
     expect(summary.leftOver).toBeCloseTo(2600 - 345.75, 10);
     expect(summary.perWeek).toBeCloseTo((2600 - 345.75) / (52 / 12), 10);
-    expect(summary.grossDti).toBeCloseTo(100 / (20 * 40 * 52 / 12), 10);
-    expect(summary.takeHomeDebtShare).toBeCloseTo(100 / 2600, 10);
+    // DTI counts the 401K loan too: 100 from the bank + 150 from the
+    // paycheck. Take-home share adds the 150 back to take-home, since
+    // take-home already has it taken out.
+    expect(summary.grossDti).toBeCloseTo(250 / (20 * 40 * 52 / 12), 10);
+    expect(summary.takeHomeDebtShare).toBeCloseTo(250 / (2600 + 150), 10);
   });
 
   it("tracks balances, net worth, and payoff", () => {
@@ -293,6 +300,93 @@ describe("summarizeMonth net worth over time", () => {
     // November has 4 Friday paydays once the cycle is known.
     expect(november.estimatedChecks).toBe(4);
     expect(november.takeHome).toBe(2400);
+  });
+});
+
+describe("balanceAfterPayment", () => {
+  const card = { kind: "card" as const, name: "Card", balance: 300, monthlyAmount: 100, balanceAsOf: "2026-10-15" };
+
+  it("skips the payment in the month the balance was entered", () => {
+    const schedule = debtSchedule(item({ ...card, balanceAfterPayment: true }));
+
+    expect(schedule.months[0]).toEqual({ month: "2026-10", balanceCents: 30000, paymentCents: 0 });
+    expect(schedule.months[1]).toEqual({ month: "2026-11", balanceCents: 30000, paymentCents: 10000 });
+    expect(schedule.paidOffMonth).toBe("2027-01");
+  });
+
+  it("pays off one month later than the same balance entered before paying", () => {
+    expect(debtSchedule(item(card)).paidOffMonth).toBe("2026-12");
+  });
+
+  it("shows no payment and all payments still left in the entered month", () => {
+    const october = summarizeMonth(null, [item({ ...card, balanceAfterPayment: true })], "2026-10", 0);
+
+    expect(october.debtPayments).toBe(0);
+    expect(october.debts[0]?.balance).toBe(300);
+    expect(october.debts[0]?.paymentsLeft).toBe(3);
+  });
+});
+
+describe("asset growth", () => {
+  it("counts months between month keys, across years and backwards", () => {
+    expect(monthsBetween("2026-10", "2027-01")).toBe(3);
+    expect(monthsBetween("2026-10", "2026-10")).toBe(0);
+    expect(monthsBetween("2027-01", "2026-10")).toBe(-3);
+  });
+
+  it("stays flat without a growth rate, and before the value was entered", () => {
+    const savings = item({ kind: "asset", name: "Savings", balance: 1000, balanceAsOf: "2026-10-03" });
+    const growing = item({ ...savings, growthPercent: 12 });
+
+    expect(assetValueInMonth(savings, "2027-10")).toBe(1000);
+    expect(assetValueInMonth(growing, "2026-10")).toBe(1000);
+    expect(assetValueInMonth(growing, "2026-08")).toBe(1000);
+  });
+
+  it("compounds monthly, rounded to the cent", () => {
+    const savings = item({ kind: "asset", name: "Savings", balance: 1000, balanceAsOf: "2026-10-03", growthPercent: 12 });
+
+    expect(assetValueInMonth(savings, "2026-11")).toBe(1010);
+    expect(assetValueInMonth(savings, "2026-12")).toBe(1020.1);
+    // 12 months at 1%/month = 1000 x 1.01^12 = 1126.825...
+    expect(assetValueInMonth(savings, "2027-10")).toBe(1126.83);
+  });
+
+  it("depreciates with a negative rate", () => {
+    const car = item({ kind: "asset", name: "Car", balance: 12000, balanceAsOf: "2026-10-03", growthPercent: -15 });
+
+    expect(assetValueInMonth(car, "2027-10")).toBe(Math.round(1200000 * (1 - 0.15 / 12) ** 12) / 100);
+  });
+
+  it("feeds each asset's value for the month into net worth", () => {
+    const car = item({ kind: "asset", name: "Car", balance: 12000, balanceAsOf: "2026-10-03", growthPercent: -12 });
+    const november = summarizeMonth(null, [car], "2026-11", 0);
+
+    expect(november.assetValues).toEqual([{ item: car, value: 11880 }]);
+    expect(november.assets).toBe(11880);
+    expect(november.netWorth).toBe(11880);
+  });
+});
+
+describe("keepLeftOver", () => {
+  const savings = item({ kind: "asset", name: "Savings", balance: 5000, balanceAsOf: "2026-10-03" });
+  const rent = item({ kind: "bill", name: "Rent", monthlyAmount: 2000 });
+
+  it("leaves left-over money out of future net worth when it gets spent", () => {
+    // 2600 take-home - 2000 rent = 600 left over each month.
+    const kept = summarizeMonth(weeklyPay, [savings, rent], "2026-12", 0, { currentMonth: "2026-10" });
+    const spent = summarizeMonth(weeklyPay, [savings, rent], "2026-12", 0, { currentMonth: "2026-10", keepLeftOver: false });
+
+    expect(kept.projectedSavings).toBeCloseTo(1200, 10);
+    expect(spent.projectedSavings).toBe(0);
+    expect(spent.netWorth).toBe(5000);
+  });
+
+  it("still counts a shortfall, since it has to come out of savings", () => {
+    const bigRent = item({ kind: "bill", name: "Rent", monthlyAmount: 3000 });
+    const spent = summarizeMonth(weeklyPay, [savings, bigRent], "2026-12", 0, { currentMonth: "2026-10", keepLeftOver: false });
+
+    expect(spent.projectedSavings).toBeCloseTo(-800, 10);
   });
 });
 

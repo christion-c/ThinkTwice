@@ -1,10 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 
-import { useThemeColors } from "@/contexts/AppPreferencesProvider";
+import { useAppPreferences, useThemeColors } from "@/contexts/AppPreferencesProvider";
 import { useFuel } from "@/contexts/FuelProvider";
 import { useMoneyPlan } from "@/contexts/MoneyPlanProvider";
+import IconButton from "@/components/money/IconButton";
+import ItemRow from "@/components/money/ItemRow";
 import MoneyItemSheet, { type MoneySheetTarget } from "@/components/money/MoneyItemSheet";
 import PaycheckSheet, { paydayLabel, type PaycheckSheetTarget } from "@/components/money/PaycheckSheet";
 import PageScaffold from "@/components/layout/PageScaffold";
@@ -26,9 +29,11 @@ import { useStepFlow, type StepFlowStepConfig } from "@/hooks/useStepFlow";
 import { useWebKeyboardInset } from "@/hooks/useWebKeyboardInset";
 import { percentOf } from "@/lib/fuel/chart-series";
 import { withAlpha } from "@/lib/color";
+import { debtStatus } from "@/lib/money/debt-status";
 import { amountToInput, parseAmount, parseDecimal } from "@/lib/money/input";
 import {
   addMonths,
+  assetValueInMonth,
   debtFreeMonth,
   type DebtInMonth,
   monthKeyOf,
@@ -109,6 +114,7 @@ export default function Finance() {
   const webKeyboardInset = useWebKeyboardInset();
   const { monthlyFuelBudget, refresh: refreshFuel } = useFuel();
   const { pay, items, paychecks, loaded, loadError, refresh: refreshPlan, savePay } = useMoneyPlan();
+  const { keepLeftOver } = useAppPreferences();
   const [sheetTarget, setSheetTarget] = useState<MoneySheetTarget | null>(null);
   const [paycheckTarget, setPaycheckTarget] = useState<PaycheckSheetTarget | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -124,8 +130,8 @@ export default function Finance() {
   const months = useMemo(() => Array.from({ length: MONTHS_SHOWN }, (_, index) => addMonths(thisMonth, index)), [thisMonth]);
 
   const summary = useMemo(
-    () => summarizeMonth(pay, items, selectedMonth, monthlyFuelBudget, { paychecks, currentMonth: thisMonth }),
-    [pay, items, selectedMonth, monthlyFuelBudget, paychecks, thisMonth],
+    () => summarizeMonth(pay, items, selectedMonth, monthlyFuelBudget, { paychecks, currentMonth: thisMonth, keepLeftOver }),
+    [pay, items, selectedMonth, monthlyFuelBudget, paychecks, thisMonth, keepLeftOver],
   );
   const debtPaymentsByMonth = useMemo(
     () =>
@@ -179,7 +185,6 @@ export default function Finance() {
       : estimatedChecks > 0
         ? `${summary.loggedChecks} logged + ${estimatedChecks} estimated at ${formatCurrency(pay.takeHomePerCheck)}`
         : `${summary.loggedChecks} logged`;
-  const assets = items.filter((item) => item.kind === "asset");
   const dtiColor = (ratio: number | null) =>
     ratio === null ? colors.textMuted : ratio <= 0.36 ? colors.success : ratio <= 0.43 ? colors.gold : colors.danger;
 
@@ -312,6 +317,11 @@ export default function Finance() {
                 <Ionicons name="add" size={16} color={colors.accent} />
                 <Text className="text-caption font-semibold text-accent">Log a paycheck</Text>
               </Pressable>
+              {paychecks.length > 0 ? (
+                <Pressable onPress={() => router.push("/paychecks")} className="self-start py-xs active:opacity-60">
+                  <Text className="text-caption font-semibold text-accent">All paychecks</Text>
+                </Pressable>
+              ) : null}
             </DashCard>
 
             <DashCard title="Where it goes" subtitle={isThisMonth ? "This month" : monthName} icon="pie-chart-outline" tint={colors.blue}>
@@ -402,8 +412,11 @@ export default function Finance() {
                 />
               </View>
               <Text className="text-caption text-textMuted">
-                {formatCurrency(summary.debtPayments)} in debt payments {monthName}
-                {summary.paycheckDebtPayments > 0 ? " (paycheck deductions not counted)" : ""}.
+                {formatCurrency(summary.debtPayments + summary.paycheckDebtPayments)} in debt payments {monthName}
+                {summary.paycheckDebtPayments > 0
+                  ? `, including ${formatCurrency(summary.paycheckDebtPayments)} taken from your paycheck`
+                  : ""}
+                .
               </Text>
             </DashCard>
 
@@ -419,16 +432,23 @@ export default function Finance() {
                 {formatCurrency(Math.abs(summary.netWorth))}
               </Text>
               <View>
-                {assets.map((asset) => (
+                {summary.assetValues.map(({ item: asset, value }) => (
                   <ItemRow
                     key={asset.id}
                     title={asset.name}
-                    value={formatCurrency(asset.balance ?? 0)}
-                    onPress={() => setSheetTarget({ group: "asset", item: asset, currentBalance: asset.balance })}
+                    subtitle={
+                      asset.growthPercent
+                        ? `${asset.growthPercent > 0 ? "+" : ""}${asset.growthPercent}% a year`
+                        : undefined
+                    }
+                    value={formatCurrency(value)}
+                    onPress={() =>
+                      setSheetTarget({ group: "asset", item: asset, currentBalance: assetValueInMonth(asset, thisMonth) })
+                    }
                   />
                 ))}
                 <ItemRow title="Assets" value={formatCurrency(summary.assets)} bold />
-                {!isThisMonth ? (
+                {!isThisMonth && (keepLeftOver || summary.projectedSavings < 0) ? (
                   <ItemRow
                     title={summary.projectedSavings >= 0 ? "Left over until then" : "Short until then"}
                     subtitle="Pay in minus bills, debt, and fuel out, from this month on"
@@ -466,78 +486,5 @@ export default function Finance() {
       <MoneyItemSheet target={sheetTarget} onClose={() => setSheetTarget(null)} />
       <PaycheckSheet target={paycheckTarget} onClose={() => setPaycheckTarget(null)} />
     </PageScaffold>
-  );
-}
-
-// One line under a debt: what's owed and when it's done.
-function debtStatus(debt: DebtInMonth): string {
-  if (debt.balance <= 0) {
-    return "Paid off";
-  }
-  const owed = `Owe ${formatCurrency(debt.balance)}`;
-  if (debt.neverPaysOff) {
-    return debt.item.monthlyAmount > 0 ? `${owed} · Payment doesn't cover interest` : `${owed} · No payment set`;
-  }
-  if (debt.notStarted && debt.item.startsOn) {
-    return `${owed} · Starts ${monthLabel(debt.item.startsOn.slice(0, 7), true)}`;
-  }
-  return debt.paidOffMonth ? `${owed} · ${debt.paymentsLeft} left · Done ${monthLabel(debt.paidOffMonth, true)}` : owed;
-}
-
-function IconButton({ icon, label, onPress }: { icon: "add" | "create-outline"; label: string; onPress: () => void }) {
-  const colors = useThemeColors();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityLabel={label}
-      className="h-9 w-9 items-center justify-center rounded-round active:opacity-70"
-      style={{ backgroundColor: withAlpha(colors.accent, 0.16) }}
-    >
-      <Ionicons name={icon} size={18} color={colors.accent} />
-    </Pressable>
-  );
-}
-
-function ItemRow({
-  title,
-  subtitle,
-  value,
-  tag,
-  bold = false,
-  onPress,
-}: {
-  title: string;
-  subtitle?: string;
-  value: string;
-  tag?: string;
-  bold?: boolean;
-  onPress?: () => void;
-}) {
-  const content = (
-    <View className="flex-row items-center gap-sm border-b border-border py-2.5">
-      <View className="flex-1 gap-0.5">
-        <View className="flex-row items-center gap-xs">
-          <Text numberOfLines={1} className={`shrink text-body text-text ${bold ? "font-bold" : "font-semibold"}`}>
-            {title}
-          </Text>
-          {tag ? (
-            <View className="rounded-round bg-surfaceSoft px-2 py-0.5">
-              <Text className="text-[10px] font-bold uppercase tracking-[0.4px] text-textMuted">{tag}</Text>
-            </View>
-          ) : null}
-        </View>
-        {subtitle ? <Text className="text-xs text-textMuted">{subtitle}</Text> : null}
-      </View>
-      <Text className={`text-body text-text ${bold ? "font-bold" : "font-semibold"}`}>{value}</Text>
-    </View>
-  );
-
-  return onPress ? (
-    <Pressable onPress={onPress} className="active:opacity-60">
-      {content}
-    </Pressable>
-  ) : (
-    content
   );
 }

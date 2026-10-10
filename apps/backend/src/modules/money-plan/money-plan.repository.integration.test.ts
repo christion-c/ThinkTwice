@@ -49,6 +49,21 @@ const debt: MoneyItemInput = {
   aprPercent: 4.5,
   startsOn: "2027-01-01",
   fromPaycheck: false,
+  growthPercent: null,
+  balanceAfterPayment: true,
+};
+
+const asset: MoneyItemInput = {
+  kind: "asset",
+  name: "Car",
+  monthlyAmount: 0,
+  balance: 12000,
+  balanceAsOf: "2026-10-02",
+  aprPercent: null,
+  startsOn: null,
+  fromPaycheck: false,
+  growthPercent: -15.5,
+  balanceAfterPayment: false,
 };
 
 test("getPayProfileForUser returns null before setup, then the saved profile", async (t) => {
@@ -103,6 +118,18 @@ test("createMoneyItem round-trips every field exactly, dates as YYYY-MM-DD", asy
         item.startsOn === "2027-01-01",
     ),
   );
+});
+
+test("createMoneyItem round-trips an asset's negative growth rate", async (t) => {
+  if (!dbAvailable) {
+    t.skip("DATABASE_URL is not reachable; skipping integration test.");
+    return;
+  }
+
+  const { id, ...fields } = await createMoneyItem(userId, asset);
+
+  assert.equal(typeof id, "string");
+  assert.deepEqual(fields, asset);
 });
 
 test("listMoneyItemsForUser never returns another user's items", async (t) => {
