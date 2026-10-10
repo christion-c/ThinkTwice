@@ -96,19 +96,17 @@ in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
 ## Security and dependencies
 
-- [ ] **Frontend has 86 npm audit findings (1 critical, 65 high, 20
-      moderate)** as of 2026-10-10. They come through Expo, React Native,
-      Jest, NativeWind/Tailwind and Firebase (e.g. `shell-quote`, the
-      critical one, plus `node-forge`, `@xmldom/xmldom`, `@grpc/grpc-js`). 19
-      packages, including `shell-quote`, have a non-breaking fix: run
-      `npm audit fix` (never `--force`) in `apps/frontend`, then the full
-      frontend checks. The rest need major-version bumps and should clear
-      with future Expo SDK upgrades. Upgrading the SDK means updating
-      `apps/frontend/AGENTS.md` too.
-
-- [ ] **`expo install --check` fails on `expo-router`.** It's 57.0.24 and SDK
-      57 expects ~57.0.25. Run `npx expo install expo-router` in
-      `apps/frontend`, then the full frontend checks.
+- [ ] **Frontend has 79 npm audit findings (58 high, 21 moderate)** as of
+      2026-10-10, after the non-breaking `npm audit fix`. They come through
+      Expo, React Native, Jest, NativeWind/Tailwind and Firebase (e.g.
+      `node-forge`, `@xmldom/xmldom`, `@grpc/grpc-js`). `npm audit fix` has
+      nothing left it can apply; the remaining fixes need major-version
+      bumps, directly or further up the chain, so don't run
+      `npm audit fix --force`. Most
+      will clear with future Expo SDK upgrades. Upgrading the SDK means
+      updating `apps/frontend/AGENTS.md` too. Align Expo's patch versions
+      (`npx expo install --check`) before any `npm audit fix`: running it on
+      mixed Expo patches broke the web export.
 
 ## Code health
 

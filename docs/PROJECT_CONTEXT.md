@@ -268,6 +268,12 @@ An audit of the math, logic, copy and docs, then fixes for what it found.
 - **Other:** the ML debug pages render in development builds only; service
   folders have short READMEs again; `finance.tsx`'s helpers moved to
   `components/money/` and `lib/money/debt-status.ts`.
+- **Frontend dependencies:** Expo patches aligned (`expo` 57.0.27,
+  `expo-router` 57.0.25, `expo-auth-session` 57.0.14, `expo-notifications`
+  57.0.22), then a non-breaking `npm audit fix`: 86 findings (1 critical,
+  `shell-quote`) down to 79 (none critical). Running the audit fix before
+  aligning Expo broke the web export (`Cannot read properties of undefined
+  (reading 'OS')` exporting `/finance`); in that order it works.
 - **Deploy order matters for this one:** the frontend now sends
   `growthPercent` and `balanceAfterPayment`, which the old backend's strict
   schemas reject, so deploy the backend (which applies migration `010` on
