@@ -3,6 +3,7 @@
 Start with the root [README](../README.md) for setup and daily development.
 
 **Project status**
+- [Next session handoff](NEXT_SESSION.md): where things stand, how to sign back in to everything, and how Christion works.
 - [Known issues and to-do](KNOWN_ISSUES.md): where open bugs, unfinished features, and cleanup are tracked (the ThinkTwice Issue Tracker), plus standing notes.
 - [Project context](PROJECT_CONTEXT.md): dated status and project history.
 
