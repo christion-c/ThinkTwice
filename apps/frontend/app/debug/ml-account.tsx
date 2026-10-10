@@ -2,6 +2,7 @@ import { Text, View } from "react-native";
 
 import { useAuth } from "@/contexts/AuthProvider";
 import PageScaffold from "@/components/layout/PageScaffold";
+import DevOnly from "@/components/ml/DevOnly";
 import MlAccountInfoBox from "@/components/ml/MlAccountInfoBox";
 import MlMetricBox from "@/components/ml/MlMetricBox";
 import MlPreviewControls from "@/components/ml/MlPreviewControls";
@@ -9,7 +10,16 @@ import { Card, CardTitle } from "@/components/ui";
 import { useMlPreview } from "@/hooks/useMlPreview";
 import { formatCurrency } from "@/lib/money/format";
 
-export default function PrivateMlAccountPage() {
+// Development builds only - see DevOnly.
+export default function PrivateMlAccountPageRoute() {
+  return (
+    <DevOnly>
+      <PrivateMlAccountPage />
+    </DevOnly>
+  );
+}
+
+function PrivateMlAccountPage() {
   const { user } = useAuth();
   const { milesInput, setMilesInput, data, loading, error, reload } = useMlPreview(user);
 

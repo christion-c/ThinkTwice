@@ -4,6 +4,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import PageScaffold from "@/components/layout/PageScaffold";
 import { useThemeColors } from "@/contexts/AppPreferencesProvider";
 import { useAuth } from "@/contexts/AuthProvider";
+import DevOnly from "@/components/ml/DevOnly";
 import MlAccountInfoBox from "@/components/ml/MlAccountInfoBox";
 import MlMetricBox from "@/components/ml/MlMetricBox";
 import MlPreviewControls from "@/components/ml/MlPreviewControls";
@@ -12,7 +13,16 @@ import { useMlPreview } from "@/hooks/useMlPreview";
 import { fetchFillUpHistory, type SavedFillUpHistoryEntry } from "@/lib/api/backend";
 import { formatCurrency } from "@/lib/money/format";
 
-export default function MlPreviewPage() {
+// Development builds only - see DevOnly.
+export default function MlPreviewPageRoute() {
+  return (
+    <DevOnly>
+      <MlPreviewPage />
+    </DevOnly>
+  );
+}
+
+function MlPreviewPage() {
   const colors = useThemeColors();
   const { user } = useAuth();
   const { milesInput, setMilesInput, data, loading, error, reload } = useMlPreview(user);
