@@ -89,7 +89,7 @@ ThinkTwice runs on **iOS, Android and the web** from one codebase. It is designe
 - **App (iOS, Android, web):** React Native + Expo, Expo Router, TypeScript, TanStack Query
 - **API:** Node.js + Fastify REST API, TypeScript, Zod for validation
 - **Database:** PostgreSQL + Drizzle ORM
-- **Auth:** Firebase Authentication (email/password) via the Firebase JS SDK; the API verifies Firebase ID tokens itself with `jose` (see `docs/architecture.md`)
+- **Auth:** Firebase Authentication (email/password and Google) via the Firebase JS SDK; the API verifies Firebase ID tokens itself with `jose` (see `docs/architecture.md`)
 - **Machine learning:** Python + FastAPI service, called by the Node API
 - **Dev environment:** Docker Compose (API + PostgreSQL + ML service)
 - **Testing:** Jest + React Native Testing Library (app), Vitest (API), pytest (ML)

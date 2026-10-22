@@ -10,7 +10,7 @@ A user can sign up, log a purchase in seconds, see how much of their spending is
 
 ### 1. Accounts
 
-- Sign up, sign in and sign out with email and password (Firebase Auth).
+- Sign up, sign in and sign out with email and password or with Google (Firebase Auth). Google sign-in is required because users of the previous version signed up with it.
 - Password reset by email.
 - Delete account, which permanently deletes all of the user's data.
 
