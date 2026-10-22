@@ -7,10 +7,13 @@ packages:
 # esbuild's script only re-checks a binary pnpm already installs as a platform package.
 # lefthook's script only installs git hooks, which the root `prepare` script does.
 # @parcel/watcher and unrs-resolver ship prebuilt binaries, so their build fallbacks aren't needed.
+# @firebase/util's script only writes optional auto-init defaults; protobufjs's only checks its version.
 allowBuilds:
+  "@firebase/util": false
   "@parcel/watcher": false
   esbuild: false
   lefthook: false
+  protobufjs: false
   unrs-resolver: false
 
 # Reviewed vulnerabilities in development-only tools that have no fix we can install yet.
@@ -26,3 +29,9 @@ auditConfig:
     - GHSA-vfj7-8cjw-p6xm
     # sprintf-js (via Jest's code coverage tooling, tests only): no fixed release yet.
     - GHSA-hp3w-g68c-fv3c
+
+# The app only uses Firebase Authentication. Firestore (a required dependency of the `firebase` package) pins a
+# vulnerable @grpc/grpc-js (GHSA-m9gg-hp2v-232j), so it isn't installed at all. Remove these to use Firestore.
+overrides:
+  "@firebase/firestore": "-"
+  "@firebase/firestore-compat": "-"

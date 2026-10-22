@@ -86,15 +86,17 @@ Each part of the project that needs settings has a `.env.example` file listing e
 Copy-Item .env.example .env
 Copy-Item services\api\.env.example services\api\.env
 Copy-Item services\ml\.env.example services\ml\.env
+Copy-Item apps\app\.env.example apps\app\.env
 ```
 
 Then replace every `change-me` value with a strong random one. Generate database passwords with `openssl rand -hex 24` and the ML service token with `openssl rand -hex 32` (Git Bash). The owner and app passwords must be the same in the root and API files.
 
-| File                | Contains secrets?  | Where real values come from                                                     |
-| ------------------- | ------------------ | ------------------------------------------------------------------------------- |
-| `.env`              | Database passwords | Local only: generate new ones. They only protect the database on this computer. |
-| `services/api/.env` | Database passwords | Local only: the same owner and app passwords as the root `.env`.                |
-| `services/ml/.env`  | ML service token   | Local only: generate a new one.                                                 |
+| File                | Contains secrets?               | Where real values come from                                                                                                                                                  |
+| ------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.env`              | Database passwords              | Local only: generate new ones. They only protect the database on this computer.                                                                                              |
+| `services/api/.env` | Database passwords              | Local only: the same owner and app passwords as the root `.env`.                                                                                                             |
+| `services/ml/.env`  | ML service token                | Local only: generate a new one.                                                                                                                                              |
+| `apps/app/.env`     | No (public Firebase web config) | Firebase console > Project settings > Your apps > Web app, for project `thinktwice-dev-christion`. Fill in `EXPO_PUBLIC_FIREBASE_API_KEY` and `EXPO_PUBLIC_FIREBASE_APP_ID`. |
 
 Local passwords and tokens don't need to be backed up: after a reset, generate new ones and recreate the database (step 7). When production secrets are added, keep their real values somewhere safe outside this computer, such as a password manager, and note where each one comes from in this table.
 
