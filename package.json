@@ -8,7 +8,7 @@
   },
   "scripts": {
     "prepare": "lefthook install",
-    "lint": "eslint . && pnpm -r --if-present lint",
+    "lint": "pnpm build && eslint . && pnpm -r --if-present lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "pnpm -r --if-present build",

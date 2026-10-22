@@ -7,7 +7,7 @@ pre-commit:
       run: pnpm exec prettier --check --ignore-unknown {staged_files}
     - name: lint
       glob: "*.{js,mjs,cjs,ts,tsx}"
-      run: pnpm exec eslint --no-warn-ignored {staged_files}
+      run: pnpm build && pnpm exec eslint --no-warn-ignored {staged_files}
     - name: typecheck
       glob: "*.{ts,tsx}"
       run: pnpm typecheck

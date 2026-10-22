@@ -141,6 +141,8 @@ Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoin
 - `apps/app/tests/theme.test.ts` checks every color token against WCAG 2.2 AA contrast in all four color modes, so the design guide's contrast rule can't regress.
 - On the web, React Native components become real HTML: `role="heading"` with `aria-level` becomes `<h1>`, and images need `role="img"` with `aria-label` (React Native Web ignores `alt`). Use `role` and `aria-*` props, not the older `accessibility*` props.
 
+- `pnpm lint` and `pnpm typecheck` both run `pnpm build` first: type-aware linting needs `packages/shared`'s compiled types, which a clean checkout (like CI's) doesn't have.
+
 ### Pre-commit checks (Lefthook)
 
 Before every commit, on the changed files only:

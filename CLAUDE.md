@@ -35,6 +35,7 @@ _Update this section whenever a stage is finished or the plan changes._
 - **Propose, then build.** For plans and design decisions, give a recommendation (not just a list of options), write it up as a draft, and wait for Christion's approval before committing it. Pick sensible defaults for small choices and say which ones you picked.
 - **Check real, current versions.** Many tools are newer than Claude's training data. Before adding or pinning a dependency, look up the actual latest version and its compatibility (e.g. `npm view <pkg> version peerDependencies`) instead of relying on memory.
 - **Report honestly.** If a check fails or something can't be verified, say so and show it.
+- **Confirm CI after every push.** Wait for the GitHub Actions run to finish and report its result. Passing locally isn't enough: CI starts from a clean checkout (no `dist/`, no generated files).
 
 ## Previous version of the app
 
