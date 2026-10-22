@@ -51,3 +51,19 @@ export const DEFAULT_CATEGORIES: readonly CreateCategoryInput[] = [
   { name: "Shopping", type: "discretionary" },
   { name: "Other", type: "discretionary" },
 ];
+
+/** A category, as the API returns it. */
+export const categorySchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  type: categoryTypeSchema,
+  isHidden: z.boolean(),
+  sortOrder: z.int(),
+});
+export type Category = z.infer<typeof categorySchema>;
+
+/** The signed-in user's categories, in display order. */
+export const categoryListSchema = z.object({
+  categories: z.array(categorySchema),
+});
+export type CategoryList = z.infer<typeof categoryListSchema>;

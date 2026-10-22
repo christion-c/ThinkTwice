@@ -11,6 +11,8 @@ import {
 
 import { createFirebaseTokenVerifier } from "./auth/firebase-token.ts";
 import type { Config } from "./config/env.ts";
+import { categoryRoutes } from "./modules/categories/routes.ts";
+import { expenseRoutes } from "./modules/expenses/routes.ts";
 import { healthRoutes } from "./modules/health/routes.ts";
 import { userRoutes } from "./modules/users/routes.ts";
 import { registerAuth } from "./plugins/auth.ts";
@@ -74,6 +76,8 @@ export async function buildApp(config: Config, options: AppOptions = {}) {
 
   await app.register(healthRoutes);
   await app.register(userRoutes);
+  await app.register(categoryRoutes);
+  await app.register(expenseRoutes);
 
   return app;
 }

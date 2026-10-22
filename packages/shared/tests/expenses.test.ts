@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  EXPENSE_NOTE_MAX_LENGTH,
   createExpenseSchema,
+  EXPENSE_NOTE_MAX_LENGTH,
+  listExpensesQuerySchema,
   updateExpenseSchema,
 } from "../src/index.js";
 
@@ -109,5 +110,31 @@ describe("updateExpenseSchema", () => {
       updateExpenseSchema.safeParse({ amountCents: 500, id: CATEGORY_ID })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("listExpensesQuerySchema", () => {
+  it("defaults the limit and coerces it from the query string", () => {
+    expect(listExpensesQuerySchema.parse({})).toEqual({ limit: 200 });
+    expect(listExpensesQuerySchema.parse({ limit: "50" })).toEqual({
+      limit: 50,
+    });
+  });
+
+  it("accepts a date range", () => {
+    expect(
+      listExpensesQuerySchema.parse({ from: "2026-10-01", to: "2026-10-31" }),
+    ).toEqual({ from: "2026-10-01", to: "2026-10-31", limit: 200 });
+  });
+
+  it.each([
+    { from: "2026-10-31", to: "2026-10-01" },
+    { from: "not-a-date" },
+    { limit: "0" },
+    { limit: "501" },
+    { limit: "ten" },
+    { userId: "someone-else" },
+  ])("rejects %o", (query) => {
+    expect(listExpensesQuerySchema.safeParse(query).success).toBe(false);
   });
 });

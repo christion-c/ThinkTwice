@@ -6,12 +6,11 @@ import {
 import { eq } from "drizzle-orm";
 
 import type { VerifiedIdentity } from "../../auth/firebase-token.ts";
-import type { Database, Transaction } from "../../db/client.ts";
+import type { Database } from "../../db/client.ts";
 import { categories, users } from "../../db/schema.ts";
 import { setUserScope, withSignedInUser } from "../../db/user-scope.ts";
 import { HttpError } from "../../errors/http-error.ts";
-
-type UserRow = typeof users.$inferSelect;
+import { accountNotFound, requireAccount, type Account } from "./account.ts";
 
 export interface CreateAccountResult {
   profile: UserProfile;
@@ -19,18 +18,8 @@ export interface CreateAccountResult {
   created: boolean;
 }
 
-/** Returns the error for a signed-in user who hasn't created their ThinkTwice account yet. */
-function accountNotFound(): HttpError {
-  return new HttpError(404, "Signed-in user has no account.", {
-    publicError: {
-      code: "ACCOUNT_NOT_FOUND",
-      message: "Let's finish setting up your account first.",
-    },
-  });
-}
-
 /** Converts a user row to the profile the API returns. */
-function toProfile(user: UserRow): UserProfile {
+function toProfile(user: Account): UserProfile {
   return {
     id: user.id,
     email: user.email,
@@ -40,31 +29,13 @@ function toProfile(user: UserRow): UserProfile {
   };
 }
 
-/** Loads the signed-in user's row, or throws 404 if they have no account. */
-async function loadUser(
-  transaction: Transaction,
-  userId: string | null,
-): Promise<UserRow> {
-  if (userId === null) {
-    throw accountNotFound();
-  }
-  const [user] = await transaction
-    .select()
-    .from(users)
-    .where(eq(users.id, userId));
-  if (user === undefined) {
-    throw accountNotFound();
-  }
-  return user;
-}
-
 /** Returns the signed-in user's profile, or throws 404 if they have no account. */
 export async function getProfile(
   db: Database,
   firebaseUid: string,
 ): Promise<UserProfile> {
   return withSignedInUser(db, firebaseUid, async (transaction, userId) =>
-    toProfile(await loadUser(transaction, userId)),
+    toProfile(await requireAccount(transaction, userId)),
   );
 }
 
@@ -93,7 +64,7 @@ export async function createAccount(
     async (transaction, existingUserId) => {
       if (existingUserId !== null) {
         return {
-          profile: toProfile(await loadUser(transaction, existingUserId)),
+          profile: toProfile(await requireAccount(transaction, existingUserId)),
           created: false,
         };
       }
@@ -138,7 +109,7 @@ export async function updateSettings(
   settings: UpdateUserSettingsInput,
 ): Promise<UserProfile> {
   return withSignedInUser(db, firebaseUid, async (transaction, userId) => {
-    const user = await loadUser(transaction, userId);
+    const user = await requireAccount(transaction, userId);
     const [updated] = await transaction
       .update(users)
       .set(settings)
@@ -160,7 +131,7 @@ export async function deleteAccount(
   firebaseUid: string,
 ): Promise<void> {
   await withSignedInUser(db, firebaseUid, async (transaction, userId) => {
-    const user = await loadUser(transaction, userId);
+    const user = await requireAccount(transaction, userId);
     await transaction.delete(users).where(eq(users.id, user.id));
   });
 }

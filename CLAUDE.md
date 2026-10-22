@@ -27,7 +27,7 @@ _Update this section whenever a stage is finished or the plan changes._
   - Step 1: `GET`, `POST`, `PATCH` and `DELETE /me` in the API (`services/api/src/modules/users/`). `POST /me` creates the account and the 12 default categories, idempotently.
   - Step 2: the app's Firebase Authentication (email/password sign-up, sign-in and password reset), the sign-in kept in the secure store on iOS/Android, account setup through `POST /me`, and screens guarded by sign-in state (`apps/app/src/features/auth/`). Tested end to end on the emulator against the live Firebase project.
   - Step 3: Google sign-in. Android uses our own Expo module (`apps/app/modules/google-sign-in`, Credential Manager), checked on the emulator up to Google's account sheet; the web uses Firebase's pop-up; iOS is a known issue. The app runs as a development build (`pnpm --filter @thinktwice/app android:build`).
-- **Next: categories and expenses** from `docs/mvp.md`: API endpoints (with `describeEndpointAuthentication` and cross-user tests), then the app's quick expense entry.
+- **Categories and expenses, step 1 of 2 done:** the API endpoints (`GET`/`POST /categories`, `PATCH /categories/:id`, `GET`/`POST /expenses`, `PATCH`/`DELETE /expenses/:id`) in `services/api/src/modules/categories/` and `expenses/`, with the security harness and cross-user tests. Dates default to today or this month in the user's time zone (`todayIn`, `monthContaining` in `packages/shared`). **Next, step 2:** the app side: TanStack Query, quick expense entry, the expense list with edit and delete, and category management.
 - Signed-in users see only a placeholder home screen so far; expenses, categories and the dashboard come next.
 
 ## Working with Christion
