@@ -15,16 +15,19 @@ Full context lives in the Word documents in the project root:
 - `Project Scoping Document.docx`: early brainstorming from when this was a team project. Its team roles and group commit rules no longer apply. Its feature ideas (Plaid bank connection, vehicle profile and fuel prediction, category spending limits, over-limit warnings) are possible features, not commitments.
 
 ## Tech stack
-- **Front end:** React Native + Expo (cross-platform web and mobile), TypeScript
-- **Back end:** Node.js + Express REST API, TypeScript
-- **Database:** PostgreSQL
-- **Auth and hosting:** Firebase Authentication (email/password) and Firebase Hosting
-- **Machine learning:** Python
-- **Environment:** Docker
+ThinkTwice is a **mobile app** (iOS and Android). This stack replaces the one in the Word documents.
+
+- **Mobile app:** React Native + Expo, Expo Router, TypeScript, TanStack Query
+- **API:** Node.js + Fastify REST API, TypeScript, Zod for validation
+- **Database:** PostgreSQL + Drizzle ORM
+- **Auth:** Firebase Authentication (email/password); the API verifies Firebase ID tokens
+- **Machine learning:** Python + FastAPI service, called by the Node API
+- **Dev environment:** Docker Compose (API + PostgreSQL + ML service)
+- **Testing:** Jest + React Native Testing Library (app), Vitest (API), pytest (ML)
 - **Version control:** Git + GitHub
 
 ## Deliverables
-- Cross-platform web and mobile app with an ADHD-friendly design
+- Mobile app (iOS and Android) with an ADHD-friendly design
 - Secure registration and authentication
 - Expense and recurring-habit tracking
 - Financial dashboards
