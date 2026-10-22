@@ -8,7 +8,7 @@ Tagline: *Don't just track where your money went. See where it's taking you.*
 
 Christion is the sole developer. The capstone is finished and Christion has graduated; this is a from-scratch rebuild of the project, worked on at Christion's own pace with no deadline. A previous version is live at thinktwice.site, and the rebuild will replace it.
 
-The agreed feature scope is in `docs/mvp.md`, the database design is in `docs/data-model.md`, the repo layout, tooling and workflow are in `docs/architecture.md`, and the look, accessibility rules and writing style are in `docs/design-guide.md`.
+The agreed feature scope is in `docs/mvp.md`, the database design is in `docs/data-model.md`, the repo layout, tooling and workflow are in `docs/architecture.md`, and the look, accessibility rules and writing style are in `docs/design-guide.md`. Open problems and gaps are tracked in `docs/known-issues.md`: add new ones as they're found, and remove them in the same commit as the fix.
 
 ## Source documents
 Full context lives in the Word documents in `docs/`:

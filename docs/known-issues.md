@@ -1,0 +1,27 @@
+# Known Issues
+
+Open problems, gaps and cleanup for the ThinkTwice rebuild. Add new issues here as they're found, and remove them (in the same commit as the fix) once they're resolved.
+
+_Last updated: 2026-10-22._
+
+**Priority:** P1 = blocks the next milestone, P2 = needed before release, P3 = nice to have.
+
+## Open
+
+| # | Priority | Area | Issue |
+|---|---|---|---|
+| 1 | P1 | Tooling | **Project rules aren't enforced automatically yet.** There is no linting, formatting, pre-commit or CI setup, so the rules in `CLAUDE.md` rely on discipline alone. Fixed by the project setup step in `docs/architecture.md`. |
+| 2 | P2 | Tooling | **Line-ending warnings on every commit** ("LF will be replaced by CRLF"). Fixed by adding a `.gitattributes` file during project setup. |
+| 3 | P2 | Branding | **App icon source is too small.** `docs/brand/app-logo.png` is 512×512; app stores need 1024×1024 (ideally a vector SVG), plus an Android adaptive icon with the artwork inside the safe zone. |
+| 4 | P2 | Deployment | **API hosting is undecided.** `api.thinktwice.site` has no host chosen yet. Needed before release. |
+| 5 | P2 | Deployment | **Firebase setup for the rebuild is undecided.** Decide whether the rebuild reuses the previous version's Firebase project or gets a new one, and record it in `docs/setup.md`. |
+| 6 | P3 | Docs | **`docs/setup.md` doesn't list Java or the Firebase CLI yet.** Both are needed for the Firebase Auth Emulator (see `docs/architecture.md`). Add them when the API test setup is built. |
+
+## Notes
+
+These aren't to-dos; they're facts worth knowing.
+
+- **`main` still holds the previous version of the app.** The rebuild lives on `christion`. The first pull request from `christion` into `main` will replace the old code entirely, so only open it once the rebuild is ready to take over. The old code stays in `main`'s git history.
+- **The previous version is live at thinktwice.site.** Don't deploy over it until the rebuild is ready (see `CLAUDE.md`).
+- **Only Claude's commits are pushed automatically.** Commits made by hand need a manual `git push` (see the Git workflow note in `CLAUDE.md`).
+- **Claude's personal memory isn't in the repo** and is lost on a computer reset. Everything important from it is recorded in `CLAUDE.md`.
