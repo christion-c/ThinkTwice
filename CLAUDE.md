@@ -8,7 +8,7 @@ Tagline: *Don't just track where your money went. See where it's taking you.*
 
 Christion is the sole developer. The capstone is finished and Christion has graduated; this is a from-scratch rebuild of the project, worked on at Christion's own pace with no deadline. A previous version is live at thinktwice.site, and the rebuild will replace it.
 
-The agreed feature scope is in `docs/mvp.md`, and the database design is in `docs/data-model.md`.
+The agreed feature scope is in `docs/mvp.md`, the database design is in `docs/data-model.md`, and the repo layout, tooling and workflow are in `docs/architecture.md`.
 
 ## Source documents
 Full context lives in the Word documents in `docs/`:
@@ -150,4 +150,5 @@ No one may ever access information they are not allowed to see. This is financia
 ## Git workflow note
 - Claude pushes to `origin/christion` immediately after every commit it makes on the `christion` branch, without asking.
 - Commits made manually are not pushed automatically. Push them yourself.
-- Never push to `main` without asking first.
+- Never push to `main` without asking first. `main` only changes through pull requests from `christion` with CI passing.
+- Commit messages follow Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`).
