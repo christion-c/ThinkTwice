@@ -9,7 +9,7 @@ Tagline: *Don't just track where your money went. See where it's taking you.*
 Christion is the sole developer on this project.
 
 ## Source documents
-Full context lives in the Word documents in the project root:
+Full context lives in the Word documents in `docs/`:
 - `Project Overview.docx`: the primary and most current description of the app.
 - `One Page Project Overview.docx`: a condensed version of the above.
 - `Project Scoping Document.docx`: early brainstorming from when this was a team project. Its team roles and group commit rules no longer apply. Its feature ideas (Plaid bank connection, vehicle profile and fuel prediction, category spending limits, over-limit warnings) are possible features, not commitments.
