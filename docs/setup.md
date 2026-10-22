@@ -100,40 +100,32 @@ Then replace every `change-me` value with a strong random one. Generate database
 
 Local passwords and tokens don't need to be backed up: after a reset, generate new ones and recreate the database (step 7). When production secrets are added, keep their real values somewhere safe outside this computer, such as a password manager, and note where each one comes from in this table.
 
-## 7. Start the database and run the services
+## 7. Run everything
 
-Make sure Docker Desktop is running, then:
-
-```powershell
-docker compose up --detach --wait
-pnpm --filter @thinktwice/api db:migrate
-pnpm --filter @thinktwice/api dev
-```
-
-- The first `docker compose up` creates the database roles and the `thinktwice` and `thinktwice_test` databases.
-- `db:migrate` creates the tables. Run it again whenever a new migration is added.
-- The API starts at <http://127.0.0.1:3000> and reloads when its code changes. Open <http://127.0.0.1:3000/health>; it should show `{"status":"ok"}`.
-
-To run the ML service (in another terminal):
-
-```powershell
-pnpm --filter @thinktwice/ml dev
-```
-
-It starts at <http://127.0.0.1:8000>. Open <http://127.0.0.1:8000/health>; it should show `{"status":"ok"}`. Every other endpoint needs the token from `services/ml/.env`.
-
-To run the app:
-
-1. In Android Studio, open **Device Manager** and start an emulator (the dev machine uses a Pixel 8a image).
-2. Run:
+1. Make sure **Docker Desktop** is running.
+2. For Android, open Android Studio's **Device Manager** and start an emulator (the dev machine uses a Pixel 8a image).
+3. Run one command:
 
    ```powershell
-   pnpm --filter @thinktwice/app android
+   pnpm dev:android
    ```
 
-   The first time, this installs **Expo Go** on the emulator and opens the app. `web` instead of `android` opens it in the browser at <http://localhost:8081>.
+   Or `pnpm dev` to choose in Expo's menu: press `a` for Android or `w` for the web (<http://localhost:8081>).
 
-To wipe the local database and start over (for example, after changing the passwords): `docker compose down --volumes`, then run the commands above again.
+`pnpm dev` (`scripts/dev.js`) does all of this:
+
+- Starts PostgreSQL (`docker compose up --detach --wait`). The first time, this creates the database roles and the `thinktwice` and `thinktwice_test` databases.
+- Applies any new database migrations.
+- Runs the API at <http://127.0.0.1:3000> and the ML service at <http://127.0.0.1:8000>, both reloading when their code changes. Their logs are labeled `[api]` and `[ml]`.
+- Runs the app's Expo dev server, which keeps the terminal so its keyboard shortcuts work. The first time on Android, it installs **Expo Go** on the emulator.
+
+Press **Ctrl+C** to stop everything; if any part stops on its own, the rest stop too. The database keeps running in Docker (stop it with `docker compose stop`).
+
+If the app is already open on the emulator, it may keep showing the previous version: press `r` in the terminal to reload it.
+
+To run one part on its own: `pnpm --filter @thinktwice/api dev`, `pnpm --filter @thinktwice/ml dev` or `pnpm --filter @thinktwice/app dev`.
+
+To wipe the local database and start over (for example, after changing the passwords): `docker compose down --volumes`, then `pnpm dev` again.
 
 ## 8. Verify
 

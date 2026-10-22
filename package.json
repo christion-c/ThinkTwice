@@ -8,6 +8,8 @@
   },
   "scripts": {
     "prepare": "lefthook install",
+    "dev": "node scripts/dev.js",
+    "dev:android": "node scripts/dev.js --android",
     "lint": "pnpm build && eslint . && pnpm -r --if-present lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

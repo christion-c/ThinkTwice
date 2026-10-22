@@ -65,7 +65,7 @@ _Update this section whenever a stage is finished or the plan changes._
 - `pnpm --filter @thinktwice/api db:migrate`: apply new database migrations.
 - `pnpm --filter @thinktwice/api dev`: run the API locally with auto-reload.
 - `pnpm --filter @thinktwice/ml dev`: run the ML service locally with auto-reload.
-- `pnpm --filter @thinktwice/app android` / `web`: run the app on the Android emulator / in the browser.
+- `pnpm dev` / `pnpm dev:android`: start everything for local development (database, migrations, API, ML service and the app; `dev:android` also opens the emulator). Ctrl+C stops it all.
 - `pnpm audit:deps`: check JavaScript and Python dependencies for known vulnerabilities. (Plain `pnpm audit` only runs pnpm's built-in JavaScript audit.)
 
 ## Tooling decisions to preserve
