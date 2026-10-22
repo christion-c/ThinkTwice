@@ -194,7 +194,7 @@ importers:
         specifier: ^8.72.0
         version: 8.72.0(eslint@10.13.0(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
 
-  apps/mobile:
+  apps/app:
     dependencies:
       '@expo/metro-runtime':
         specifier: ~58.0.14

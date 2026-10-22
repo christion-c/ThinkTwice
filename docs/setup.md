@@ -126,7 +126,7 @@ To run the app:
 2. Run:
 
    ```powershell
-   pnpm --filter @thinktwice/mobile android
+   pnpm --filter @thinktwice/app android
    ```
 
    The first time, this installs **Expo Go** on the emulator and opens the app. `web` instead of `android` opens it in the browser at <http://localhost:8081>.

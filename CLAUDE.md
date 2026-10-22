@@ -21,7 +21,7 @@ _Update this section whenever a stage is finished or the plan changes._
   - Step 2: database: PostgreSQL 18.6 in `compose.yaml`, least-privilege roles (`thinktwice_owner`, `thinktwice_app`), hand-written SQL migration `0001_initial_schema.sql` with forced row-level security on `users`, `categories` and `expenses`, a tested migration runner, Drizzle table definitions, and `withUserScope` for every user-data query. Tests in `services/api/tests/db/` prove the isolation against a real database.
   - Step 3: sign-in: Firebase ID token verification with `jose`, deny-by-default auth on every route, `requireIdentity` and `withSignedInUser`, and the reusable rule 13 harness `describeEndpointAuthentication` in `tests/security/`.
 - **`services/ml` done:** FastAPI forecasting service (Python 3.14, uv). `POST /forecasts` projects each category's month-end total at the current pace (at least 3 expenses this month), in whole cents. Protected by a shared service token; `GET /health` is public.
-- **`apps/mobile` done:** Expo SDK 58 app (iOS, Android, web) with Expo Router, the design guide's theme tokens (all four color modes) in `src/theme/`, a `Screen` layout component, and a placeholder welcome screen. It reuses the previous version's identifiers (`com.thinktwice.app`, `com.thinktwicefinance.app`, EAS project and owner) at version 2.0.0, so it replaces the old app in the stores. Checked on the Android emulator in light and dark mode.
+- **`apps/app` done:** Expo SDK 58 app (iOS, Android, web) with Expo Router, the design guide's theme tokens (all four color modes) in `src/theme/`, a `Screen` layout component, and a placeholder welcome screen. It reuses the previous version's identifiers (`com.thinktwice.app`, `com.thinktwicefinance.app`, EAS project and owner) at version 2.0.0, so it replaces the old app in the stores. Checked on the Android emulator in light and dark mode.
 - **Setup stage 2 is complete.** **Next: build v1 features** from `docs/mvp.md`, starting with accounts (sign-up, sign-in with email/password and Google, the user's row and default categories).
 - There are no v1 features yet: no endpoints besides `GET /health`, and only a placeholder welcome screen.
 
@@ -60,7 +60,7 @@ _Update this section whenever a stage is finished or the plan changes._
 - `pnpm --filter @thinktwice/api db:migrate`: apply new database migrations.
 - `pnpm --filter @thinktwice/api dev`: run the API locally with auto-reload.
 - `pnpm --filter @thinktwice/ml dev`: run the ML service locally with auto-reload.
-- `pnpm --filter @thinktwice/mobile android` / `web`: run the app on the Android emulator / in the browser.
+- `pnpm --filter @thinktwice/app android` / `web`: run the app on the Android emulator / in the browser.
 - `pnpm audit:deps`: check JavaScript and Python dependencies for known vulnerabilities. (Plain `pnpm audit` only runs pnpm's built-in JavaScript audit.)
 
 ## Tooling decisions to preserve

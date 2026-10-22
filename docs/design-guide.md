@@ -17,7 +17,7 @@ How ThinkTwice looks, feels and talks. It applies to every screen on iOS, Androi
 
 - **Source files (vector):** `docs/brand/logo.svg` for light backgrounds and `docs/brand/logo-dark.svg` for dark backgrounds (its handle is cream so it stays visible). Both have transparent backgrounds. A magnifying glass split into espresso brown (a `$`) and pumpkin orange (a drop), in the palette's exact colors.
 - `docs/brand/app-logo-original.png` is the previous version's 512×512 logo, kept for reference. The SVGs were redrawn from it.
-- **App assets** (in `apps/mobile/assets/images/`, generated from the SVGs):
+- **App assets** (in `apps/app/assets/images/`, generated from the SVGs):
   - `icon.png`: 1024×1024 store and iOS icon on cream (Apple requires an opaque icon).
   - `adaptive-icon.png`: 1024×1024 transparent Android adaptive icon foreground, with the artwork inside the 66% safe circle; its background color is cream (`#FBF2E4`).
   - `favicon.png`: 48×48 web favicon.
@@ -90,7 +90,7 @@ A setting that keeps every accent color but pushes neutrals to their extremes an
 | `textMuted`             | `#2B1B10`               | `#F1E4D4`                  |
 
 - Follows the system light/dark setting, with a manual override and a high contrast toggle in settings.
-- Colors are defined once in `apps/mobile/src/theme/` and used by name. No hard-coded colors in components.
+- Colors are defined once in `apps/app/src/theme/` and used by name. No hard-coded colors in components.
 
 ## Components
 

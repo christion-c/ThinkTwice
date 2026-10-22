@@ -30,7 +30,7 @@ One repository (a "monorepo") holds all three parts, managed as a **pnpm workspa
 ```
 ThinkTwice/
 ├── apps/
-│   └── mobile/                      Expo app (iOS, Android, web)
+│   └── app/                         Expo app (iOS, Android, web)
 │       ├── app/                     Screens and navigation (Expo Router, file-based)
 │       ├── assets/images/           App icons and logos (generated from docs/brand/)
 │       ├── src/
@@ -137,8 +137,8 @@ Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoin
 - The API tests run against a real PostgreSQL database (in Docker), not a mock, so row-level security is actually tested. They use a separate `thinktwice_test` database, so they never touch development data.
 - Sign-in is tested with **real RS256-signed tokens** made from a test key pair (`tests/helpers/tokens.ts`), so signature, audience, issuer and expiry checks are all genuinely exercised. No Firebase emulator, CLI or Java is needed.
 
-- **App tests run on iOS and Android** with React Native Testing Library. It can't read web HTML, so `pnpm --filter @thinktwice/mobile test:web` builds the static web export and checks the real HTML (`apps/mobile/tests/web/`): page language, headings and screen reader labels.
-- `apps/mobile/tests/theme.test.ts` checks every color token against WCAG 2.2 AA contrast in all four color modes, so the design guide's contrast rule can't regress.
+- **App tests run on iOS and Android** with React Native Testing Library. It can't read web HTML, so `pnpm --filter @thinktwice/app test:web` builds the static web export and checks the real HTML (`apps/app/tests/web/`): page language, headings and screen reader labels.
+- `apps/app/tests/theme.test.ts` checks every color token against WCAG 2.2 AA contrast in all four color modes, so the design guide's contrast rule can't regress.
 - On the web, React Native components become real HTML: `role="heading"` with `aria-level` becomes `<h1>`, and images need `role="img"` with `aria-label` (React Native Web ignores `alt`). Use `role` and `aria-*` props, not the older `accessibility*` props.
 
 ### Pre-commit checks (Lefthook)
@@ -192,7 +192,7 @@ Every step must pass before anything is merged into `main`.
 ## Local development
 
 - `docker compose up --detach --wait` starts PostgreSQL (listening only on `127.0.0.1`). The API and ML service will be added to `compose.yaml` later; for now the API runs directly with `pnpm --filter @thinktwice/api dev`.
-- The Expo app runs outside Docker (`pnpm --filter mobile start`) so it can reach phone simulators, real devices and the browser.
+- The Expo app runs outside Docker (`pnpm --filter @thinktwice/app start`) so it can reach phone simulators, real devices and the browser.
 - Secrets come from `.env` files that are never committed; each part has a `.env.example` (rule 9).
 
 ## Git workflow

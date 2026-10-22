@@ -30,11 +30,11 @@ export default defineConfig(
   },
   {
     // React's own rules of hooks, plus the React Compiler's checks.
-    files: ["apps/mobile/**/*.{ts,tsx}"],
+    files: ["apps/app/**/*.{ts,tsx}"],
     extends: [reactHooks.configs.flat["recommended-latest"]],
   },
   {
-    files: ["apps/mobile/tests/**/*.{ts,tsx}"],
+    files: ["apps/app/tests/**/*.{ts,tsx}"],
     languageOptions: { globals: globals.jest },
   },
   {
