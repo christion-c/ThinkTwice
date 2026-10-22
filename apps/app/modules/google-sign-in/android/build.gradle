@@ -1,0 +1,25 @@
+// Google sign-in through Android's Credential Manager (Google's current, recommended API).
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.googlesignin'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.googlesignin"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+}
+
+dependencies {
+  // Latest stable releases (checked against Google's Maven repository).
+  implementation "androidx.credentials:credentials:1.6.0"
+  implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
+  // 1.2.1 is compiled with Kotlin 2.4, which the app's Kotlin 2.2 (set by React Native and Expo) can't read.
+  // Move to 1.2.1 or newer once the app's Kotlin is 2.3 or later.
+  implementation "com.google.android.libraries.identity.googleid:googleid:1.2.0"
+}

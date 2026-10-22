@@ -21,11 +21,13 @@ const PAGES = {
   "sign-in": {
     heading: "Welcome back",
     button: "Sign in",
+    google: true,
     links: ["/forgot-password", "/sign-up"],
   },
   "sign-up": {
     heading: "Create your account",
     button: "Create account",
+    google: true,
     links: ["/sign-in"],
   },
   "forgot-password": {
@@ -77,6 +79,12 @@ for (const [route, expected] of Object.entries(PAGES)) {
     it("has a named main button", () => {
       assert.match(html, new RegExp(`aria-label="${expected.button}"`));
     });
+
+    if (expected.google) {
+      it("offers Google sign-in", () => {
+        assert.match(html, /aria-label="Continue with Google"/);
+      });
+    }
 
     it("links only to pages that exist", async () => {
       for (const link of expected.links) {

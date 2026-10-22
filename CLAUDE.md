@@ -26,7 +26,7 @@ _Update this section whenever a stage is finished or the plan changes._
 - **Accounts, steps 1 and 2 of 3 done:**
   - Step 1: `GET`, `POST`, `PATCH` and `DELETE /me` in the API (`services/api/src/modules/users/`). `POST /me` creates the account and the 12 default categories, idempotently.
   - Step 2: the app's Firebase Authentication (email/password sign-up, sign-in and password reset), the sign-in kept in the secure store on iOS/Android, account setup through `POST /me`, and screens guarded by sign-in state (`apps/app/src/features/auth/`).
-  - Step 3: Google sign-in, with a local Android development build (needs JDK 21; confirm before installing).
+  - Step 3 (in progress): Google sign-in. Android uses our own Expo module (`apps/app/modules/google-sign-in`, Credential Manager); the web uses Firebase's pop-up; iOS is a known issue. The app now runs as a development build (`pnpm --filter @thinktwice/app android:build`), with JDK 17 and `ANDROID_HOME` set up.
 - Signed-in users see only a placeholder home screen so far; expenses, categories and the dashboard come next.
 
 ## Working with Christion
@@ -65,6 +65,7 @@ _Update this section whenever a stage is finished or the plan changes._
 - `pnpm --filter @thinktwice/api db:migrate`: apply new database migrations.
 - `pnpm --filter @thinktwice/api dev`: run the API locally with auto-reload.
 - `pnpm --filter @thinktwice/ml dev`: run the ML service locally with auto-reload.
+- `pnpm --filter @thinktwice/app android:build`: build and install the Android development build (once, and after native changes).
 - `pnpm dev` / `pnpm dev:android`: start everything for local development (database, migrations, API, ML service and the app; `dev:android` also opens the emulator). Ctrl+C stops it all.
 - `pnpm audit:deps`: check JavaScript and Python dependencies for known vulnerabilities. (Plain `pnpm audit` only runs pnpm's built-in JavaScript audit.)
 
@@ -83,6 +84,9 @@ These were deliberate security choices. Don't undo them without asking Christion
 - **All user data goes through `withUserScope` or `withSignedInUser`.** Row-level security is forced on every user-data table, and the API connects only as `thinktwice_app`. Never give the API the owner or superuser connection, and never add `BYPASSRLS`.
 - **The Docker image is pinned to its digest**, like the GitHub Actions.
 - **Firestore is excluded from the install** (`overrides` in `pnpm-workspace.yaml`): it pins a vulnerable `@grpc/grpc-js`, and the app uses only Firebase Authentication.
+- **Android Google sign-in uses our own Credential Manager module** (Christion's choice): the free `@react-native-google-signin` uses Google's deprecated API. Keep its libraries on stable (non-alpha) releases.
+- **Windows Android builds rely on long-path support, CMake 4.1.2 (`apps/app/plugins/with-windows-cmake.js`) and `virtualStoreDirMaxLength: 32`** in `pnpm-workspace.yaml`. Don't remove any of them, or the native build fails on 300+ character paths.
+- **Native projects (`apps/app/android/`, `apps/app/ios/`) are generated, never committed.** Change native settings through `app.json` or config plugins, not by editing those folders.
 - **Expo's typed routes stay off** until they can be generated in CI; the web test checks links instead.
 - **Audit exceptions are by advisory ID only** (`auditConfig.ignoreGhsas` in `pnpm-workspace.yaml`), each with a written reason, only for development-only tools with no fix available, and approved by Christion. Never use `--ignore-unfixable` or ignore a vulnerability in anything that ships. Remove exceptions as soon as fixes exist.
 

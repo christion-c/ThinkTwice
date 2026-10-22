@@ -16,6 +16,13 @@ describe("SignInScreen", () => {
     expect(screen.getByLabelText("Password")).toBeOnTheScreen();
   });
 
+  it("offers Google sign-in as well", async () => {
+    await renderWithAuth(<SignInScreen />);
+    expect(
+      screen.getByRole("button", { name: "Continue with Google" }),
+    ).toBeOnTheScreen();
+  });
+
   it("explains what's missing instead of signing in with empty fields", async () => {
     const auth = fakeAuth();
     await renderWithAuth(<SignInScreen />, auth);

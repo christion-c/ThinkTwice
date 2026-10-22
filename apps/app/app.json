@@ -22,7 +22,16 @@
       "bundler": "metro",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": ["expo-router", "expo-status-bar"],
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      [
+        "./plugins/with-windows-cmake",
+        {
+          "version": "4.1.2"
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "fe8d07cb-32c4-4722-98e8-3d6637f59df4"

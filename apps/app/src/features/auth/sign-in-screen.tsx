@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 
 import { Button } from "../../components/button";
 import { Message } from "../../components/message";
+import { OrDivider } from "../../components/or-divider";
 import { Screen } from "../../components/screen";
 import { TextField } from "../../components/text-field";
 import { TextLink } from "../../components/text-link";
@@ -10,6 +11,7 @@ import { spacing } from "../../theme/tokens";
 import { AuthHeader } from "./auth-header";
 import { authErrorMessage } from "./auth-errors";
 import { useAuth } from "./auth-provider";
+import { GoogleSignInButton } from "./google-sign-in-button";
 import { validateEmail, validatePassword } from "./validation";
 
 interface FieldErrors {
@@ -85,6 +87,13 @@ export function SignInScreen() {
           label="Sign in"
           onPress={() => void handleSubmit()}
           loading={submitting}
+        />
+        <OrDivider />
+        <GoogleSignInButton
+          onStart={() => {
+            setFormError(undefined);
+          }}
+          onError={setFormError}
         />
         <TextLink href="/forgot-password" label="Forgot your password?" />
         <TextLink href="/sign-up" label="New here? Create an account" />

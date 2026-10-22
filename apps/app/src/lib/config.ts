@@ -9,6 +9,11 @@ const configSchema = z.object({
     appId: z.string().min(1),
   }),
   apiUrl: z.url(),
+  /** Google's OAuth web client ID; Android's Google sign-in needs it. Empty until it's configured. */
+  googleWebClientId: z
+    .string()
+    .transform((id) => (id === "" ? undefined : id))
+    .optional(),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;
@@ -38,6 +43,7 @@ export function getConfig(): AppConfig {
       appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
     },
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
+    googleWebClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   });
   if (!result.success) {
     throw new Error(

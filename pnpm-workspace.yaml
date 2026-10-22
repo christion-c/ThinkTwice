@@ -1,3 +1,7 @@
+# Keep pnpm's internal folder names short: Android's native build tools (CMake/ninja) fail on Windows paths
+# over 260 characters, and the default names pushed some build files to 271.
+virtualStoreDirMaxLength: 32
+
 packages:
   - apps/*
   - services/*

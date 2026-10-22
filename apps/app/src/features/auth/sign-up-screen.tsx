@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 
 import { Button } from "../../components/button";
 import { Message } from "../../components/message";
+import { OrDivider } from "../../components/or-divider";
 import { Screen } from "../../components/screen";
 import { TextField } from "../../components/text-field";
 import { TextLink } from "../../components/text-link";
@@ -10,6 +11,7 @@ import { spacing } from "../../theme/tokens";
 import { AuthHeader } from "./auth-header";
 import { authErrorMessage } from "./auth-errors";
 import { useAuth } from "./auth-provider";
+import { GoogleSignInButton } from "./google-sign-in-button";
 import {
   MIN_NEW_PASSWORD_LENGTH,
   validateEmail,
@@ -89,6 +91,13 @@ export function SignUpScreen() {
           label="Create account"
           onPress={() => void handleSubmit()}
           loading={submitting}
+        />
+        <OrDivider />
+        <GoogleSignInButton
+          onStart={() => {
+            setFormError(undefined);
+          }}
+          onError={setFormError}
         />
         <TextLink href="/sign-in" label="Already have an account? Sign in" />
       </View>

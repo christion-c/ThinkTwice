@@ -20,6 +20,7 @@ import {
 import { ApiError } from "../../lib/api";
 import { getFirebaseAuth } from "../../lib/firebase";
 import { ensureAccount } from "./account";
+import { forgetGoogleAccount } from "./google-sign-in";
 
 /** Where the user is in signing in. Only "ready" users can see the app's main screens. */
 export type AuthState =
@@ -100,7 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password,
         );
       },
-      signOut: () => firebaseSignOut(getFirebaseAuth()),
+      signOut: async () => {
+        await firebaseSignOut(getFirebaseAuth());
+        await forgetGoogleAccount();
+      },
       resetPassword: (email) =>
         sendPasswordResetEmail(getFirebaseAuth(), email),
       retryAccountSetup: () => {
