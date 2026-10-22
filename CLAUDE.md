@@ -1,12 +1,14 @@
 # ThinkTwice
 
-ThinkTwice is an ADHD-friendly personal finance and habit-tracking app (Atlas School CS2900 capstone). Instead of only reviewing past transactions, it uses machine learning to spot recurring spending habits, forecast their future cost, and suggest practical budget adjustments before small habits become big problems.
+ThinkTwice is an ADHD-friendly personal finance and habit-tracking app, originally built as an Atlas School CS2900 capstone. Instead of only reviewing past transactions, it uses machine learning to spot recurring spending habits, forecast their future cost, and suggest practical budget adjustments before small habits become big problems.
 
 Example: "$35 on coffee this week" becomes "at this pace, about $140 on coffee by the end of the month."
 
 Tagline: *Don't just track where your money went. See where it's taking you.*
 
-Christion is the sole developer on this project.
+Christion is the sole developer. The capstone is finished and Christion has graduated; this is a from-scratch rebuild of the project, worked on at Christion's own pace with no deadline. A previous version is live at thinktwice.site, and the rebuild will replace it.
+
+The agreed feature scope is in `docs/mvp.md`.
 
 ## Source documents
 Full context lives in the Word documents in `docs/`:
@@ -33,7 +35,7 @@ ThinkTwice runs on **iOS, Android and the web** from one codebase. It is designe
 - Test changes on all three platforms.
 
 ## Domains and hosting
-- `thinktwice.site`: the web app (Expo static web export, hosted on Firebase Hosting).
+- `thinktwice.site`: the web app (Expo static web export, hosted on Firebase Hosting). The previous version is live there now. Don't deploy over it until the rebuild is ready.
 - `api.thinktwice.site`: the Fastify API (host to be decided).
 - The ML service is private. Only the API calls it; it is never exposed to the internet.
 
@@ -47,7 +49,7 @@ ThinkTwice runs on **iOS, Android and the web** from one codebase. It is designe
 - Predictive insights and practical monthly-budget recommendations
 - Awareness of nutritional spending habits (snacks, energy drinks, dining)
 - REST API and PostgreSQL database
-- Documentation, source code and a final presentation
+- Documentation and source code
 
 ## Design principles
 - ADHD-friendly: information is clear, short and manageable, never overwhelming.
@@ -118,6 +120,32 @@ These rules apply to all work on this project, by Christion or Claude. Follow th
 - Give exact install commands and record the versions in use.
 - Pin versions in the project itself where possible (e.g. lockfiles, `engines` in `package.json`, Python requirements).
 - List every secret in a `.env.example`, and note in `docs/setup.md` where its real value comes from.
+
+## 13. User security is PARAMOUNT
+No one may ever access information they are not allowed to see. This is financial data.
+
+**Access control**
+- Deny by default: every API endpoint requires a verified Firebase ID token unless it is explicitly public.
+- Every database read and write is scoped to the signed-in user. Never trust a user ID, record ID or ownership claim sent by the client; always check that the record belongs to the requesting user.
+- Return `404` (not `403`) for records that belong to someone else, so their existence isn't revealed.
+- The ML service is reachable only from the API, never from the internet, and only receives the data it needs.
+
+**Data protection**
+- HTTPS everywhere. No sensitive data in URLs, logs or error messages.
+- Store tokens securely on the device (`expo-secure-store` on iOS/Android); never put sensitive data in plain `AsyncStorage` or `localStorage`.
+- Validate and size-limit every input; use parameterized queries only (Drizzle), never string-built SQL.
+- Apply rate limiting to the API, with stricter limits on auth-related endpoints.
+- Deleting an account permanently deletes all of that user's data.
+- Database and service credentials follow least privilege.
+
+**Testing (required)**
+- Every endpoint has automated tests proving that:
+  - requests with no token, an invalid token or an expired token are rejected;
+  - user A cannot read, list, update or delete user B's data, including by guessing or swapping IDs;
+  - invalid or malicious input is rejected safely.
+- These tests run on every commit and must pass before merging.
+- Dependencies are audited for known vulnerabilities (the JS package manager's audit command and `pip-audit`), and issues are fixed before release.
+- When in doubt, choose the more secure option and ask.
 
 ## Git workflow note
 - Claude pushes to `origin/christion` immediately after every commit it makes on the `christion` branch, without asking.
