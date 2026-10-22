@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import * as z from "zod";
 
 import type { App } from "../src/app.ts";
-import { buildTestApp } from "./helpers/config.ts";
+import { buildTestApp } from "./helpers/app.ts";
 
 const SECRET_DETAIL = "database password is hunter2";
 

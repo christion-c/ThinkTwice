@@ -8,7 +8,7 @@ import { pino } from "pino";
 
 /** The migrations folder, resolved the same way from src/db and dist/db. */
 export const MIGRATIONS_DIR = fileURLToPath(
-  new URL("../../migrations", import.meta.url),
+  new URL("../../database/migrations", import.meta.url),
 );
 
 const MIGRATION_FILE_PATTERN = /^\d{4}_[a-z0-9_]+\.sql$/;

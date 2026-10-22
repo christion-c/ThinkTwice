@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { App } from "../src/app.ts";
-import { ALLOWED_ORIGIN, buildTestApp } from "./helpers/config.ts";
+import { ALLOWED_ORIGIN, buildTestApp } from "./helpers/app.ts";
 import { authHeaders } from "./helpers/tokens.ts";
 
 let app: App | undefined;

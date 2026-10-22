@@ -30,52 +30,63 @@ One repository (a "monorepo") holds all three parts, managed as a **pnpm workspa
 ```
 ThinkTwice/
 ├── apps/
-│   └── mobile/                  Expo app (iOS, Android, web)
-│       ├── app/                 Screens and navigation (Expo Router, file-based)
+│   └── mobile/                      Expo app (iOS, Android, web)
+│       ├── app/                     Screens and navigation (Expo Router, file-based)
+│       ├── assets/images/           App icons and logos (generated from docs/brand/)
 │       ├── src/
-│       │   ├── features/        One folder per feature: auth, expenses,
-│       │   │                    categories, dashboard, forecasts
-│       │   ├── components/      Shared UI components
-│       │   ├── lib/             API client, Firebase setup
-│       │   └── theme/           Colors, typography, spacing
+│       │   ├── components/          Shared UI components (e.g. Screen)
+│       │   ├── theme/               Colors, spacing, typography (docs/design-guide.md)
+│       │   ├── types/               Type declarations (e.g. image imports)
+│       │   ├── features/            (planned) One folder per feature: auth, expenses,
+│       │   │                        categories, dashboard, forecasts
+│       │   └── lib/                 (planned) API client, Firebase setup
 │       └── tests/
+│           ├── helpers/             Test utilities (render with providers)
+│           └── web/                 Checks of the static web export's HTML
 ├── services/
-│   ├── api/                     Fastify REST API
+│   ├── api/                         Fastify REST API
 │   │   ├── src/
-│   │   │   ├── app.ts           Builds the Fastify app (used by tests too)
-│   │   │   ├── server.ts        Starts the server
-│   │   │   ├── config/          Environment variable loading and validation
-│   │   │   ├── db/              Drizzle table definitions, database client,
-│   │   │   │                    user scope and migration runner
-│   │   │   ├── auth/            Firebase ID token verification
-│   │   │   ├── errors/          Error types that map to HTTP responses
-│   │   │   ├── plugins/         Auth (deny by default), database, error handling
-│   │   │   └── modules/         One folder per resource: users, categories,
-│   │   │                        expenses, dashboard, forecasts
-│   │   ├── migrations/          Hand-written SQL migrations (the schema's source of truth)
-│   │   ├── db/init/             Creates the database roles and databases in Docker
+│   │   │   ├── app.ts               Builds the Fastify app (used by the server and tests)
+│   │   │   ├── server.ts            Starts the server
+│   │   │   ├── auth/                Firebase ID token verification
+│   │   │   ├── config/              Environment variable loading and validation
+│   │   │   ├── db/                  Database code: client, Drizzle tables, user scope,
+│   │   │   │                        migration runner
+│   │   │   ├── errors/              Error types that map to HTTP responses
+│   │   │   ├── plugins/             Auth (deny by default), database, error handling
+│   │   │   └── modules/             One folder per resource (health; planned: users,
+│   │   │                            categories, expenses, dashboard, forecasts)
+│   │   ├── database/
+│   │   │   ├── init/                Creates the database roles and databases in Docker
+│   │   │   └── migrations/          Hand-written SQL migrations (the schema's source of truth)
 │   │   └── tests/
-│   │       ├── db/              Row-level security, privileges, constraints, migrations
-│   │       └── security/        Rule 13 endpoint access-control tests
-│   └── ml/                      FastAPI forecasting service (Python)
-│       ├── src/thinktwice_ml/
+│   │       ├── db/                  Row-level security, privileges, constraints, migrations
+│   │       ├── security/            Rule 13 auth tests and the reusable endpoint harness
+│   │       └── helpers/             Test app, database, token and fixture helpers
+│   └── ml/                          FastAPI forecasting service (Python)
+│       ├── src/thinktwice_ml/       Service code (forecasting, routes, schemas, security)
 │       ├── tests/
-│       └── pyproject.toml
+│       └── pyproject.toml           Python dependencies and tool settings (uv.lock pins them)
 ├── packages/
-│   └── shared/                  Zod schemas and TypeScript types shared by
-│                                the app and the API (one source of truth)
-├── docs/                        Project documentation
-├── scripts/                     Repo tooling scripts (e.g. the commit-message check)
-├── .github/workflows/           CI pipelines
-├── compose.yaml                 Local dev services (PostgreSQL for now)
-├── package.json                 Workspace scripts
-├── pnpm-workspace.yaml
-├── tsconfig.base.json           Shared strict TypeScript settings
+│   └── shared/                      Zod schemas and TypeScript types shared by
+│                                    the app and the API (one source of truth)
+├── docs/                            Project documentation
+│   ├── brand/                       Logo source files (SVG) and the original PNG
+│   └── background/                  The original Word documents (historical context)
+├── scripts/                         Repo tooling scripts (e.g. the commit-message check)
+├── .github/                         CI workflow and Dependabot settings
+├── compose.yaml                     Local dev services (PostgreSQL for now)
+├── .env.example                     Local database passwords for compose.yaml
+├── package.json                     Workspace scripts (lint, typecheck, test, audit:deps)
+├── pnpm-workspace.yaml              Workspace packages and dependency security settings
+├── tsconfig.base.json               Shared strict TypeScript settings
 ├── eslint.config.js
-├── lefthook.yml                 Pre-commit checks
-├── .gitattributes
+├── .prettierrc.json
+├── lefthook.yml                     Git hooks (pre-commit checks, commit messages)
+├── .nvmrc                           Node.js version
+├── .gitattributes                   Line endings
 ├── .editorconfig
-├── CLAUDE.md
+├── CLAUDE.md                        Project context and rules (read by Claude every session)
 └── README.md
 ```
 
@@ -173,7 +184,7 @@ Every step must pass before anything is merged into `main`.
 
 ## Database migrations
 
-- Migrations are **hand-written SQL files** in `services/api/migrations/`, named `NNNN_description.sql` and applied in order. drizzle-kit isn't used because its stable release depends on deprecated packages (rule 5), and hand-written SQL gives exact control over row-level security and roles (rule 13).
+- Migrations are **hand-written SQL files** in `services/api/database/migrations/`, named `NNNN_description.sql` and applied in order. drizzle-kit isn't used because its stable release depends on deprecated packages (rule 5), and hand-written SQL gives exact control over row-level security and roles (rule 13).
 - `pnpm --filter @thinktwice/api db:migrate` applies new migrations as `thinktwice_owner`. Each runs in its own transaction and is recorded with a checksum in `schema_migrations`; an advisory lock stops two runs at once.
 - **Never edit a migration after it has been applied.** The runner refuses to run if an applied file's checksum changes. Add a new migration instead.
 - Drizzle table definitions in `services/api/src/db/schema.ts` must match the SQL. `tests/db/schema.test.ts` fails if they drift apart.

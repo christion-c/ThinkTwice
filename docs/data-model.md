@@ -2,7 +2,7 @@
 
 _Status: approved. Last updated: 2026-10-22._
 
-This covers the v1 scope in `docs/mvp.md`. The database is PostgreSQL 18. The tables are created by hand-written SQL migrations in `services/api/migrations/` (the source of truth), and the API queries them through Drizzle ORM.
+This covers the v1 scope in `docs/mvp.md`. The database is PostgreSQL 18. The tables are created by hand-written SQL migrations in `services/api/database/migrations/` (the source of truth), and the API queries them through Drizzle ORM.
 
 ## Conventions
 

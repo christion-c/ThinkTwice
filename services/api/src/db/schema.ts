@@ -1,5 +1,5 @@
 // Drizzle table definitions used for type-safe queries.
-// The SQL files in migrations/ are the source of truth; tests/db/schema.test.ts checks that these match them.
+// The SQL files in database/migrations/ are the source of truth; tests/db/schema.test.ts checks that these match them.
 import { CATEGORY_TYPES } from "@thinktwice/shared";
 import { sql } from "drizzle-orm";
 import {

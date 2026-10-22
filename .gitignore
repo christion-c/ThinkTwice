@@ -23,7 +23,6 @@
 
 # Expo
 **/.expo/
-**/expo-env.d.ts
 **/web-build/
 
 # Python

@@ -4,7 +4,7 @@ import * as z from "zod";
 
 import { buildApp, type App } from "../../src/app.ts";
 import { requireIdentity } from "../../src/plugins/auth.ts";
-import { buildTestApp, testConfig } from "../helpers/config.ts";
+import { buildTestApp, testConfig } from "../helpers/app.ts";
 import { authHeaders, signTestToken } from "../helpers/tokens.ts";
 import { describeEndpointAuthentication } from "./endpoint-security.ts";
 

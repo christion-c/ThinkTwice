@@ -81,11 +81,11 @@ These were deliberate security choices. Don't undo them without asking Christion
 
 ## Source documents
 
-Full context lives in the Word documents in `docs/`:
+Background context lives in the Word documents in `docs/background/`:
 
-- `Project Overview.docx`: the primary and most current description of the app.
-- `One Page Project Overview.docx`: a condensed version of the above.
-- `Project Scoping Document.docx`: early brainstorming from when this was a team project. Its team roles and group commit rules no longer apply. Its feature ideas (Plaid bank connection, vehicle profile and fuel prediction, category spending limits, over-limit warnings) are possible features, not commitments.
+- `project-overview.docx`: the primary and most current description of the app.
+- `one-page-project-overview.docx`: a condensed version of the above.
+- `project-scoping-document.docx`: early brainstorming from when this was a team project. Its team roles and group commit rules no longer apply. Its feature ideas (Plaid bank connection, vehicle profile and fuel prediction, category spending limits, over-limit warnings) are possible features, not commitments.
 
 ## Tech stack
 
