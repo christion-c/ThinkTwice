@@ -15,19 +15,30 @@ Full context lives in the Word documents in the project root:
 - `Project Scoping Document.docx`: early brainstorming from when this was a team project. Its team roles and group commit rules no longer apply. Its feature ideas (Plaid bank connection, vehicle profile and fuel prediction, category spending limits, over-limit warnings) are possible features, not commitments.
 
 ## Tech stack
-ThinkTwice is a **mobile app** (iOS and Android). This stack replaces the one in the Word documents.
+ThinkTwice runs on **iOS, Android and the web** from one codebase. It is designed mobile-first, but the web is a fully supported platform. This stack replaces the one in the Word documents.
 
-- **Mobile app:** React Native + Expo, Expo Router, TypeScript, TanStack Query
+- **App (iOS, Android, web):** React Native + Expo, Expo Router, TypeScript, TanStack Query
 - **API:** Node.js + Fastify REST API, TypeScript, Zod for validation
 - **Database:** PostgreSQL + Drizzle ORM
-- **Auth:** Firebase Authentication (email/password); the API verifies Firebase ID tokens
+- **Auth:** Firebase Authentication (email/password) via the Firebase JS SDK; the API verifies Firebase ID tokens
 - **Machine learning:** Python + FastAPI service, called by the Node API
 - **Dev environment:** Docker Compose (API + PostgreSQL + ML service)
 - **Testing:** Jest + React Native Testing Library (app), Vitest (API), pytest (ML)
 - **Version control:** Git + GitHub
 
+## Platform requirements
+- Every screen must work on phones, tablets and desktop browsers. Use responsive layouts and keep content centered and calm on wide screens.
+- Only add dependencies that support iOS, Android **and** web. Check web support before adding any library.
+- Use the Firebase JS SDK, not `@react-native-firebase` (native-only).
+- Test changes on all three platforms.
+
+## Domains and hosting
+- `thinktwice.site`: the web app (Expo static web export, hosted on Firebase Hosting).
+- `api.thinktwice.site`: the Fastify API (host to be decided).
+- The ML service is private. Only the API calls it; it is never exposed to the internet.
+
 ## Deliverables
-- Mobile app (iOS and Android) with an ADHD-friendly design
+- App for iOS, Android and the web (thinktwice.site) with an ADHD-friendly design
 - Secure registration and authentication
 - Expense and recurring-habit tracking
 - Financial dashboards
