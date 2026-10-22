@@ -16,10 +16,11 @@ _Update this section whenever a stage is finished or the plan changes._
 
 - **Done:** all planning docs (MVP scope, data model, architecture, design guide), the setup guide, the known-issues list, and **setup stage 1: repo foundation** (pnpm workspace, strict TypeScript base config, ESLint, Prettier, Lefthook git hooks, GitHub Actions CI, Dependabot, `.gitattributes`). CI passes on `christion`.
 - **Setup stage 2 in progress.** Done: `packages/shared` (`@thinktwice/shared`): Zod schemas, types and default categories for users, categories and expenses, built to `dist/` with `tsc`, tested with Vitest.
-- **`services/api` steps 1 and 2 of 3 done:**
+- **`services/api` done** (3 steps):
   - Step 1: Fastify server skeleton: validated environment config, logging with credentials redacted, friendly JSON errors that never leak internals, security headers (helmet), CORS allowlist, rate limiting, 100 KB body limit and `GET /health`.
   - Step 2: database: PostgreSQL 18.6 in `compose.yaml`, least-privilege roles (`thinktwice_owner`, `thinktwice_app`), hand-written SQL migration `0001_initial_schema.sql` with forced row-level security on `users`, `categories` and `expenses`, a tested migration runner, Drizzle table definitions, and `withUserScope` for every user-data query. Tests in `services/api/tests/db/` prove the isolation against a real database.
-- **Next in stage 2:** `services/api` step 3: Firebase ID token verification (with the Firebase Auth Emulator for tests), resolving the signed-in user inside `withUserScope`, and the rule 13 endpoint security test setup. Then `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
+  - Step 3: sign-in: Firebase ID token verification with `jose`, deny-by-default auth on every route, `requireIdentity` and `withSignedInUser`, and the reusable rule 13 harness `describeEndpointAuthentication` in `tests/security/`.
+- **Next in stage 2:** `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
 - There are no v1 features yet: no endpoints besides `GET /health`, and no app screens.
 
 ## Working with Christion
@@ -56,7 +57,9 @@ These were deliberate security choices. Don't undo them without asking Christion
 - **TypeScript stays on 6.0** until typescript-eslint supports TypeScript 7 (see `docs/known-issues.md`).
 - **Never bypass the git hooks** (`--no-verify`). If a hook fails, fix the cause.
 - **Database migrations are hand-written SQL** (Christion's choice; drizzle-kit's stable release depends on deprecated packages). Never edit an applied migration; add a new one. Keep `src/db/schema.ts` in sync with the SQL.
-- **All user data goes through `withUserScope`.** Row-level security is forced on every user-data table, and the API connects only as `thinktwice_app`. Never give the API the owner or superuser connection, and never add `BYPASSRLS`.
+- **Token verification uses `jose`, not `firebase-admin`** (Christion's choice; `firebase-admin` depends on a deprecated package). Don't weaken any of its checks.
+- **Routes are private by default.** Only add `config: { public: true }` to a route that genuinely needs no sign-in, and say so to Christion. Every new endpoint's tests must use `describeEndpointAuthentication` and include cross-user tests.
+- **All user data goes through `withUserScope` or `withSignedInUser`.** Row-level security is forced on every user-data table, and the API connects only as `thinktwice_app`. Never give the API the owner or superuser connection, and never add `BYPASSRLS`.
 - **The Docker image is pinned to its digest**, like the GitHub Actions.
 
 ## Source documents
@@ -74,7 +77,7 @@ ThinkTwice runs on **iOS, Android and the web** from one codebase. It is designe
 - **App (iOS, Android, web):** React Native + Expo, Expo Router, TypeScript, TanStack Query
 - **API:** Node.js + Fastify REST API, TypeScript, Zod for validation
 - **Database:** PostgreSQL + Drizzle ORM
-- **Auth:** Firebase Authentication (email/password) via the Firebase JS SDK; the API verifies Firebase ID tokens
+- **Auth:** Firebase Authentication (email/password) via the Firebase JS SDK; the API verifies Firebase ID tokens itself with `jose` (see `docs/architecture.md`)
 - **Machine learning:** Python + FastAPI service, called by the Node API
 - **Dev environment:** Docker Compose (API + PostgreSQL + ML service)
 - **Testing:** Jest + React Native Testing Library (app), Vitest (API), pytest (ML)

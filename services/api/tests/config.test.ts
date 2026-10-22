@@ -4,10 +4,12 @@ import { loadConfig } from "../src/config/env.ts";
 
 const DATABASE_URL =
   "postgresql://thinktwice_app:secret@127.0.0.1:5432/thinktwice";
+const FIREBASE_PROJECT_ID = "thinktwice-prod";
+const REQUIRED = { DATABASE_URL, FIREBASE_PROJECT_ID };
 
 describe("loadConfig", () => {
-  it("uses safe defaults for everything except the database", () => {
-    expect(loadConfig({ DATABASE_URL })).toEqual({
+  it("uses safe defaults for everything except the required settings", () => {
+    expect(loadConfig(REQUIRED)).toEqual({
       nodeEnv: "development",
       host: "127.0.0.1",
       port: 3000,
@@ -15,6 +17,7 @@ describe("loadConfig", () => {
       corsOrigins: [],
       trustProxy: false,
       rateLimitMax: 100,
+      firebaseProjectId: FIREBASE_PROJECT_ID,
       databaseUrl: DATABASE_URL,
     });
   });
@@ -28,7 +31,7 @@ describe("loadConfig", () => {
       CORS_ORIGINS: "https://thinktwice.site, http://localhost:8081",
       TRUST_PROXY: "true",
       RATE_LIMIT_MAX: "50",
-      DATABASE_URL,
+      ...REQUIRED,
     });
     expect(config).toEqual({
       nodeEnv: "production",
@@ -38,12 +41,14 @@ describe("loadConfig", () => {
       corsOrigins: ["https://thinktwice.site", "http://localhost:8081"],
       trustProxy: true,
       rateLimitMax: 50,
+      firebaseProjectId: FIREBASE_PROJECT_ID,
       databaseUrl: DATABASE_URL,
     });
   });
 
-  it("requires a database URL", () => {
-    expect(() => loadConfig({})).toThrow("DATABASE_URL");
+  it("requires a database URL and a Firebase project ID", () => {
+    expect(() => loadConfig({ FIREBASE_PROJECT_ID })).toThrow("DATABASE_URL");
+    expect(() => loadConfig({ DATABASE_URL })).toThrow("FIREBASE_PROJECT_ID");
   });
 
   it.each([
@@ -55,8 +60,10 @@ describe("loadConfig", () => {
     { TRUST_PROXY: "yes" },
     { RATE_LIMIT_MAX: "0" },
     { DATABASE_URL: "https://example.com/db" },
+    { FIREBASE_PROJECT_ID: "Not A Project" },
+    { FIREBASE_PROJECT_ID: "x" },
   ])("fails fast on the invalid setting %o", (overrides) => {
-    expect(() => loadConfig({ DATABASE_URL, ...overrides })).toThrow(
+    expect(() => loadConfig({ ...REQUIRED, ...overrides })).toThrow(
       "Invalid environment configuration",
     );
   });

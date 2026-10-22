@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import * as z from "zod";
 
-import { buildApp, type App } from "../src/app.ts";
-import { testConfig } from "./helpers/config.ts";
+import type { App } from "../src/app.ts";
+import { buildTestApp } from "./helpers/config.ts";
 
 const SECRET_DETAIL = "database password is hunter2";
 
@@ -13,15 +13,18 @@ afterEach(async () => {
   app = undefined;
 });
 
-/** Builds the app with extra test-only routes that trigger each kind of error. */
+/** Builds the app with extra public test-only routes that trigger each kind of error. */
 async function buildAppWithTestRoutes(rateLimitMax = 1000): Promise<App> {
-  const testApp = await buildApp(testConfig({ rateLimitMax }));
+  const testApp = await buildTestApp({ rateLimitMax });
   testApp.post(
     "/test/echo",
-    { schema: { body: z.strictObject({ amountCents: z.int() }) } },
+    {
+      config: { public: true },
+      schema: { body: z.strictObject({ amountCents: z.int() }) },
+    },
     (request) => request.body,
   );
-  testApp.get("/test/crash", () => {
+  testApp.get("/test/crash", { config: { public: true } }, () => {
     throw new Error(SECRET_DETAIL);
   });
   return testApp;

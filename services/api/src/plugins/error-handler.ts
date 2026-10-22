@@ -67,6 +67,9 @@ export function registerErrorHandlers(app: FastifyInstance): void {
     }
 
     const statusCode = getStatusCode(error);
+    if (statusCode === 401) {
+      void reply.header("www-authenticate", "Bearer");
+    }
     if (statusCode < 500) {
       return reply
         .code(statusCode)

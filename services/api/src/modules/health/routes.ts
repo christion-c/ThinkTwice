@@ -7,7 +7,10 @@ const healthResponseSchema = z.object({ status: z.literal("ok") });
 export const healthRoutes: FastifyPluginCallbackZod = (app, _options, done) => {
   app.get(
     "/health",
-    { schema: { response: { 200: healthResponseSchema } } },
+    {
+      config: { public: true },
+      schema: { response: { 200: healthResponseSchema } },
+    },
     () => ({
       status: "ok" as const,
     }),

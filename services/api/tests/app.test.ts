@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { buildApp, type App } from "../src/app.ts";
-import { ALLOWED_ORIGIN, testConfig } from "./helpers/config.ts";
+import type { App } from "../src/app.ts";
+import { ALLOWED_ORIGIN, buildTestApp } from "./helpers/config.ts";
+import { authHeaders } from "./helpers/tokens.ts";
 
 let app: App | undefined;
 
@@ -12,7 +13,7 @@ afterEach(async () => {
 
 describe("GET /health", () => {
   it("reports that the API is running", async () => {
-    app = await buildApp(testConfig());
+    app = await buildTestApp();
     const response = await app.inject({ method: "GET", url: "/health" });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: "ok" });
@@ -21,7 +22,7 @@ describe("GET /health", () => {
 
 describe("security headers", () => {
   it("sets protective headers and hides the server technology", async () => {
-    app = await buildApp(testConfig());
+    app = await buildTestApp();
     const response = await app.inject({ method: "GET", url: "/health" });
     expect(response.headers["x-content-type-options"]).toBe("nosniff");
     expect(response.headers["strict-transport-security"]).toBeDefined();
@@ -32,7 +33,7 @@ describe("security headers", () => {
 
 describe("CORS", () => {
   it("allows configured origins", async () => {
-    app = await buildApp(testConfig());
+    app = await buildTestApp();
     const response = await app.inject({
       method: "GET",
       url: "/health",
@@ -44,7 +45,7 @@ describe("CORS", () => {
   });
 
   it("does not allow other origins", async () => {
-    app = await buildApp(testConfig());
+    app = await buildTestApp();
     const response = await app.inject({
       method: "GET",
       url: "/health",
@@ -55,11 +56,12 @@ describe("CORS", () => {
 });
 
 describe("unknown routes", () => {
-  it("return a friendly 404", async () => {
-    app = await buildApp(testConfig());
+  it("return a friendly 404 to signed-in users", async () => {
+    app = await buildTestApp();
     const response = await app.inject({
       method: "GET",
       url: "/does-not-exist",
+      headers: await authHeaders("alice-uid"),
     });
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({

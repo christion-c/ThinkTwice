@@ -47,7 +47,9 @@ ThinkTwice/
 │   │   │   ├── config/          Environment variable loading and validation
 │   │   │   ├── db/              Drizzle table definitions, database client,
 │   │   │   │                    user scope and migration runner
-│   │   │   ├── plugins/         Auth, row-level security, rate limiting, errors
+│   │   │   ├── auth/            Firebase ID token verification
+│   │   │   ├── errors/          Error types that map to HTTP responses
+│   │   │   ├── plugins/         Auth (deny by default), database, error handling
 │   │   │   └── modules/         One folder per resource: users, categories,
 │   │   │                        expenses, dashboard, forecasts
 │   │   ├── migrations/          Hand-written SQL migrations (the schema's source of truth)
@@ -113,7 +115,7 @@ Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoin
 | ML     | pytest                                                                      |
 
 - The API tests run against a real PostgreSQL database (in Docker), not a mock, so row-level security is actually tested. They use a separate `thinktwice_test` database, so they never touch development data.
-- The **Firebase Auth Emulator** issues real test tokens locally and in CI, so token verification is tested for real. It needs Java and the Firebase CLI.
+- Sign-in is tested with **real RS256-signed tokens** made from a test key pair (`tests/helpers/tokens.ts`), so signature, audience, issuer and expiry checks are all genuinely exercised. No Firebase emulator, CLI or Java is needed.
 
 ### Pre-commit checks (Lefthook)
 
@@ -129,7 +131,7 @@ On every push and pull request:
 
 1. Install dependencies from the lockfiles.
 2. Lint, format check and type check everything.
-3. Run all tests, including the rule 13 security tests, against PostgreSQL and the Firebase Auth Emulator.
+3. Run all tests, including the rule 13 security tests, against a real PostgreSQL database.
 4. Audit dependencies for known vulnerabilities (`pnpm audit`, `pip-audit`).
 
 Every step must pass before anything is merged into `main`.
@@ -147,6 +149,14 @@ Every step must pass before anything is merged into `main`.
 - **API (development):** Node.js 24 runs the TypeScript source directly with its built-in type stripping (`node --watch src/server.ts`), so no extra runner like `tsx` is needed. The API's `tsconfig.json` enables `erasableSyntaxOnly` so only syntax Node can strip is allowed, and relative imports use `.ts` extensions.
 - **API (production):** `tsc` compiles to `dist/` and rewrites the `.ts` imports to `.js` (`rewriteRelativeImportExtensions`); `node dist/server.js` runs it.
 - **Shared package:** compiled to `dist/` with `tsc`. The app and API import the compiled output, so `pnpm build` runs before type checking.
+
+## Authentication
+
+- The app signs users in with Firebase Authentication and sends the Firebase **ID token** with every request (`Authorization: Bearer <token>`).
+- The API verifies the token itself with **jose**, following Firebase's documented checks for third-party JWT libraries: RS256 signature against Google's published keys, audience = our Firebase project ID, issuer = `https://securetoken.google.com/<project ID>`, not expired, issued and signed in no later than now, and a non-empty subject (the Firebase UID). `firebase-admin` isn't used because it depends on a deprecated package (rule 5).
+- **Deny by default:** an `onRequest` hook (`src/plugins/auth.ts`) rejects every request without a valid token with `401`, before the body is even read. A route is public only if it sets `config: { public: true }` (today, only `GET /health`).
+- Handlers get the caller from `requireIdentity(request)` and run all user-data queries through `withSignedInUser(app.db, firebaseUid, …)`, which looks up the user's ID inside their own row-level security scope.
+- **Every new endpoint's tests must** call `describeEndpointAuthentication` (`tests/security/endpoint-security.ts`), which checks 15 kinds of missing, forged or invalid tokens, **and** add cross-user tests proving user A can't read, list, update or delete user B's data through it.
 
 ## Database migrations
 

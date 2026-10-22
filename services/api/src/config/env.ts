@@ -33,6 +33,12 @@ const envSchema = z.object({
     .pipe(z.array(z.url())),
   TRUST_PROXY: booleanString.default(false),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  FIREBASE_PROJECT_ID: z
+    .string()
+    .regex(
+      /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/,
+      "FIREBASE_PROJECT_ID must be a Firebase project ID.",
+    ),
   DATABASE_URL: z.url({
     protocol: /^postgres(ql)?$/,
     error: "DATABASE_URL must be a postgresql:// connection URL.",
@@ -47,6 +53,7 @@ export interface Config {
   corsOrigins: string[];
   trustProxy: boolean;
   rateLimitMax: number;
+  firebaseProjectId: string;
   databaseUrl: string;
 }
 
@@ -67,6 +74,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     corsOrigins: values.CORS_ORIGINS,
     trustProxy: values.TRUST_PROXY,
     rateLimitMax: values.RATE_LIMIT_MAX,
+    firebaseProjectId: values.FIREBASE_PROJECT_ID,
     databaseUrl: values.DATABASE_URL,
   };
 }

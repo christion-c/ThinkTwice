@@ -2,14 +2,17 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyServerOptions } from "fastify";
+import type { JWTVerifyGetKey } from "jose";
 import {
   serializerCompiler,
   validatorCompiler,
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 
+import { createFirebaseTokenVerifier } from "./auth/firebase-token.ts";
 import type { Config } from "./config/env.ts";
 import { healthRoutes } from "./modules/health/routes.ts";
+import { registerAuth } from "./plugins/auth.ts";
 import { registerDatabase } from "./plugins/database.ts";
 import { registerErrorHandlers } from "./plugins/error-handler.ts";
 
@@ -36,8 +39,13 @@ function buildLoggerOptions(
   return { level: config.logLevel, redact: REDACTED_LOG_PATHS };
 }
 
+export interface AppOptions {
+  /** Keys that sign Firebase ID tokens. Defaults to Google's public keys; tests pass their own. */
+  firebaseSigningKeys?: JWTVerifyGetKey;
+}
+
 /** Creates the Fastify app with security plugins, error handling and all routes (used by the server and tests). */
-export async function buildApp(config: Config) {
+export async function buildApp(config: Config, options: AppOptions = {}) {
   const app = Fastify({
     logger: buildLoggerOptions(config),
     bodyLimit: BODY_LIMIT_BYTES,
@@ -55,6 +63,13 @@ export async function buildApp(config: Config) {
   });
   registerErrorHandlers(app);
   registerDatabase(app, config.databaseUrl);
+  registerAuth(
+    app,
+    createFirebaseTokenVerifier(
+      config.firebaseProjectId,
+      options.firebaseSigningKeys,
+    ),
+  );
 
   await app.register(healthRoutes);
 
