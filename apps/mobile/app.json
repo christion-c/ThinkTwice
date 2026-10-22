@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "ThinkTwice",
+    "slug": "thinktwice",
+    "scheme": "thinktwice",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thinktwice.app"
+    },
+    "android": {
+      "package": "com.thinktwicefinance.app"
+    },
+    "web": {
+      "output": "static",
+      "bundler": "metro"
+    },
+    "plugins": ["expo-router", "expo-status-bar"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "fe8d07cb-32c4-4722-98e8-3d6637f59df4"
+      }
+    },
+    "owner": "ccallahan"
+  }
+}

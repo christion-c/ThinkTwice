@@ -116,15 +116,19 @@ Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoin
 
 ### Tests
 
-| Part   | Tool                                                                        |
-| ------ | --------------------------------------------------------------------------- |
-| App    | Jest + React Native Testing Library                                         |
-| API    | Vitest, using Fastify's built-in request injection (no real network needed) |
-| Shared | Vitest                                                                      |
-| ML     | pytest                                                                      |
+| Part   | Tool                                                                                                                 |
+| ------ | -------------------------------------------------------------------------------------------------------------------- |
+| App    | Jest + jest-expo + React Native Testing Library (iOS and Android); the static web export is checked with `node:test` |
+| API    | Vitest, using Fastify's built-in request injection (no real network needed)                                          |
+| Shared | Vitest                                                                                                               |
+| ML     | pytest                                                                                                               |
 
 - The API tests run against a real PostgreSQL database (in Docker), not a mock, so row-level security is actually tested. They use a separate `thinktwice_test` database, so they never touch development data.
 - Sign-in is tested with **real RS256-signed tokens** made from a test key pair (`tests/helpers/tokens.ts`), so signature, audience, issuer and expiry checks are all genuinely exercised. No Firebase emulator, CLI or Java is needed.
+
+- **App tests run on iOS and Android** with React Native Testing Library. It can't read web HTML, so `pnpm --filter @thinktwice/mobile test:web` builds the static web export and checks the real HTML (`apps/mobile/tests/web/`): page language, headings and screen reader labels.
+- `apps/mobile/tests/theme.test.ts` checks every color token against WCAG 2.2 AA contrast in all four color modes, so the design guide's contrast rule can't regress.
+- On the web, React Native components become real HTML: `role="heading"` with `aria-level` becomes `<h1>`, and images need `role="img"` with `aria-label` (React Native Web ignores `alt`). Use `role` and `aria-*` props, not the older `accessibility*` props.
 
 ### Pre-commit checks (Lefthook)
 

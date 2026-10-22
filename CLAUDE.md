@@ -15,14 +15,15 @@ The agreed feature scope is in `docs/mvp.md`, the database design is in `docs/da
 _Update this section whenever a stage is finished or the plan changes._
 
 - **Done:** all planning docs (MVP scope, data model, architecture, design guide), the setup guide, the known-issues list, and **setup stage 1: repo foundation** (pnpm workspace, strict TypeScript base config, ESLint, Prettier, Lefthook git hooks, GitHub Actions CI, Dependabot, `.gitattributes`). CI passes on `christion`.
-- **Setup stage 2 in progress.** Done: `packages/shared` (`@thinktwice/shared`): Zod schemas, types and default categories for users, categories and expenses, built to `dist/` with `tsc`, tested with Vitest.
+- **Setup stage 2 done:** `packages/shared` (`@thinktwice/shared`): Zod schemas, types and default categories for users, categories and expenses, built to `dist/` with `tsc`, tested with Vitest.
 - **`services/api` done** (3 steps):
   - Step 1: Fastify server skeleton: validated environment config, logging with credentials redacted, friendly JSON errors that never leak internals, security headers (helmet), CORS allowlist, rate limiting, 100 KB body limit and `GET /health`.
   - Step 2: database: PostgreSQL 18.6 in `compose.yaml`, least-privilege roles (`thinktwice_owner`, `thinktwice_app`), hand-written SQL migration `0001_initial_schema.sql` with forced row-level security on `users`, `categories` and `expenses`, a tested migration runner, Drizzle table definitions, and `withUserScope` for every user-data query. Tests in `services/api/tests/db/` prove the isolation against a real database.
   - Step 3: sign-in: Firebase ID token verification with `jose`, deny-by-default auth on every route, `requireIdentity` and `withSignedInUser`, and the reusable rule 13 harness `describeEndpointAuthentication` in `tests/security/`.
 - **`services/ml` done:** FastAPI forecasting service (Python 3.14, uv). `POST /forecasts` projects each category's month-end total at the current pace (at least 3 expenses this month), in whole cents. Protected by a shared service token; `GET /health` is public.
-- **Next in stage 2:** `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
-- There are no v1 features yet: no endpoints besides `GET /health`, and no app screens.
+- **`apps/mobile` done:** Expo SDK 58 app (iOS, Android, web) with Expo Router, the design guide's theme tokens (all four color modes) in `src/theme/`, a `Screen` layout component, and a placeholder welcome screen. It reuses the previous version's identifiers (`com.thinktwice.app`, `com.thinktwicefinance.app`, EAS project and owner) at version 2.0.0, so it replaces the old app in the stores. Checked on the Android emulator in light and dark mode.
+- **Setup stage 2 is complete.** **Next: build v1 features** from `docs/mvp.md`, starting with accounts (sign-up, sign-in with email/password and Google, the user's row and default categories).
+- There are no v1 features yet: no endpoints besides `GET /health`, and only a placeholder welcome screen.
 
 ## Working with Christion
 
@@ -59,6 +60,7 @@ _Update this section whenever a stage is finished or the plan changes._
 - `pnpm --filter @thinktwice/api db:migrate`: apply new database migrations.
 - `pnpm --filter @thinktwice/api dev`: run the API locally with auto-reload.
 - `pnpm --filter @thinktwice/ml dev`: run the ML service locally with auto-reload.
+- `pnpm --filter @thinktwice/mobile android` / `web`: run the app on the Android emulator / in the browser.
 - `pnpm audit:deps`: check JavaScript and Python dependencies for known vulnerabilities. (Plain `pnpm audit` only runs pnpm's built-in JavaScript audit.)
 
 ## Tooling decisions to preserve
@@ -75,6 +77,7 @@ These were deliberate security choices. Don't undo them without asking Christion
 - **Routes are private by default.** Only add `config: { public: true }` to a route that genuinely needs no sign-in, and say so to Christion. Every new endpoint's tests must use `describeEndpointAuthentication` and include cross-user tests.
 - **All user data goes through `withUserScope` or `withSignedInUser`.** Row-level security is forced on every user-data table, and the API connects only as `thinktwice_app`. Never give the API the owner or superuser connection, and never add `BYPASSRLS`.
 - **The Docker image is pinned to its digest**, like the GitHub Actions.
+- **Audit exceptions are by advisory ID only** (`auditConfig.ignoreGhsas` in `pnpm-workspace.yaml`), each with a written reason, only for development-only tools with no fix available, and approved by Christion. Never use `--ignore-unfixable` or ignore a vulnerability in anything that ships. Remove exceptions as soon as fixes exist.
 
 ## Source documents
 

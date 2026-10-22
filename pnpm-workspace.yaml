@@ -6,6 +6,23 @@ packages:
 # Dependencies may not run install scripts unless listed here as true.
 # esbuild's script only re-checks a binary pnpm already installs as a platform package.
 # lefthook's script only installs git hooks, which the root `prepare` script does.
+# @parcel/watcher and unrs-resolver ship prebuilt binaries, so their build fallbacks aren't needed.
 allowBuilds:
+  "@parcel/watcher": false
   esbuild: false
   lefthook: false
+  unrs-resolver: false
+
+# Reviewed vulnerabilities in development-only tools that have no fix we can install yet.
+# None of these packages ship in the app or run in the API or ML service. See docs/known-issues.md.
+# Remove each entry as soon as a fix is available.
+auditConfig:
+  ignoreGhsas:
+    # uuid (via Expo CLI > @expo/config-plugins > xcode): fixed by Expo SDK 58.0.17's xcode v4.
+    - GHSA-w5hq-g745-h8pq
+    # node-forge (via Expo CLI, local dev-server HTTPS certificates): no fixed release yet.
+    - GHSA-86w9-cpqp-85rv
+    # braces (via the Metro bundler's file watcher, patterns come from our own config): no fixed release yet.
+    - GHSA-vfj7-8cjw-p6xm
+    # sprintf-js (via Jest's code coverage tooling, tests only): no fixed release yet.
+    - GHSA-hp3w-g68c-fv3c

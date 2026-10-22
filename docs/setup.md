@@ -18,6 +18,7 @@ winget install --id Python.Python.3.14 -e
 winget install --id astral-sh.uv -e
 winget install --id Docker.DockerDesktop -e
 winget install --id Microsoft.VisualStudioCode -e
+winget install --id Google.AndroidStudio -e
 ```
 
 Close and reopen PowerShell afterwards so the new commands are on your `PATH`.
@@ -31,6 +32,7 @@ Close and reopen PowerShell afterwards so the new commands are on your `PATH`.
 | uv             | Python package manager for the ML service       | 0.13.5                     |
 | Docker Desktop | Runs the API, PostgreSQL and ML service locally | 29.7.2                     |
 | VS Code        | Editor                                          | 1.142.0                    |
+| Android Studio | Android emulator for testing the app            | (any current version)      |
 
 pnpm automatically switches to the exact version pinned in `package.json` (`packageManager`), so any recent pnpm 12 install works.
 
@@ -117,6 +119,17 @@ pnpm --filter @thinktwice/ml dev
 ```
 
 It starts at <http://127.0.0.1:8000>. Open <http://127.0.0.1:8000/health>; it should show `{"status":"ok"}`. Every other endpoint needs the token from `services/ml/.env`.
+
+To run the app:
+
+1. In Android Studio, open **Device Manager** and start an emulator (the dev machine uses a Pixel 8a image).
+2. Run:
+
+   ```powershell
+   pnpm --filter @thinktwice/mobile android
+   ```
+
+   The first time, this installs **Expo Go** on the emulator and opens the app. `web` instead of `android` opens it in the browser at <http://localhost:8081>.
 
 To wipe the local database and start over (for example, after changing the passwords): `docker compose down --volumes`, then run the commands above again.
 
