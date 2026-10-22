@@ -15,7 +15,8 @@ The agreed feature scope is in `docs/mvp.md`, the database design is in `docs/da
 _Update this section whenever a stage is finished or the plan changes._
 
 - **Done:** all planning docs (MVP scope, data model, architecture, design guide), the setup guide, the known-issues list, and **setup stage 1: repo foundation** (pnpm workspace, strict TypeScript base config, ESLint, Prettier, Lefthook git hooks, GitHub Actions CI, Dependabot, `.gitattributes`). CI passes on `christion`.
-- **Next: setup stage 2:** scaffold the apps and services from `docs/architecture.md`, one at a time, each verified and committed separately: `packages/shared`, `services/api` (with PostgreSQL in `compose.yaml`), `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
+- **Setup stage 2 in progress.** Done: `packages/shared` (`@thinktwice/shared`): Zod schemas, types and default categories for users, categories and expenses, built to `dist/` with `tsc`, tested with Vitest.
+- **Next in stage 2:** scaffold the apps and services from `docs/architecture.md`, one at a time, each verified and committed separately: `services/api` (with PostgreSQL in `compose.yaml`), `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
 - There is no application code yet.
 
 ## Working with Christion
@@ -34,7 +35,8 @@ _Update this section whenever a stage is finished or the plan changes._
 - `pnpm install`: install all JavaScript dependencies and the git hooks.
 - `pnpm format` / `pnpm format:check`: format with Prettier / check formatting.
 - `pnpm lint`: run ESLint.
-- `pnpm typecheck`: type check every package.
+- `pnpm build`: build every package that has a build step (e.g. `packages/shared`).
+- `pnpm typecheck`: build, then type check every package.
 - `pnpm test`: run all tests.
 - `pnpm audit`: check dependencies for known vulnerabilities.
 

@@ -101,11 +101,12 @@ Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoin
 
 ### Tests
 
-| Part | Tool                                                                        |
-| ---- | --------------------------------------------------------------------------- |
-| App  | Jest + React Native Testing Library                                         |
-| API  | Vitest, using Fastify's built-in request injection (no real network needed) |
-| ML   | pytest                                                                      |
+| Part   | Tool                                                                        |
+| ------ | --------------------------------------------------------------------------- |
+| App    | Jest + React Native Testing Library                                         |
+| API    | Vitest, using Fastify's built-in request injection (no real network needed) |
+| Shared | Vitest                                                                      |
+| ML     | pytest                                                                      |
 
 - The API tests run against a real PostgreSQL database (in Docker), not a mock, so row-level security is actually tested.
 - The **Firebase Auth Emulator** issues real test tokens locally and in CI, so token verification is tested for real. It needs Java and the Firebase CLI.
