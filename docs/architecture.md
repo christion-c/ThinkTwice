@@ -138,6 +138,12 @@ Every step must pass before anything is merged into `main`.
 
 `.gitattributes` stores all text files with LF line endings in the repo, which works on every operating system and stops the line-ending warnings on commit.
 
+## Running TypeScript
+
+- **API (development):** Node.js 24 runs the TypeScript source directly with its built-in type stripping (`node --watch src/server.ts`), so no extra runner like `tsx` is needed. The API's `tsconfig.json` enables `erasableSyntaxOnly` so only syntax Node can strip is allowed, and relative imports use `.ts` extensions.
+- **API (production):** `tsc` compiles to `dist/` and rewrites the `.ts` imports to `.js` (`rewriteRelativeImportExtensions`); `node dist/server.js` runs it.
+- **Shared package:** compiled to `dist/` with `tsc`. The app and API import the compiled output, so `pnpm build` runs before type checking.
+
 ## Local development
 
 - `docker compose watch` starts PostgreSQL, the API and the ML service, and reloads the API and ML service when their code changes.

@@ -4,7 +4,7 @@ How to get from a freshly reset Windows computer back to working on ThinkTwice.
 
 Keep this file up to date: every tool, package, service or account the project depends on must be listed here (see rule 12 in `CLAUDE.md`).
 
-_Last updated: 2026-10-22. The repo has its tooling (formatting, linting, git hooks, CI) but no application code yet._
+_Last updated: 2026-10-22._
 
 ## 1. Install the base tools
 
@@ -71,11 +71,29 @@ Git will open a browser window to sign in to GitHub the first time you push.
 | Firebase        | Authentication and web hosting          | Not set up yet         |
 | thinktwice.site | Domain for the web app and API          | Domain registrar login |
 
-## 6. Secrets
+## 6. Environment files and secrets
 
-No secrets are needed yet. When they are, they will be listed in `.env.example` files. Copy each one to `.env` and fill in the real values. `.env` files are never committed, so keep the real values somewhere safe outside this computer, such as a password manager.
+Each part of the project that needs settings has a `.env.example` file listing every variable. Copy each one to `.env` (which is never committed) and fill in the values:
 
-## 7. Verify
+```powershell
+Copy-Item services\api\.env.example services\api\.env
+```
+
+| File                | Contains secrets?                 | Where real values come from                               |
+| ------------------- | --------------------------------- | --------------------------------------------------------- |
+| `services/api/.env` | No (local settings only, for now) | The defaults in `.env.example` work for local development |
+
+When secrets are added, keep their real values somewhere safe outside this computer, such as a password manager, and note where each one comes from in this table.
+
+## 7. Run the API
+
+```powershell
+pnpm --filter @thinktwice/api dev
+```
+
+The API starts at <http://127.0.0.1:3000> and reloads when its code changes. Open <http://127.0.0.1:3000/health>; it should show `{"status":"ok"}`.
+
+## 8. Verify
 
 ```powershell
 git --version

@@ -16,7 +16,8 @@ _Update this section whenever a stage is finished or the plan changes._
 
 - **Done:** all planning docs (MVP scope, data model, architecture, design guide), the setup guide, the known-issues list, and **setup stage 1: repo foundation** (pnpm workspace, strict TypeScript base config, ESLint, Prettier, Lefthook git hooks, GitHub Actions CI, Dependabot, `.gitattributes`). CI passes on `christion`.
 - **Setup stage 2 in progress.** Done: `packages/shared` (`@thinktwice/shared`): Zod schemas, types and default categories for users, categories and expenses, built to `dist/` with `tsc`, tested with Vitest.
-- **Next in stage 2:** scaffold the apps and services from `docs/architecture.md`, one at a time, each verified and committed separately: `services/api` (with PostgreSQL in `compose.yaml`), `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
+- **`services/api` step 1 of 3 done:** Fastify server skeleton: validated environment config, logging with credentials redacted, friendly JSON errors that never leak internals, security headers (helmet), CORS allowlist, rate limiting, 100 KB body limit and `GET /health`. Step 2 is the database (PostgreSQL 18 in `compose.yaml`, Drizzle schema, migrations, row-level security); step 3 is Firebase token verification and the rule 13 security tests.
+- **Next in stage 2:** scaffold the apps and services from `docs/architecture.md`, one at a time, each verified and committed separately: finish `services/api` (steps 2 and 3), then `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
 - There is no application code yet.
 
 ## Working with Christion
@@ -38,6 +39,7 @@ _Update this section whenever a stage is finished or the plan changes._
 - `pnpm build`: build every package that has a build step (e.g. `packages/shared`).
 - `pnpm typecheck`: build, then type check every package.
 - `pnpm test`: run all tests.
+- `pnpm --filter @thinktwice/api dev`: run the API locally with auto-reload.
 - `pnpm audit`: check dependencies for known vulnerabilities.
 
 ## Tooling decisions to preserve
