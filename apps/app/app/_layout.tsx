@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 
 import { AuthProvider, useAuth } from "../src/features/auth/auth-provider";
+import { startRouteFor } from "../src/features/auth/start-route";
 import { useTheme } from "../src/theme/use-theme";
 
 // Keep the splash screen up until we know whether someone is signed in, so the sign-in form never flashes.
@@ -20,6 +21,7 @@ function RootNavigator() {
     }
   }, [state.status]);
 
+  const startRoute = startRouteFor(state.status);
   const isReady = state.status === "ready";
   const isSettingUp =
     state.status === "settingUp" || state.status === "setupFailed";
@@ -35,13 +37,13 @@ function RootNavigator() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        <Stack.Protected guard={isReady}>
+        <Stack.Protected guard={isReady} redirectTo={startRoute}>
           <Stack.Screen name="(app)" />
         </Stack.Protected>
-        <Stack.Protected guard={isSettingUp}>
+        <Stack.Protected guard={isSettingUp} redirectTo={startRoute}>
           <Stack.Screen name="account-setup" />
         </Stack.Protected>
-        <Stack.Protected guard={isSignedOut}>
+        <Stack.Protected guard={isSignedOut} redirectTo={startRoute}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
       </Stack>
