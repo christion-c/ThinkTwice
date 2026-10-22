@@ -112,6 +112,13 @@ These rules apply to all work on this project, by Christion or Claude. Follow th
 - All tests must pass before code is committed or merged.
 - Tests live in the project's standard test location and follow the same rules as the rest of the code.
 
+## 12. Document everything needed to rebuild the dev environment
+- `docs/setup.md` must always let a freshly reset computer get back to work quickly.
+- Whenever a tool, package manager, global package, service, account, environment variable or setup step is added, removed or changed, update `docs/setup.md` in the same commit.
+- Give exact install commands and record the versions in use.
+- Pin versions in the project itself where possible (e.g. lockfiles, `engines` in `package.json`, Python requirements).
+- List every secret in a `.env.example`, and note in `docs/setup.md` where its real value comes from.
+
 ## Git workflow note
 - Claude pushes to `origin/christion` immediately after every commit it makes on the `christion` branch, without asking.
 - Commits made manually are not pushed automatically. Push them yourself.
