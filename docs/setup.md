@@ -65,11 +65,11 @@ Git will open a browser window to sign in to GitHub the first time you push.
 
 ## 5. Accounts and services
 
-| Service         | Used for                                | What to restore        |
-| --------------- | --------------------------------------- | ---------------------- |
-| GitHub          | Code hosting (`christion-c/ThinkTwice`) | Sign in                |
-| Firebase        | Authentication and web hosting          | Not set up yet         |
-| thinktwice.site | Domain for the web app and API          | Domain registrar login |
+| Service                 | Used for                                                                   | What to restore                                                                                 |
+| ----------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| GitHub                  | Code hosting (`christion-c/ThinkTwice`)                                    | Sign in                                                                                         |
+| Firebase / Google Cloud | Sign-in, web hosting, and the live previous version (Cloud Run, Cloud SQL) | Sign in at console.firebase.google.com. Project: `thinktwice-dev-christion`. It has real users. |
+| thinktwice.site         | Domain for the web app and API                                             | Domain registrar login                                                                          |
 
 ## 6. Environment files and secrets
 

@@ -34,6 +34,18 @@ _Update this section whenever a stage is finished or the plan changes._
 
 `origin/main` still holds the previous (capstone) version of the app. It's a useful reference, but don't copy code from it without reviewing it against these rules. The design guide's color palette came from its `apps/frontend/lib/theme.ts`. See `docs/known-issues.md` before opening any pull request into `main`.
 
+**It's live, with active users.** It runs in the Google Cloud / Firebase project **`thinktwice-dev-christion`**:
+
+- Firebase Authentication (email/password and Google sign-in) and Firebase Hosting for thinktwice.site.
+- API and ML service on Cloud Run (`thinktwice-backend`, `thinktwice-ml`, region `us-east4`).
+- PostgreSQL on Cloud SQL (instance `thinktwice`, region `us-central1`), holding the users' data in the old schema.
+
+**The rebuild reuses this Firebase project** (Christion's decision), so existing users keep their sign-in accounts. Rules for it:
+
+- **Never touch the live project without asking Christion first**: no deploys, no changes to Firebase or Cloud SQL, no reads of production data.
+- **Tests never use it.** They always use the placeholder project `demo-thinktwice` and test-signed tokens.
+- Existing users' data must be migrated into the new schema before the rebuild goes live (see `docs/known-issues.md`).
+
 ## Common commands
 
 - `pnpm install`: install all JavaScript dependencies and the git hooks.
