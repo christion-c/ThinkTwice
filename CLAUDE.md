@@ -10,6 +10,44 @@ Christion is the sole developer. The capstone is finished and Christion has grad
 
 The agreed feature scope is in `docs/mvp.md`, the database design is in `docs/data-model.md`, the repo layout, tooling and workflow are in `docs/architecture.md`, and the look, accessibility rules and writing style are in `docs/design-guide.md`. Open problems and gaps are tracked in `docs/known-issues.md`: add new ones as they're found, and remove them in the same commit as the fix.
 
+## Current status
+
+_Update this section whenever a stage is finished or the plan changes._
+
+- **Done:** all planning docs (MVP scope, data model, architecture, design guide), the setup guide, the known-issues list, and **setup stage 1: repo foundation** (pnpm workspace, strict TypeScript base config, ESLint, Prettier, Lefthook git hooks, GitHub Actions CI, Dependabot, `.gitattributes`). CI passes on `christion`.
+- **Next: setup stage 2:** scaffold the apps and services from `docs/architecture.md`, one at a time, each verified and committed separately: `packages/shared`, `services/api` (with PostgreSQL in `compose.yaml`), `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
+- There is no application code yet.
+
+## Working with Christion
+
+- **Explain in plain language.** Christion wants to understand every decision. Avoid unexplained jargon.
+- **Propose, then build.** For plans and design decisions, give a recommendation (not just a list of options), write it up as a draft, and wait for Christion's approval before committing it. Pick sensible defaults for small choices and say which ones you picked.
+- **Check real, current versions.** Many tools are newer than Claude's training data. Before adding or pinning a dependency, look up the actual latest version and its compatibility (e.g. `npm view <pkg> version peerDependencies`) instead of relying on memory.
+- **Report honestly.** If a check fails or something can't be verified, say so and show it.
+
+## Previous version of the app
+
+`origin/main` still holds the previous (capstone) version of the app. It's a useful reference, but don't copy code from it without reviewing it against these rules. The design guide's color palette came from its `apps/frontend/lib/theme.ts`. See `docs/known-issues.md` before opening any pull request into `main`.
+
+## Common commands
+
+- `pnpm install`: install all JavaScript dependencies and the git hooks.
+- `pnpm format` / `pnpm format:check`: format with Prettier / check formatting.
+- `pnpm lint`: run ESLint.
+- `pnpm typecheck`: type check every package.
+- `pnpm test`: run all tests.
+- `pnpm audit`: check dependencies for known vulnerabilities.
+
+## Tooling decisions to preserve
+
+These were deliberate security choices. Don't undo them without asking Christion:
+
+- **pnpm's minimum release age stays on.** pnpm refuses packages published too recently, which protects against hijacked releases. If a brand-new version is blocked, pin a slightly older one instead of adding exceptions.
+- **Install scripts are denied by default** (`allowBuilds` in `pnpm-workspace.yaml`). Only allow a package's install script after checking that it needs one.
+- **GitHub Actions are pinned to full commit SHAs** (with the version in a comment), and CI runs with read-only permissions.
+- **TypeScript stays on 6.0** until typescript-eslint supports TypeScript 7 (see `docs/known-issues.md`).
+- **Never bypass the git hooks** (`--no-verify`). If a hook fails, fix the cause.
+
 ## Source documents
 
 Full context lives in the Word documents in `docs/`:
