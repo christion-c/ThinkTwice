@@ -11,6 +11,10 @@ pre-commit:
     - name: typecheck
       glob: "*.{ts,tsx}"
       run: pnpm typecheck
+    - name: python
+      root: services/ml/
+      glob: "*.py"
+      run: uv run ruff check {staged_files} && uv run ruff format --check {staged_files} && uv run mypy
 
 commit-msg:
   jobs:

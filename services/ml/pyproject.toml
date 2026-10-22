@@ -1,0 +1,56 @@
+[project]
+name = "thinktwice-ml"
+version = "0.1.0"
+description = "ThinkTwice forecasting service: projects where each spending habit is heading."
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "fastapi>=0.159.1",
+    "pydantic-settings>=2.16.1",
+    "uvicorn>=0.54.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16.0",
+    "mypy>=2.4.0",
+    "pip-audit>=2.10.1",
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812", # Conflicts with the Ruff formatter.
+    "CPY001", # No copyright headers in this project.
+]
+
+[tool.ruff.lint.flake8-type-checking]
+# Pydantic reads these classes' annotations at runtime, so their imports must stay real imports.
+runtime-evaluated-base-classes = ["pydantic.BaseModel", "pydantic_settings.BaseSettings"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",    # pytest uses plain assert statements.
+    "PLR2004", # Tests compare against literal expected values.
+]
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest]
+testpaths = ["tests"]
+strict = true

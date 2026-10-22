@@ -102,8 +102,17 @@ Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoin
 ### Python (ML service)
 
 - **uv** for installing Python, managing dependencies and locking versions (`uv.lock`).
-- **Ruff** for linting and formatting.
-- **mypy** in strict mode for type checking.
+- **Ruff** for linting and formatting, with every rule set enabled (`select = ["ALL"]`), including docstrings on every function (rule 4) and security checks.
+- **mypy** in strict mode for type checking, with the Pydantic plugin.
+- **pytest** for tests, with FastAPI's test client on **httpx2** (Starlette deprecated using it with the original httpx).
+- **pip-audit** for known vulnerabilities.
+- `services/ml/package.json` exists only so the root `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm audit:deps` also run the Python checks. Python dependencies live in `pyproject.toml`.
+
+### ML service security
+
+- Only the API may call it: every endpoint except `GET /health` requires a shared secret (`ML_SERVICE_TOKEN`, at least 32 characters) as a Bearer token, compared in constant time.
+- It never receives IDs, emails or notes; only category name and type, amount and date (`schemas.py`). Unknown fields are rejected and every value is size-limited.
+- Interactive docs and the OpenAPI schema are turned off.
 
 ### Tests
 
@@ -132,7 +141,7 @@ On every push and pull request:
 1. Install dependencies from the lockfiles.
 2. Lint, format check and type check everything.
 3. Run all tests, including the rule 13 security tests, against a real PostgreSQL database.
-4. Audit dependencies for known vulnerabilities (`pnpm audit`, `pip-audit`).
+4. Audit dependencies for known vulnerabilities (`pnpm audit:deps`, which runs `pnpm audit` and `pip-audit`).
 
 Every step must pass before anything is merged into `main`.
 

@@ -6,7 +6,13 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-  globalIgnores(["**/node_modules/", "**/dist/", "**/coverage/", "**/.expo/"]),
+  globalIgnores([
+    "**/node_modules/",
+    "**/dist/",
+    "**/coverage/",
+    "**/.expo/",
+    "**/.venv/",
+  ]),
   eslint.configs.recommended,
   {
     files: ["**/*.{ts,tsx}"],

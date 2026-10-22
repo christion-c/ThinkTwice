@@ -29,7 +29,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+
       - run: pnpm install --frozen-lockfile
+      - name: Install Python dependencies
+        working-directory: services/ml
+        run: uv sync --locked
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
@@ -52,4 +57,4 @@ jobs:
           echo "TEST_MIGRATION_DATABASE_URL=postgresql://thinktwice_owner:${THINKTWICE_OWNER_PASSWORD}@127.0.0.1:5432/thinktwice_test" >> "${GITHUB_ENV}"
 
       - run: pnpm test
-      - run: pnpm audit
+      - run: pnpm audit:deps

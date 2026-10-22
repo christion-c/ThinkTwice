@@ -20,7 +20,8 @@ _Update this section whenever a stage is finished or the plan changes._
   - Step 1: Fastify server skeleton: validated environment config, logging with credentials redacted, friendly JSON errors that never leak internals, security headers (helmet), CORS allowlist, rate limiting, 100 KB body limit and `GET /health`.
   - Step 2: database: PostgreSQL 18.6 in `compose.yaml`, least-privilege roles (`thinktwice_owner`, `thinktwice_app`), hand-written SQL migration `0001_initial_schema.sql` with forced row-level security on `users`, `categories` and `expenses`, a tested migration runner, Drizzle table definitions, and `withUserScope` for every user-data query. Tests in `services/api/tests/db/` prove the isolation against a real database.
   - Step 3: sign-in: Firebase ID token verification with `jose`, deny-by-default auth on every route, `requireIdentity` and `withSignedInUser`, and the reusable rule 13 harness `describeEndpointAuthentication` in `tests/security/`.
-- **Next in stage 2:** `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
+- **`services/ml` done:** FastAPI forecasting service (Python 3.14, uv). `POST /forecasts` projects each category's month-end total at the current pace (at least 3 expenses this month), in whole cents. Protected by a shared service token; `GET /health` is public.
+- **Next in stage 2:** `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
 - There are no v1 features yet: no endpoints besides `GET /health`, and no app screens.
 
 ## Working with Christion
@@ -57,7 +58,8 @@ _Update this section whenever a stage is finished or the plan changes._
 - `docker compose up --detach --wait`: start the local PostgreSQL database (needed by the API and by `pnpm test`).
 - `pnpm --filter @thinktwice/api db:migrate`: apply new database migrations.
 - `pnpm --filter @thinktwice/api dev`: run the API locally with auto-reload.
-- `pnpm audit`: check dependencies for known vulnerabilities.
+- `pnpm --filter @thinktwice/ml dev`: run the ML service locally with auto-reload.
+- `pnpm audit:deps`: check JavaScript and Python dependencies for known vulnerabilities. (Plain `pnpm audit` only runs pnpm's built-in JavaScript audit.)
 
 ## Tooling decisions to preserve
 

@@ -8,13 +8,13 @@
   },
   "scripts": {
     "prepare": "lefthook install",
-    "lint": "eslint .",
+    "lint": "eslint . && pnpm -r --if-present lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm build && pnpm -r --if-present typecheck",
     "test": "node --test \"scripts/tests/*.test.js\" && pnpm -r --if-present test",
-    "audit": "pnpm audit"
+    "audit:deps": "pnpm audit && pnpm -r --if-present run audit:deps"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

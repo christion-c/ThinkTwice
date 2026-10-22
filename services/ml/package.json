@@ -1,0 +1,13 @@
+{
+  "name": "@thinktwice/ml",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Runs the Python forecasting service's checks from the pnpm workspace. Dependencies live in pyproject.toml.",
+  "scripts": {
+    "dev": "uv run uvicorn thinktwice_ml.main:create_app --factory --reload --host 127.0.0.1 --port 8000",
+    "lint": "uv run ruff check . && uv run ruff format --check .",
+    "typecheck": "uv run mypy",
+    "test": "uv run pytest",
+    "audit:deps": "uv run pip-audit --skip-editable"
+  }
+}
