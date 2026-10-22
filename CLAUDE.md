@@ -8,7 +8,7 @@ Tagline: _Don't just track where your money went. See where it's taking you._
 
 Christion is the sole developer. The capstone is finished and Christion has graduated; this is a from-scratch rebuild of the project, worked on at Christion's own pace with no deadline. A previous version is live at thinktwice.site, and the rebuild will replace it.
 
-The agreed feature scope is in `docs/mvp.md`, the database design is in `docs/data-model.md`, the repo layout, tooling and workflow are in `docs/architecture.md`, and the look, accessibility rules and writing style are in `docs/design-guide.md`. Open problems and gaps are tracked in `docs/known-issues.md`: add new ones as they're found, and remove them in the same commit as the fix.
+The agreed feature scope is in `docs/mvp.md`, the database design is in `docs/data-model.md`, the repo layout, tooling and workflow are in `docs/architecture.md`, and the look, accessibility rules and writing style are in `docs/design-guide.md`, and every API endpoint is documented in `docs/api.md` (update it with each endpoint change). Open problems and gaps are tracked in `docs/known-issues.md`: add new ones as they're found, and remove them in the same commit as the fix.
 
 ## Current status
 
@@ -22,7 +22,8 @@ _Update this section whenever a stage is finished or the plan changes._
   - Step 3: sign-in: Firebase ID token verification with `jose`, deny-by-default auth on every route, `requireIdentity` and `withSignedInUser`, and the reusable rule 13 harness `describeEndpointAuthentication` in `tests/security/`.
 - **`services/ml` done:** FastAPI forecasting service (Python 3.14, uv). `POST /forecasts` projects each category's month-end total at the current pace (at least 3 expenses this month), in whole cents. Protected by a shared service token; `GET /health` is public.
 - **`apps/app` done:** Expo SDK 58 app (iOS, Android, web) with Expo Router, the design guide's theme tokens (all four color modes) in `src/theme/`, a `Screen` layout component, and a placeholder welcome screen. It reuses the previous version's identifiers (`com.thinktwice.app`, `com.thinktwicefinance.app`, EAS project and owner) at version 2.0.0, so it replaces the old app in the stores. Checked on the Android emulator in light and dark mode.
-- **Setup stage 2 is complete.** **Next: build v1 features** from `docs/mvp.md`, starting with accounts (sign-up, sign-in with email/password and Google, the user's row and default categories).
+- **Setup stage 2 is complete. Building v1 features** from `docs/mvp.md`.
+- **Accounts, step 1 of 3 done:** `GET`, `POST`, `PATCH` and `DELETE /me` in the API (`services/api/src/modules/users/`). `POST /me` creates the account and the 12 default categories, idempotently. Step 2: the app's Firebase setup and email/password sign-up and sign-in (Firebase web config read from thinktwice.site's public bundle, with Christion's OK). Step 3: Google sign-in, with a local Android development build (needs JDK 21; confirm before installing).
 - There are no v1 features yet: no endpoints besides `GET /health`, and only a placeholder welcome screen.
 
 ## Working with Christion

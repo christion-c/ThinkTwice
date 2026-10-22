@@ -29,3 +29,19 @@ export const updateUserSettingsSchema = partialUpdateSchema({
   monthlyBudgetCents: amountCentsSchema.nullable(),
 });
 export type UpdateUserSettingsInput = z.infer<typeof updateUserSettingsSchema>;
+
+/** Request body for creating the signed-in user's ThinkTwice account. Email comes from the verified token. */
+export const createAccountSchema = z.strictObject({
+  timezone: timeZoneSchema,
+});
+export type CreateAccountInput = z.infer<typeof createAccountSchema>;
+
+/** The signed-in user's account, as the API returns it. */
+export const userProfileSchema = z.object({
+  id: z.uuid(),
+  email: z.string(),
+  timezone: z.string(),
+  monthlyBudgetCents: z.int().nullable(),
+  createdAt: z.iso.datetime(),
+});
+export type UserProfile = z.infer<typeof userProfileSchema>;

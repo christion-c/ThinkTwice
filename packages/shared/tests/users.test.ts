@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { isValidTimeZone, updateUserSettingsSchema } from "../src/index.js";
+import {
+  createAccountSchema,
+  isValidTimeZone,
+  updateUserSettingsSchema,
+} from "../src/index.js";
 
 describe("isValidTimeZone", () => {
   it.each(["America/Chicago", "Europe/London", "UTC"])(
@@ -46,6 +50,36 @@ describe("updateUserSettingsSchema", () => {
     expect(
       updateUserSettingsSchema.safeParse({ email: "someone@example.com" })
         .success,
+    ).toBe(false);
+  });
+});
+
+describe("createAccountSchema", () => {
+  it("accepts a time zone", () => {
+    expect(createAccountSchema.parse({ timezone: "America/Chicago" })).toEqual({
+      timezone: "America/Chicago",
+    });
+  });
+
+  it("rejects a missing or invalid time zone", () => {
+    expect(createAccountSchema.safeParse({}).success).toBe(false);
+    expect(
+      createAccountSchema.safeParse({ timezone: "Mars/Olympus_Mons" }).success,
+    ).toBe(false);
+  });
+
+  it("rejects unknown fields such as a client-supplied email or user ID", () => {
+    expect(
+      createAccountSchema.safeParse({
+        timezone: "UTC",
+        email: "someone@example.com",
+      }).success,
+    ).toBe(false);
+    expect(
+      createAccountSchema.safeParse({
+        timezone: "UTC",
+        userId: "0199f3c2-7c1e-7a3b-9d2e-1234567890ab",
+      }).success,
     ).toBe(false);
   });
 });

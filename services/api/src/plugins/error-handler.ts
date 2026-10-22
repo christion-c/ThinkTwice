@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod";
 
+import { HttpError } from "../errors/http-error.ts";
+
 interface ClientError {
   code: string;
   message: string;
@@ -71,9 +73,11 @@ export function registerErrorHandlers(app: FastifyInstance): void {
       void reply.header("www-authenticate", "Bearer");
     }
     if (statusCode < 500) {
-      return reply
-        .code(statusCode)
-        .send({ error: CLIENT_ERRORS[statusCode] ?? DEFAULT_CLIENT_ERROR });
+      const publicError =
+        error instanceof HttpError ? error.publicError : undefined;
+      return reply.code(statusCode).send({
+        error: publicError ?? CLIENT_ERRORS[statusCode] ?? DEFAULT_CLIENT_ERROR,
+      });
     }
 
     request.log.error({ err: error }, "Unhandled error");

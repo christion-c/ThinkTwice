@@ -90,7 +90,7 @@ ThinkTwice/
 └── README.md
 ```
 
-Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoints), `service.ts` (business logic), `schemas.ts` (request and response validation).
+Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoints) and `service.ts` (business logic). Request and response schemas come from `packages/shared` so the app uses the same ones; a module adds its own `schemas.ts` only for shapes the app never sees. Every endpoint is documented in `docs/api.md`.
 
 ## Tooling
 

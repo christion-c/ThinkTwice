@@ -10,7 +10,7 @@ export interface UserScope {
 }
 
 /** Sets the row-level security settings for the rest of the transaction. */
-async function setScope(
+export async function setUserScope(
   transaction: Transaction,
   scope: UserScope,
 ): Promise<void> {
@@ -29,7 +29,7 @@ export async function withUserScope<T>(
   work: (transaction: Transaction) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (transaction) => {
-    await setScope(transaction, scope);
+    await setUserScope(transaction, scope);
     return work(transaction);
   });
 }
@@ -44,14 +44,14 @@ export async function withSignedInUser<T>(
   work: (transaction: Transaction, userId: string | null) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (transaction) => {
-    await setScope(transaction, { firebaseUid, userId: null });
+    await setUserScope(transaction, { firebaseUid, userId: null });
     const [user] = await transaction
       .select({ id: users.id })
       .from(users)
       .where(eq(users.firebaseUid, firebaseUid));
     const userId = user?.id ?? null;
     if (userId !== null) {
-      await setScope(transaction, { firebaseUid, userId });
+      await setUserScope(transaction, { firebaseUid, userId });
     }
     return work(transaction, userId);
   });

@@ -12,6 +12,7 @@ import {
 import { createFirebaseTokenVerifier } from "./auth/firebase-token.ts";
 import type { Config } from "./config/env.ts";
 import { healthRoutes } from "./modules/health/routes.ts";
+import { userRoutes } from "./modules/users/routes.ts";
 import { registerAuth } from "./plugins/auth.ts";
 import { registerDatabase } from "./plugins/database.ts";
 import { registerErrorHandlers } from "./plugins/error-handler.ts";
@@ -72,6 +73,7 @@ export async function buildApp(config: Config, options: AppOptions = {}) {
   );
 
   await app.register(healthRoutes);
+  await app.register(userRoutes);
 
   return app;
 }
