@@ -23,10 +23,11 @@ _Update this section whenever a stage is finished or the plan changes._
 - **`services/ml` done:** FastAPI forecasting service (Python 3.14, uv). `POST /forecasts` projects each category's month-end total at the current pace (at least 3 expenses this month), in whole cents. Protected by a shared service token; `GET /health` is public.
 - **`apps/app` done:** Expo SDK 58 app (iOS, Android, web) with Expo Router, the design guide's theme tokens (all four color modes) in `src/theme/`, a `Screen` layout component, and a placeholder welcome screen. It reuses the previous version's identifiers (`com.thinktwice.app`, `com.thinktwicefinance.app`, EAS project and owner) at version 2.0.0, so it replaces the old app in the stores. Checked on the Android emulator in light and dark mode.
 - **Setup stage 2 is complete. Building v1 features** from `docs/mvp.md`.
-- **Accounts, steps 1 and 2 of 3 done:**
+- **Accounts done** (3 steps):
   - Step 1: `GET`, `POST`, `PATCH` and `DELETE /me` in the API (`services/api/src/modules/users/`). `POST /me` creates the account and the 12 default categories, idempotently.
-  - Step 2: the app's Firebase Authentication (email/password sign-up, sign-in and password reset), the sign-in kept in the secure store on iOS/Android, account setup through `POST /me`, and screens guarded by sign-in state (`apps/app/src/features/auth/`).
-  - Step 3 (in progress): Google sign-in. Android uses our own Expo module (`apps/app/modules/google-sign-in`, Credential Manager); the web uses Firebase's pop-up; iOS is a known issue. The app now runs as a development build (`pnpm --filter @thinktwice/app android:build`), with JDK 17 and `ANDROID_HOME` set up.
+  - Step 2: the app's Firebase Authentication (email/password sign-up, sign-in and password reset), the sign-in kept in the secure store on iOS/Android, account setup through `POST /me`, and screens guarded by sign-in state (`apps/app/src/features/auth/`). Tested end to end on the emulator against the live Firebase project.
+  - Step 3: Google sign-in. Android uses our own Expo module (`apps/app/modules/google-sign-in`, Credential Manager), checked on the emulator up to Google's account sheet; the web uses Firebase's pop-up; iOS is a known issue. The app runs as a development build (`pnpm --filter @thinktwice/app android:build`).
+- **Next: categories and expenses** from `docs/mvp.md`: API endpoints (with `describeEndpointAuthentication` and cross-user tests), then the app's quick expense entry.
 - Signed-in users see only a placeholder home screen so far; expenses, categories and the dashboard come next.
 
 ## Working with Christion
