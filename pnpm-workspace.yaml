@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - services/*
+  - packages/*
+
+# Dependencies may not run install scripts unless listed here as true.
+# lefthook's script only installs git hooks, which the root `prepare` script does.
+allowBuilds:
+  lefthook: false

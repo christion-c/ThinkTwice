@@ -59,6 +59,7 @@ ThinkTwice/
 │   └── shared/                  Zod schemas and TypeScript types shared by
 │                                the app and the API (one source of truth)
 ├── docs/                        Project documentation
+├── scripts/                     Repo tooling scripts (e.g. the commit-message check)
 ├── .github/workflows/           CI pipelines
 ├── compose.yaml                 Local dev: PostgreSQL, API, ML service
 ├── package.json                 Workspace scripts
@@ -77,41 +78,50 @@ Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoin
 ## Tooling
 
 ### Versions
-| Tool | Version | Pinned in |
-|---|---|---|
-| Node.js | 24 LTS | `.nvmrc`, `engines` in `package.json` |
-| pnpm | Latest stable | `packageManager` in `package.json` |
-| Python | 3.14 | `pyproject.toml`, `.python-version` |
-| PostgreSQL | 18 | `compose.yaml` |
+
+| Tool       | Version | Pinned in                             |
+| ---------- | ------- | ------------------------------------- |
+| Node.js    | 24 LTS  | `.nvmrc`, `engines` in `package.json` |
+| pnpm       | 12.14   | `packageManager` in `package.json`    |
+| TypeScript | 6.0     | `package.json` (see known issues)     |
+| Python     | 3.14    | `pyproject.toml`, `.python-version`   |
+| PostgreSQL | 18      | `compose.yaml`                        |
 
 ### TypeScript (app, API, shared)
+
 - **TypeScript** in strict mode, from a shared `tsconfig.base.json`.
 - **ESLint** (flat config) for code quality, with the React, React Hooks and TypeScript rule sets.
 - **Prettier** for formatting.
 
 ### Python (ML service)
+
 - **uv** for installing Python, managing dependencies and locking versions (`uv.lock`).
 - **Ruff** for linting and formatting.
 - **mypy** in strict mode for type checking.
 
 ### Tests
-| Part | Tool |
-|---|---|
-| App | Jest + React Native Testing Library |
-| API | Vitest, using Fastify's built-in request injection (no real network needed) |
-| ML | pytest |
+
+| Part | Tool                                                                        |
+| ---- | --------------------------------------------------------------------------- |
+| App  | Jest + React Native Testing Library                                         |
+| API  | Vitest, using Fastify's built-in request injection (no real network needed) |
+| ML   | pytest                                                                      |
 
 - The API tests run against a real PostgreSQL database (in Docker), not a mock, so row-level security is actually tested.
 - The **Firebase Auth Emulator** issues real test tokens locally and in CI, so token verification is tested for real. It needs Java and the Firebase CLI.
 
 ### Pre-commit checks (Lefthook)
+
 Before every commit, on the changed files only:
+
 - format check (Prettier, Ruff)
 - lint (ESLint, Ruff)
 - type check
 
 ### CI (GitHub Actions)
+
 On every push and pull request:
+
 1. Install dependencies from the lockfiles.
 2. Lint, format check and type check everything.
 3. Run all tests, including the rule 13 security tests, against PostgreSQL and the Firebase Auth Emulator.
@@ -120,17 +130,21 @@ On every push and pull request:
 Every step must pass before anything is merged into `main`.
 
 ### Dependency updates
+
 **Dependabot** opens pull requests when dependencies have updates or security fixes.
 
 ### Line endings
+
 `.gitattributes` stores all text files with LF line endings in the repo, which works on every operating system and stops the line-ending warnings on commit.
 
 ## Local development
+
 - `docker compose watch` starts PostgreSQL, the API and the ML service, and reloads the API and ML service when their code changes.
 - The Expo app runs outside Docker (`pnpm --filter mobile start`) so it can reach phone simulators, real devices and the browser.
 - Secrets come from `.env` files that are never committed; each part has a `.env.example` (rule 9).
 
 ## Git workflow
+
 - Day-to-day work happens on `christion`. Claude pushes there after every commit (see the Git workflow note in `CLAUDE.md`).
 - `main` always holds a working, deployable version. Changes reach it only through pull requests from `christion`, and CI must pass.
 - Commit messages follow **Conventional Commits** (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`).

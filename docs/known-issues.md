@@ -8,14 +8,14 @@ _Last updated: 2026-10-22._
 
 ## Open
 
-| # | Priority | Area | Issue |
-|---|---|---|---|
-| 1 | P1 | Tooling | **Project rules aren't enforced automatically yet.** There is no linting, formatting, pre-commit or CI setup, so the rules in `CLAUDE.md` rely on discipline alone. Fixed by the project setup step in `docs/architecture.md`. |
-| 2 | P2 | Tooling | **Line-ending warnings on every commit** ("LF will be replaced by CRLF"). Fixed by adding a `.gitattributes` file during project setup. |
-| 3 | P2 | Branding | **App icon source is too small.** `docs/brand/app-logo.png` is 512×512; app stores need 1024×1024 (ideally a vector SVG), plus an Android adaptive icon with the artwork inside the safe zone. |
-| 4 | P2 | Deployment | **API hosting is undecided.** `api.thinktwice.site` has no host chosen yet. Needed before release. |
-| 5 | P2 | Deployment | **Firebase setup for the rebuild is undecided.** Decide whether the rebuild reuses the previous version's Firebase project or gets a new one, and record it in `docs/setup.md`. |
-| 6 | P3 | Docs | **`docs/setup.md` doesn't list Java or the Firebase CLI yet.** Both are needed for the Firebase Auth Emulator (see `docs/architecture.md`). Add them when the API test setup is built. |
+| #   | Priority | Area       | Issue                                                                                                                                                                                                              |
+| --- | -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | P2       | Branding   | **App icon source is too small.** `docs/brand/app-logo.png` is 512×512; app stores need 1024×1024 (ideally a vector SVG), plus an Android adaptive icon with the artwork inside the safe zone.                     |
+| 2   | P2       | Deployment | **API hosting is undecided.** `api.thinktwice.site` has no host chosen yet. Needed before release.                                                                                                                 |
+| 3   | P2       | Deployment | **Firebase setup for the rebuild is undecided.** Decide whether the rebuild reuses the previous version's Firebase project or gets a new one, and record it in `docs/setup.md`.                                    |
+| 4   | P3       | Docs       | **`docs/setup.md` doesn't list Java or the Firebase CLI yet.** Both are needed for the Firebase Auth Emulator (see `docs/architecture.md`). Add them when the API test setup is built.                             |
+| 5   | P3       | Tooling    | **TypeScript 7 isn't supported yet.** The repo uses TypeScript 6.0 because typescript-eslint (and Expo SDK 58's template) only support TypeScript below 6.1. Upgrade once typescript-eslint supports TypeScript 7. |
+| 6   | P3       | Setup      | **Node.js on the dev machine is one patch behind.** It has 24.21.0; the latest Node 24 LTS release is 24.22.1. Update with `winget upgrade OpenJS.NodeJS.LTS`, then update the version in `docs/setup.md`.         |
 
 ## Notes
 

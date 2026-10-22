@@ -1,0 +1,18 @@
+# Git hooks that run automatically on commit (installed by `pnpm install`).
+pre-commit:
+  parallel: true
+  jobs:
+    - name: format
+      glob: "*.{js,mjs,cjs,ts,tsx,json,md,yml,yaml}"
+      run: pnpm exec prettier --check --ignore-unknown {staged_files}
+    - name: lint
+      glob: "*.{js,mjs,cjs,ts,tsx}"
+      run: pnpm exec eslint --no-warn-ignored {staged_files}
+    - name: typecheck
+      glob: "*.{ts,tsx}"
+      run: pnpm typecheck
+
+commit-msg:
+  jobs:
+    - name: conventional-commit
+      run: node scripts/check-commit-message.js {1}

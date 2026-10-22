@@ -7,15 +7,24 @@
 /secrets/
 **/application_default_credentials.json
 **/*service-account*.json
+*.key
+*.pem
 
-# Generated Firebase state
+# Firebase local state
 /.firebase/
+**/firebase-debug.log
+**/firestore-debug.log
+**/ui-debug.log
 
 # JavaScript dependencies and builds
 **/node_modules/
 **/dist/
-**/.expo/
 **/.cache/
+
+# Expo
+**/.expo/
+**/expo-env.d.ts
+**/web-build/
 
 # Python
 **/__pycache__/
@@ -23,13 +32,9 @@
 **/.venv/
 **/.pytest_cache/
 **/.mypy_cache/
+**/.ruff_cache/
 
-# ML service runtime/generated data (self-bootstrapping — see services/ml/app/main.py)
-services/ml/budget_data.json
-services/ml/user_history.json
-**/user_history.json
-
-# Local Android/iOS build artifacts (EAS/Gradle output)
+# Native build artifacts (EAS/Gradle/Xcode output)
 *.apk
 *.aab
 *.ipa
@@ -39,9 +44,9 @@ services/ml/user_history.json
 
 # Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+
+# Personal git hook overrides
+lefthook-local.yml
 
 # Operating systems
 .DS_Store
@@ -52,9 +57,3 @@ Thumbs.db
 !.vscode/extensions.json
 !.vscode/settings.json
 .idea/
-
-# Keys and Expo files formerly covered by apps/frontend/.gitignore
-*.key
-*.pem
-**/.keystore-recovery/
-**/expo-env.d.ts
