@@ -16,9 +16,11 @@ _Update this section whenever a stage is finished or the plan changes._
 
 - **Done:** all planning docs (MVP scope, data model, architecture, design guide), the setup guide, the known-issues list, and **setup stage 1: repo foundation** (pnpm workspace, strict TypeScript base config, ESLint, Prettier, Lefthook git hooks, GitHub Actions CI, Dependabot, `.gitattributes`). CI passes on `christion`.
 - **Setup stage 2 in progress.** Done: `packages/shared` (`@thinktwice/shared`): Zod schemas, types and default categories for users, categories and expenses, built to `dist/` with `tsc`, tested with Vitest.
-- **`services/api` step 1 of 3 done:** Fastify server skeleton: validated environment config, logging with credentials redacted, friendly JSON errors that never leak internals, security headers (helmet), CORS allowlist, rate limiting, 100 KB body limit and `GET /health`. Step 2 is the database (PostgreSQL 18 in `compose.yaml`, Drizzle schema, migrations, row-level security); step 3 is Firebase token verification and the rule 13 security tests.
-- **Next in stage 2:** scaffold the apps and services from `docs/architecture.md`, one at a time, each verified and committed separately: finish `services/api` (steps 2 and 3), then `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
-- There is no application code yet.
+- **`services/api` steps 1 and 2 of 3 done:**
+  - Step 1: Fastify server skeleton: validated environment config, logging with credentials redacted, friendly JSON errors that never leak internals, security headers (helmet), CORS allowlist, rate limiting, 100 KB body limit and `GET /health`.
+  - Step 2: database: PostgreSQL 18.6 in `compose.yaml`, least-privilege roles (`thinktwice_owner`, `thinktwice_app`), hand-written SQL migration `0001_initial_schema.sql` with forced row-level security on `users`, `categories` and `expenses`, a tested migration runner, Drizzle table definitions, and `withUserScope` for every user-data query. Tests in `services/api/tests/db/` prove the isolation against a real database.
+- **Next in stage 2:** `services/api` step 3: Firebase ID token verification (with the Firebase Auth Emulator for tests), resolving the signed-in user inside `withUserScope`, and the rule 13 endpoint security test setup. Then `services/ml` (needs `uv` installed), then `apps/mobile` (Expo SDK 58). Then start building v1 features from `docs/mvp.md`.
+- There are no v1 features yet: no endpoints besides `GET /health`, and no app screens.
 
 ## Working with Christion
 
@@ -39,6 +41,8 @@ _Update this section whenever a stage is finished or the plan changes._
 - `pnpm build`: build every package that has a build step (e.g. `packages/shared`).
 - `pnpm typecheck`: build, then type check every package.
 - `pnpm test`: run all tests.
+- `docker compose up --detach --wait`: start the local PostgreSQL database (needed by the API and by `pnpm test`).
+- `pnpm --filter @thinktwice/api db:migrate`: apply new database migrations.
 - `pnpm --filter @thinktwice/api dev`: run the API locally with auto-reload.
 - `pnpm audit`: check dependencies for known vulnerabilities.
 
@@ -51,6 +55,9 @@ These were deliberate security choices. Don't undo them without asking Christion
 - **GitHub Actions are pinned to full commit SHAs** (with the version in a comment), and CI runs with read-only permissions.
 - **TypeScript stays on 6.0** until typescript-eslint supports TypeScript 7 (see `docs/known-issues.md`).
 - **Never bypass the git hooks** (`--no-verify`). If a hook fails, fix the cause.
+- **Database migrations are hand-written SQL** (Christion's choice; drizzle-kit's stable release depends on deprecated packages). Never edit an applied migration; add a new one. Keep `src/db/schema.ts` in sync with the SQL.
+- **All user data goes through `withUserScope`.** Row-level security is forced on every user-data table, and the API connects only as `thinktwice_app`. Never give the API the owner or superuser connection, and never add `BYPASSRLS`.
+- **The Docker image is pinned to its digest**, like the GitHub Actions.
 
 ## Source documents
 

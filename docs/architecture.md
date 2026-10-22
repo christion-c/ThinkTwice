@@ -45,12 +45,16 @@ ThinkTwice/
 │   │   │   ├── app.ts           Builds the Fastify app (used by tests too)
 │   │   │   ├── server.ts        Starts the server
 │   │   │   ├── config/          Environment variable loading and validation
-│   │   │   ├── db/              Drizzle schema, database client, migrations
+│   │   │   ├── db/              Drizzle table definitions, database client,
+│   │   │   │                    user scope and migration runner
 │   │   │   ├── plugins/         Auth, row-level security, rate limiting, errors
 │   │   │   └── modules/         One folder per resource: users, categories,
 │   │   │                        expenses, dashboard, forecasts
+│   │   ├── migrations/          Hand-written SQL migrations (the schema's source of truth)
+│   │   ├── db/init/             Creates the database roles and databases in Docker
 │   │   └── tests/
-│   │       └── security/        Rule 13 access-control tests
+│   │       ├── db/              Row-level security, privileges, constraints, migrations
+│   │       └── security/        Rule 13 endpoint access-control tests
 │   └── ml/                      FastAPI forecasting service (Python)
 │       ├── src/thinktwice_ml/
 │       ├── tests/
@@ -61,7 +65,7 @@ ThinkTwice/
 ├── docs/                        Project documentation
 ├── scripts/                     Repo tooling scripts (e.g. the commit-message check)
 ├── .github/workflows/           CI pipelines
-├── compose.yaml                 Local dev: PostgreSQL, API, ML service
+├── compose.yaml                 Local dev services (PostgreSQL for now)
 ├── package.json                 Workspace scripts
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json           Shared strict TypeScript settings
@@ -108,7 +112,7 @@ Inside each API module, files follow the same pattern: `routes.ts` (HTTP endpoin
 | Shared | Vitest                                                                      |
 | ML     | pytest                                                                      |
 
-- The API tests run against a real PostgreSQL database (in Docker), not a mock, so row-level security is actually tested.
+- The API tests run against a real PostgreSQL database (in Docker), not a mock, so row-level security is actually tested. They use a separate `thinktwice_test` database, so they never touch development data.
 - The **Firebase Auth Emulator** issues real test tokens locally and in CI, so token verification is tested for real. It needs Java and the Firebase CLI.
 
 ### Pre-commit checks (Lefthook)
@@ -144,9 +148,16 @@ Every step must pass before anything is merged into `main`.
 - **API (production):** `tsc` compiles to `dist/` and rewrites the `.ts` imports to `.js` (`rewriteRelativeImportExtensions`); `node dist/server.js` runs it.
 - **Shared package:** compiled to `dist/` with `tsc`. The app and API import the compiled output, so `pnpm build` runs before type checking.
 
+## Database migrations
+
+- Migrations are **hand-written SQL files** in `services/api/migrations/`, named `NNNN_description.sql` and applied in order. drizzle-kit isn't used because its stable release depends on deprecated packages (rule 5), and hand-written SQL gives exact control over row-level security and roles (rule 13).
+- `pnpm --filter @thinktwice/api db:migrate` applies new migrations as `thinktwice_owner`. Each runs in its own transaction and is recorded with a checksum in `schema_migrations`; an advisory lock stops two runs at once.
+- **Never edit a migration after it has been applied.** The runner refuses to run if an applied file's checksum changes. Add a new migration instead.
+- Drizzle table definitions in `services/api/src/db/schema.ts` must match the SQL. `tests/db/schema.test.ts` fails if they drift apart.
+
 ## Local development
 
-- `docker compose watch` starts PostgreSQL, the API and the ML service, and reloads the API and ML service when their code changes.
+- `docker compose up --detach --wait` starts PostgreSQL (listening only on `127.0.0.1`). The API and ML service will be added to `compose.yaml` later; for now the API runs directly with `pnpm --filter @thinktwice/api dev`.
 - The Expo app runs outside Docker (`pnpm --filter mobile start`) so it can reach phone simulators, real devices and the browser.
 - Secrets come from `.env` files that are never committed; each part has a `.env.example` (rule 9).
 

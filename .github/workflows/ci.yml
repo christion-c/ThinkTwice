@@ -33,5 +33,23 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
+
+      # Random, single-use passwords for the throwaway CI database, hidden from the logs.
+      - name: Generate database passwords
+        run: |
+          for name in POSTGRES_SUPERUSER_PASSWORD THINKTWICE_OWNER_PASSWORD THINKTWICE_APP_PASSWORD; do
+            value="$(openssl rand -hex 24)"
+            echo "::add-mask::${value}"
+            echo "${name}=${value}" >> "${GITHUB_ENV}"
+          done
+
+      - name: Start PostgreSQL
+        run: docker compose up --detach --wait postgres
+
+      - name: Point tests at the database
+        run: |
+          echo "TEST_DATABASE_URL=postgresql://thinktwice_app:${THINKTWICE_APP_PASSWORD}@127.0.0.1:5432/thinktwice_test" >> "${GITHUB_ENV}"
+          echo "TEST_MIGRATION_DATABASE_URL=postgresql://thinktwice_owner:${THINKTWICE_OWNER_PASSWORD}@127.0.0.1:5432/thinktwice_test" >> "${GITHUB_ENV}"
+
       - run: pnpm test
       - run: pnpm audit

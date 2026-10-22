@@ -8,5 +8,5 @@
     "types": ["node"],
     "rootDir": "."
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests", "vitest.config.ts"]
 }

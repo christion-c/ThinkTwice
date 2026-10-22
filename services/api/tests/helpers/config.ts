@@ -12,6 +12,8 @@ export function testConfig(overrides: Partial<Config> = {}): Config {
     corsOrigins: [ALLOWED_ORIGIN],
     trustProxy: false,
     rateLimitMax: 1000,
+    // The connection pool only connects when a query runs, so tests that don't touch the database never use this.
+    databaseUrl: "postgresql://unused:unused@127.0.0.1:1/unused",
     ...overrides,
   };
 }

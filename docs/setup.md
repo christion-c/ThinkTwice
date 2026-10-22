@@ -76,22 +76,34 @@ Git will open a browser window to sign in to GitHub the first time you push.
 Each part of the project that needs settings has a `.env.example` file listing every variable. Copy each one to `.env` (which is never committed) and fill in the values:
 
 ```powershell
+Copy-Item .env.example .env
 Copy-Item services\api\.env.example services\api\.env
 ```
 
-| File                | Contains secrets?                 | Where real values come from                               |
-| ------------------- | --------------------------------- | --------------------------------------------------------- |
-| `services/api/.env` | No (local settings only, for now) | The defaults in `.env.example` work for local development |
+Then replace every `change-me` with a strong random password. Generate one with `openssl rand -hex 24` (Git Bash). The owner and app passwords must be the same in both files.
 
-When secrets are added, keep their real values somewhere safe outside this computer, such as a password manager, and note where each one comes from in this table.
+| File                | Contains secrets?  | Where real values come from                                                     |
+| ------------------- | ------------------ | ------------------------------------------------------------------------------- |
+| `.env`              | Database passwords | Local only: generate new ones. They only protect the database on this computer. |
+| `services/api/.env` | Database passwords | Local only: the same owner and app passwords as the root `.env`.                |
 
-## 7. Run the API
+Local database passwords don't need to be backed up: after a reset, generate new ones and recreate the database (step 7). When production secrets are added, keep their real values somewhere safe outside this computer, such as a password manager, and note where each one comes from in this table.
+
+## 7. Start the database and run the API
+
+Make sure Docker Desktop is running, then:
 
 ```powershell
+docker compose up --detach --wait
+pnpm --filter @thinktwice/api db:migrate
 pnpm --filter @thinktwice/api dev
 ```
 
-The API starts at <http://127.0.0.1:3000> and reloads when its code changes. Open <http://127.0.0.1:3000/health>; it should show `{"status":"ok"}`.
+- The first `docker compose up` creates the database roles and the `thinktwice` and `thinktwice_test` databases.
+- `db:migrate` creates the tables. Run it again whenever a new migration is added.
+- The API starts at <http://127.0.0.1:3000> and reloads when its code changes. Open <http://127.0.0.1:3000/health>; it should show `{"status":"ok"}`.
+
+To wipe the local database and start over (for example, after changing the passwords): `docker compose down --volumes`, then run the commands above again.
 
 ## 8. Verify
 
@@ -107,4 +119,4 @@ pnpm lint
 pnpm test
 ```
 
-Each version command should print a version, `git status` should show you are on the `christion` branch, and the last three commands should pass with no errors.
+Each version command should print a version, `git status` should show you are on the `christion` branch, and the last three commands should pass with no errors. `pnpm test` needs the database from step 7 to be running.

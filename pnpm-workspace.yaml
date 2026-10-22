@@ -4,6 +4,8 @@ packages:
   - packages/*
 
 # Dependencies may not run install scripts unless listed here as true.
+# esbuild's script only re-checks a binary pnpm already installs as a platform package.
 # lefthook's script only installs git hooks, which the root `prepare` script does.
 allowBuilds:
+  esbuild: false
   lefthook: false

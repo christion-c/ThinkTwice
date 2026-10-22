@@ -10,6 +10,7 @@ import {
 
 import type { Config } from "./config/env.ts";
 import { healthRoutes } from "./modules/health/routes.ts";
+import { registerDatabase } from "./plugins/database.ts";
 import { registerErrorHandlers } from "./plugins/error-handler.ts";
 
 /** Largest request body accepted: 100 KB, far more than any v1 request needs. */
@@ -53,6 +54,7 @@ export async function buildApp(config: Config) {
     timeWindow: "1 minute",
   });
   registerErrorHandlers(app);
+  registerDatabase(app, config.databaseUrl);
 
   await app.register(healthRoutes);
 

@@ -2,7 +2,7 @@
 
 _Status: approved. Last updated: 2026-10-22._
 
-This covers the v1 scope in `docs/mvp.md`. The database is PostgreSQL, accessed through Drizzle ORM.
+This covers the v1 scope in `docs/mvp.md`. The database is PostgreSQL 18. The tables are created by hand-written SQL migrations in `services/api/migrations/` (the source of truth), and the API queries them through Drizzle ORM.
 
 ## Conventions
 
@@ -72,10 +72,17 @@ Each user gets their own copy of the default categories when they sign up, so th
 2. **Every query is scoped.** Every read, update and delete on `categories` and `expenses` includes `WHERE user_id = <current user>`. A record that doesn't match returns `404`.
 3. **The database enforces ownership too.**
    - Composite foreign keys stop cross-user references.
-   - **PostgreSQL row-level security** on `categories` and `expenses`: the API sets the current user ID for each transaction, and the database refuses to return or change other users' rows even if a query forgets the filter.
-   - The API's database role is not the table owner and cannot bypass row-level security.
-4. **The ML service gets the minimum.** It receives only category type, category name, amount and date for the requesting user. No emails, notes or IDs.
-5. **Account deletion is complete.** Deleting the `users` row cascades to all of that user's categories and expenses, and the API also deletes the Firebase account.
+   - **PostgreSQL row-level security on every table.** For each transaction the API sets the signed-in user's Firebase UID and user ID (`withUserScope` in `services/api/src/db/user-scope.ts`), and the database refuses to return or change any other user's rows even if a query forgets the filter:
+     - `users`: only the row whose `firebase_uid` matches the verified token.
+     - `categories` and `expenses`: only rows whose `user_id` matches.
+     - Outside a user scope, every query sees nothing.
+   - Row-level security is **forced**, so it applies even to the table owner.
+4. **Database roles follow least privilege.**
+   - `thinktwice_owner` owns the tables and runs migrations. It is not a superuser.
+   - `thinktwice_app` is what the API connects as. It can only read and write rows (always filtered by row-level security). It can't create, alter or drop tables, change policies, truncate, or switch roles.
+   - `services/api/tests/db/` proves all of the above against a real database.
+5. **The ML service gets the minimum.** It receives only category type, category name, amount and date for the requesting user. No emails, notes or IDs.
+6. **Account deletion is complete.** Deleting the `users` row cascades to all of that user's categories and expenses, and the API also deletes the Firebase account.
 
 ## Planned for later versions
 
