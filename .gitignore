@@ -1,0 +1,60 @@
+# Local environment values
+.env
+.env.local
+.env.*.local
+
+# Local credentials
+/secrets/
+**/application_default_credentials.json
+**/*service-account*.json
+
+# Generated Firebase state
+/.firebase/
+
+# JavaScript dependencies and builds
+**/node_modules/
+**/dist/
+**/.expo/
+**/.cache/
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/.pytest_cache/
+**/.mypy_cache/
+
+# ML service runtime/generated data (self-bootstrapping — see services/ml/app/main.py)
+services/ml/budget_data.json
+services/ml/user_history.json
+**/user_history.json
+
+# Local Android/iOS build artifacts (EAS/Gradle output)
+*.apk
+*.aab
+*.ipa
+
+# Test output
+**/coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Operating systems
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# Keys and Expo files formerly covered by apps/frontend/.gitignore
+*.key
+*.pem
+**/.keystore-recovery/
+**/expo-env.d.ts
