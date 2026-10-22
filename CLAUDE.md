@@ -55,3 +55,8 @@ These rules apply to everyone working on this project, human or AI. Follow them 
 - New features and bug fixes come with tests.
 - All tests must pass before code is committed or merged.
 - Tests live in the project's standard test location and follow the same rules as the rest of the code.
+
+## Git workflow note
+- Claude pushes to `origin/christion` immediately after every commit it makes on the `christion` branch, without asking.
+- Commits made manually are not pushed automatically. Push them yourself.
+- Never push to `main` without asking first.
