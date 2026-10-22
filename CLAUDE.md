@@ -1,6 +1,48 @@
+# ThinkTwice
+
+ThinkTwice is an ADHD-friendly personal finance and habit-tracking app (Atlas School CS2900 capstone). Instead of only reviewing past transactions, it uses machine learning to spot recurring spending habits, forecast their future cost, and suggest practical budget adjustments before small habits become big problems.
+
+Example: "$35 on coffee this week" becomes "at this pace, about $140 on coffee by the end of the month."
+
+Tagline: *Don't just track where your money went. See where it's taking you.*
+
+Christion is the sole developer on this project.
+
+## Source documents
+Full context lives in the Word documents in the project root:
+- `Project Overview.docx`: the primary and most current description of the app.
+- `One Page Project Overview.docx`: a condensed version of the above.
+- `Project Scoping Document.docx`: early brainstorming from when this was a team project. Its team roles and group commit rules no longer apply. Its feature ideas (Plaid bank connection, vehicle profile and fuel prediction, category spending limits, over-limit warnings) are possible features, not commitments.
+
+## Tech stack
+- **Front end:** React Native + Expo (cross-platform web and mobile), TypeScript
+- **Back end:** Node.js + Express REST API, TypeScript
+- **Database:** PostgreSQL
+- **Auth and hosting:** Firebase Authentication (email/password) and Firebase Hosting
+- **Machine learning:** Python
+- **Environment:** Docker
+- **Version control:** Git + GitHub
+
+## Deliverables
+- Cross-platform web and mobile app with an ADHD-friendly design
+- Secure registration and authentication
+- Expense and recurring-habit tracking
+- Financial dashboards
+- Transaction categorization (essential vs. discretionary)
+- ML models that identify and forecast spending patterns
+- Predictive insights and practical monthly-budget recommendations
+- Awareness of nutritional spending habits (snacks, energy drinks, dining)
+- REST API and PostgreSQL database
+- Documentation, source code and a final presentation
+
+## Design principles
+- ADHD-friendly: information is clear, short and manageable, never overwhelming.
+- Never shame the user. The tone is supportive, along the lines of "maybe don't do that."
+- Understandable by users who are not technically experienced.
+
 # Project Rules
 
-These rules apply to everyone working on this project, human or AI. Follow them strictly.
+These rules apply to all work on this project, by Christion or Claude. Follow them strictly.
 
 ## 1. Code has to work
 - Never commit code that has not been run or tested.
