@@ -11,11 +11,16 @@
       "bundleIdentifier": "com.thinktwice.app"
     },
     "android": {
-      "package": "com.thinktwicefinance.app"
+      "package": "com.thinktwicefinance.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#FBF2E4"
+      }
     },
     "web": {
       "output": "static",
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": ["expo-router", "expo-status-bar"],
     "experiments": {
@@ -26,6 +31,7 @@
         "projectId": "fe8d07cb-32c4-4722-98e8-3d6637f59df4"
       }
     },
-    "owner": "ccallahan"
+    "owner": "ccallahan",
+    "icon": "./assets/images/icon.png"
   }
 }

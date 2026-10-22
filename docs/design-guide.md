@@ -15,9 +15,15 @@ How ThinkTwice looks, feels and talks. It applies to every screen on iOS, Androi
 
 ## Logo
 
-- Source file: `docs/brand/app-logo.png`. A magnifying glass split into espresso brown (a `$`) and pumpkin orange (a drop), on a cream background, matching the palette below.
-- The current file is 512×512. App store icons need a **1024×1024** source (ideally a vector SVG), plus an Android adaptive icon with the artwork inside the safe zone. Create these before the first store release.
+- **Source files (vector):** `docs/brand/logo.svg` for light backgrounds and `docs/brand/logo-dark.svg` for dark backgrounds (its handle is cream so it stays visible). Both have transparent backgrounds. A magnifying glass split into espresso brown (a `$`) and pumpkin orange (a drop), in the palette's exact colors.
+- `docs/brand/app-logo-original.png` is the previous version's 512×512 logo, kept for reference. The SVGs were redrawn from it.
+- **App assets** (in `apps/mobile/assets/images/`, generated from the SVGs):
+  - `icon.png`: 1024×1024 store and iOS icon on cream (Apple requires an opaque icon).
+  - `adaptive-icon.png`: 1024×1024 transparent Android adaptive icon foreground, with the artwork inside the 66% safe circle; its background color is cream (`#FBF2E4`).
+  - `favicon.png`: 48×48 web favicon.
+  - `logo.png` and `logo-dark.png`: 512×512 transparent in-app logos; the app picks one from the color scheme.
 - Always pair the logo with the name "ThinkTwice" as text, and give it an accessible label ("ThinkTwice logo") wherever it appears in the app.
+- To change the logo, edit the SVGs and regenerate every asset above from them.
 
 ## Layout
 

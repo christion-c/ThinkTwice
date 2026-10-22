@@ -1,19 +1,20 @@
 import { Image, StyleSheet, Text, View } from "react-native";
 
-import logo from "../assets/images/logo.png";
+import darkLogo from "../assets/images/logo-dark.png";
+import lightLogo from "../assets/images/logo.png";
 import { Screen } from "../src/components/screen";
 import { spacing, typography } from "../src/theme/tokens";
 import { useTheme } from "../src/theme/use-theme";
 
 /** The welcome screen: the logo, the app's name and its tagline. v1 features build out from here. */
 export default function WelcomeScreen() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
 
   return (
     <Screen>
       <View style={styles.center}>
         <Image
-          source={logo}
+          source={scheme === "dark" ? darkLogo : lightLogo}
           style={styles.logo}
           role="img"
           aria-label="ThinkTwice logo"

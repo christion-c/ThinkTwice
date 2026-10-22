@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">ThinkTwice logo</title>
+  <!-- A magnifying glass looking at money ($) and essentials (the drop): "think twice" before spending. -->
+  <!-- Dark-background version: the handle is cream so it stays visible. Handle drawn first so the ring sits on top. -->
+  <line x1="290" y1="282" x2="414" y2="390" stroke="#FBF2E4" stroke-width="40" stroke-linecap="round" />
+  <!-- Cream ring around the lens. -->
+  <circle cx="208" cy="202" r="128" fill="#FBF2E4" />
+  <!-- Lens: espresso left half, pumpkin right half, split by a thin brick line. -->
+  <clipPath id="lens">
+    <circle cx="208" cy="202" r="106" />
+  </clipPath>
+  <g clip-path="url(#lens)">
+    <rect x="102" y="96" width="106" height="212" fill="#3D2B1A" />
+    <rect x="208" y="96" width="106" height="212" fill="#B8500A" />
+    <rect x="205" y="96" width="5" height="212" fill="#B73B1E" />
+  </g>
+  <!-- Glint on the glass. -->
+  <path d="M 125 168 A 91 91 0 0 1 190 113" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" />
+  <!-- Dollar sign. -->
+  <g fill="none" stroke="#FBF2E4" stroke-linecap="butt">
+    <path d="M 176 182 C 170 170 136 168 136 187 C 136 205 176 199 176 219 C 176 239 138 240 133 225" stroke-width="16" />
+    <line x1="155" y1="153" x2="155" y2="180" stroke-width="8" />
+    <line x1="155" y1="226" x2="155" y2="251" stroke-width="8" />
+  </g>
+  <!-- Drop. -->
+  <path d="M 263 162 L 285.2 198.5 A 26 26 0 1 1 240.8 198.5 Z" fill="#FBF2E4" />
+  <circle cx="259" cy="213" r="7" fill="#B8500A" />
+</svg>
